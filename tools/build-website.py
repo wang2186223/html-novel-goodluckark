@@ -245,8 +245,11 @@ class WebsiteBuilder:
             f.write(html_content)
             
     def build_chapter_pages(self, novel_data: Dict, novel_dir: Path):
-        """生成章节页面"""
-        template = self.env.get_template('chapter.html')
+        """生成章节页面（包括带广告版本和clean版本）"""
+        # 加载两个模板
+        template_with_ads = self.env.get_template('chapter.html')
+        template_clean = self.env.get_template('chapter-clean.html')
+        
         chapters = novel_data['chapters']
         
         for i, chapter in enumerate(chapters):
@@ -279,17 +282,17 @@ class WebsiteBuilder:
             
             # 获取时间戳信息
             timestamps = self.get_novel_timestamps(novel_data)
-                
-            # 渲染页面
-            html_content = template.render(
-                chapter={
+            
+            # 准备渲染数据（两个版本使用相同的数据）
+            render_data = {
+                'chapter': {
                     'number': chapter['number'],
                     'title': chapter['title'],
                     'content': chapter['content'],
                     'word_count': chapter.get('word_count', 0),
                     'publish_date': chapter.get('publish_date', '')
                 },
-                novel={
+                'novel': {
                     'title': novel_data['title'],
                     'author': novel_data['author'],
                     'cover_url': self.get_cover_url(novel_data),
@@ -297,17 +300,24 @@ class WebsiteBuilder:
                     'chapters': all_chapters,
                     'tags': novel_data['tags']
                 },
-                timestamps=timestamps,
-                prev_chapter=prev_chapter,
-                next_chapter=next_chapter,
-                canonical_url=f"{self.site_url}/novels/{novel_data['slug']}/chapter-{chapter['number']}.html",
-                site_url=self.site_url
-            )
-            
-            # 保存文件
+                'timestamps': timestamps,
+                'prev_chapter': prev_chapter,
+                'next_chapter': next_chapter,
+                'canonical_url': f"{self.site_url}/novels/{novel_data['slug']}/chapter-{chapter['number']}.html",
+                'site_url': self.site_url
+            }
+                
+            # 渲染并保存带广告版本
+            html_content_with_ads = template_with_ads.render(**render_data)
             output_file = novel_dir / f"chapter-{chapter['number']}.html"
             with open(output_file, 'w', encoding='utf-8') as f:
-                f.write(html_content)
+                f.write(html_content_with_ads)
+            
+            # 渲染并保存clean版本
+            html_content_clean = template_clean.render(**render_data)
+            output_file_clean = novel_dir / f"chapter-{chapter['number']}-clean.html"
+            with open(output_file_clean, 'w', encoding='utf-8') as f:
+                f.write(html_content_clean)
                 
     def build_homepage(self, novels: Dict):
         """生成首页"""
@@ -543,7 +553,7 @@ def main():
     args = parser.parse_args()
     
     # 读取配置文件
-    site_url = 'https://novel.goodluckark.com'  # 默认正确域名
+    site_url = 'https://adx.myfreenovel.com'  # 默认正确域名
     config_file = 'config.json'
     if os.path.exists(config_file):
         try:

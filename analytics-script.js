@@ -1,9 +1,9 @@
 
     // Google Apps Script 代码 - 网站访问统计系统
 // Spreadsheet ID: 1_aTtHxX7LmHTcY9BB5qECc4L8OSWHxNoDaqDuyda_xY
-// V7 部署 (2025年10月21日上午11:11)
-// 部署ID: AKfycbyn-yImz5x-Wo_uwdF50XegbX6w_PtnQgpbhBWLffH3MBD0pS1ge4csM1VMPKfzuu9AJg
-// URL: https://script.google.com/macros/s/AKfycbyn-yImz5x-Wo_uwdF50XegbX6w_PtnQgpbhBWLffH3MBD0pS1ge4csM1VMPKfzuu9AJg/exec
+// V8 部署 (2025年10月25日)
+// 部署ID: AKfycbzdW57X6q48loXoU0bwVxdW_uNwSJltA_ybYMvGqyERPWifnTAisWsctXXsbV42-ZXX
+// URL: https://script.google.com/macros/s/AKfycbzdW57X6q48loXoU0bwVxdW_uNwSJltA_ybYMvGqyERPWifnTAisWsctXXsbV42-ZXX/exec
 
 function doPost(e) {
   try {
