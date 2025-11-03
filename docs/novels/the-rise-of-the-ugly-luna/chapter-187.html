@@ -141,10 +141,10 @@
     
     <!-- Time Meta Tags for SEO -->
     
-    <meta property="article:published_time" content="2025-11-03T11:34:10.982362">
-    <meta property="article:modified_time" content="2025-11-03T11:34:10.982362">
+    <meta property="article:published_time" content="2025-11-03T14:23:12.809182">
+    <meta property="article:modified_time" content="2025-11-03T14:23:12.809182">
     <meta name="date" content="2025-11-03">
-    <meta name="last-modified" content="2025-11-03 11:34:10">
+    <meta name="last-modified" content="2025-11-03 14:23:12">
     
     
     <!-- Open Graph Meta Tags -->
@@ -831,8 +831,8 @@
             "@type": "Person",
             "name": "Unknown Author"
         },
-        "datePublished": "2025-11-03T11:34:10.982362",
-        "dateModified": "2025-11-03T11:34:10.982362",
+        "datePublished": "2025-11-03T14:23:12.809182",
+        "dateModified": "2025-11-03T14:23:12.809182",
         "publisher": {
             "@type": "Organization",
             "name": "NovelVibe",
@@ -2134,12 +2134,16 @@
                 }
                 
                 // Key Point 1: Guide Trigger Mechanism
-                this.REQUIRED_ADS = 15; // Number of ads to accumulate across pages
+                this.INITIAL_REQUIRED_ADS = 15; // Initial number of ads to trigger first guide
+                this.MIN_RANDOM_ADS = 20; // Minimum random ads for next trigger
+                this.MAX_RANDOM_ADS = 40; // Maximum random ads for next trigger
                 this.TRIGGER_PROBABILITY = 0.79; // 79% trigger probability
-                this.COOLDOWN_MINUTES = 14; // 14 minutes cooldown
-                this.MAX_TRIGGERS_BEFORE_LONG_COOLDOWN = 20; // Enter long cooldown after 3 accumulated triggers
+                this.MAX_TRIGGERS_BEFORE_LONG_COOLDOWN = 20; // Enter long cooldown after 20 accumulated triggers
                 this.LONG_COOLDOWN_HOURS = 1; // Long cooldown 1 hour
                 this.INACTIVITY_RESET_MINUTES = 60; // Auto reset after 60 minutes of inactivity
+                
+                // Dynamic trigger threshold
+                this.nextTriggerThreshold = this.getNextTriggerThreshold();
                 
                 // State management
                 this.currentPageAds = []; // Current page ads
@@ -2206,6 +2210,26 @@
                 localStorage.setItem('adGuideTotalSeen', this.totalAdsSeen.toString());
             }
 
+            // Get next trigger threshold (dynamic)
+            getNextTriggerThreshold() {
+                const stored = localStorage.getItem('adGuideNextThreshold');
+                if (stored) {
+                    return parseInt(stored);
+                }
+                // First time, use initial threshold
+                return this.INITIAL_REQUIRED_ADS;
+            }
+
+            // Save next trigger threshold
+            saveNextTriggerThreshold(threshold) {
+                localStorage.setItem('adGuideNextThreshold', threshold.toString());
+            }
+
+            // Generate random ads count for next trigger (20-40)
+            generateRandomAdsCount() {
+                return Math.floor(Math.random() * (this.MAX_RANDOM_ADS - this.MIN_RANDOM_ADS + 1)) + this.MIN_RANDOM_ADS;
+            }
+
             // Get accumulated trigger count
             getTriggerCount() {
                 const stored = localStorage.getItem('adGuideTriggerCount');
@@ -2270,7 +2294,7 @@
                 const timeSinceLastActivity = Date.now() - lastActivity;
 
                 if (timeSinceLastActivity >= inactivityMs) {
-                    console.log(`Ad Guide: User left for more than {0} minutes, auto reset all data`);
+                    console.log(`Ad Guide: User left for more than ${this.INACTIVITY_RESET_MINUTES} minutes, auto reset all data`);
                     this.resetAllData();
                     // Update activity time
                     this.updateLastActivityTime();
@@ -2372,11 +2396,11 @@
                     this.totalAdsSeen++;
                     this.saveTotalAdsSeen();
                     
-                    console.log(`Ad Guide: New ad found, current page: {0}, total: {1}${this.totalAdsSeen}`);
+                    console.log(`Ad Guide: New ad found, current page: ${this.currentPageAds.length}, total: ${this.totalAdsSeen}, threshold: ${this.nextTriggerThreshold}`);
                     this.updateDebugInfo();
                     
-                    // Check if trigger condition is met (based on accumulated count)
-                    if (this.totalAdsSeen >= this.REQUIRED_ADS) {
+                    // Check if trigger condition is met (based on accumulated count reaching threshold)
+                    if (this.totalAdsSeen >= this.nextTriggerThreshold) {
                         this.considerTriggeringGuide();
                     }
                 }
@@ -2389,39 +2413,24 @@
                     const longCooldownMs = this.LONG_COOLDOWN_HOURS * 60 * 60 * 1000;
                     const remainingMs = longCooldownMs - (Date.now() - longCooldownStart);
                     const remainingHours = Math.ceil(remainingMs / (60 * 60 * 1000));
-                    console.log(`Ad Guide: In long cooldown, {0} hours remaining`);
+                    console.log(`Ad Guide: In long cooldown, ${remainingHours} hours remaining`);
                     return;
                 }
 
-                // Check short cooldown time
-                if (!this.canTrigger()) {
-                    console.log('Ad Guide: Still in short cooldown');
-                    return;
-                }
-
-                // Probability control: 80% trigger, 20% skip
+                // Probability control: 79% trigger, 21% skip
                 const shouldTrigger = Math.random() < this.TRIGGER_PROBABILITY;
                 if (!shouldTrigger) {
                     console.log('Ad Guide: Skipped by probability control');
-                    this.recordTriggerAttempt();
+                    // Generate new random threshold for next attempt
+                    const randomAdsCount = this.generateRandomAdsCount();
+                    this.nextTriggerThreshold = this.totalAdsSeen + randomAdsCount;
+                    this.saveNextTriggerThreshold(this.nextTriggerThreshold);
+                    console.log(`Ad Guide: Next trigger at ${this.nextTriggerThreshold} ads (need ${randomAdsCount} more)`);
                     return;
                 }
 
                 // Trigger guide
                 this.triggerGuide();
-            }
-
-            canTrigger() {
-                const lastTrigger = localStorage.getItem('adGuideLastTrigger');
-                if (!lastTrigger) return true;
-                
-                const cooldownMs = this.COOLDOWN_MINUTES * 60 * 1000;
-                const timeSinceLastTrigger = Date.now() - parseInt(lastTrigger);
-                return timeSinceLastTrigger >= cooldownMs;
-            }
-
-            recordTriggerAttempt() {
-                localStorage.setItem('adGuideLastTrigger', Date.now().toString());
             }
 
             // Key Point 2: Guide Interaction Flow Implementation
@@ -2432,12 +2441,17 @@
                 if (this.isGuideActive) return;
                 
                 this.isGuideActive = true;
-                this.recordTriggerAttempt();
                 
                 // Increase trigger count
                 const triggerCount = this.getTriggerCount() + 1;
                 this.saveTriggerCount(triggerCount);
                 console.log(`Ad Guide: Trigger count ${triggerCount}/${this.MAX_TRIGGERS_BEFORE_LONG_COOLDOWN}`);
+                
+                // Generate new random threshold for next trigger
+                const randomAdsCount = this.generateRandomAdsCount();
+                this.nextTriggerThreshold = this.totalAdsSeen + randomAdsCount;
+                this.saveNextTriggerThreshold(this.nextTriggerThreshold);
+                console.log(`Ad Guide: Guide triggered! Next trigger at ${this.nextTriggerThreshold} ads (need ${randomAdsCount} more)`);
                 
                 // Check if long cooldown condition is met
                 if (triggerCount >= this.MAX_TRIGGERS_BEFORE_LONG_COOLDOWN) {
@@ -2564,7 +2578,7 @@
                     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
                     pointer-events: none;
                     z-index: 20000;
-                    animation: bounce 1s infinite;
+                    animation: bounce 1s ease-in-out infinite;
                 `;
                 tooltip.textContent = 'Please click an AD and watch it for 10s to keep reading. Thank you!!!👇👇👇 👇👇👇 👇👇👇';
 
@@ -2580,7 +2594,7 @@
                         }
                         @keyframes bounce {
                             0%, 100% { transform: translateY(0); }
-                            50% { transform: translateY(-10px); }
+                            50% { transform: translateY(-8px); }
                         }
                     `;
                     document.head.appendChild(style);
@@ -2616,6 +2630,9 @@
                 window.addEventListener('scroll', this.updateOverlayPosition, { passive: true });
                 window.addEventListener('resize', this.updateOverlayPosition, { passive: true });
 
+                // Report Facebook Pixel event when ad guide is triggered
+                this.reportFacebookAdGuideEvent();
+
                 // Report ad guide trigger event to Google Sheets
                 this.reportAdGuideTriggered();
 
@@ -2623,8 +2640,29 @@
                 this.enableAdClick(targetAd);
             }
 
+            // Report Facebook Pixel event for ad guide trigger
+            reportFacebookAdGuideEvent() {
+                // Check if shouldTrackEvent function exists (from Facebook Pixel code)
+                if (typeof shouldTrackEvent === 'function' && typeof fbq === 'function') {
+                    if (shouldTrackEvent('1_c')) {
+                        fbq('track', '1_c');
+                        console.log('Facebook event sent: 1_c (ad guide popup triggered)');
+                    } else {
+                        console.log('Facebook event skipped: 1_c (already sent within 72 hours)');
+                    }
+                } else {
+                    console.log('Facebook Pixel not available for 1_c event');
+                }
+            }
+
             // Report ad guide trigger event
             reportAdGuideTriggered() {
+                // Check if getUserIP function is available
+                if (typeof getUserIP !== 'function') {
+                    console.error('Ad Guide: getUserIP function not available');
+                    return;
+                }
+                
                 const triggerCount = this.getTriggerCount();
                 const isInLongCooldown = this.isInLongCooldown();
                 
@@ -2811,7 +2849,6 @@
                                 // Left for less than 10 seconds, show notification popup
                                 this.showShortLeaveNotification();
                             } else if (hiddenDuration > 10000) {
-                                // Left for more than 10 seconds
                                 if (this.isGuideActive) {
                                     // Guide active and left for more than 10 seconds, close guide and show thank you popup
                                     console.log('Ad Guide: User left page for more than 10 seconds, auto close guide');
@@ -2923,10 +2960,9 @@
                     font-weight: 600;
                     z-index: 50000;
                     text-align: center;
-                    box-shadow: none;
+                    box-shadow: 0 12px 40px rgba(0, 122, 255, 0);
                     animation: fadeInScale 0.4s ease-out;
-                    border: none;
-                    opacity: 0;
+                    border: 2px solid rgba(255, 255, 255, 0);
                 `;
                 notification.textContent = 'Thank you for your AD browsing';
 
@@ -3054,18 +3090,7 @@
             updateDebugInfo() {
                 if (!this.debugPanel) return;
                 
-                const lastTrigger = localStorage.getItem('adGuideLastTrigger');
-                const cooldownMs = this.COOLDOWN_MINUTES * 60 * 1000;
                 const now = Date.now();
-                
-                let timeUntilReset = 0;
-                if (lastTrigger) {
-                    const timeSinceLastTrigger = now - parseInt(lastTrigger);
-                    timeUntilReset = Math.max(0, cooldownMs - timeSinceLastTrigger);
-                }
-                
-                const minutes = Math.floor(timeUntilReset / 60000);
-                const seconds = Math.floor((timeUntilReset % 60000) / 1000);
                 
                 // Long cooldown countdown
                 const triggerCount = this.getTriggerCount();
@@ -3103,48 +3128,77 @@
                     }
                 }
                 
+                // Calculate ads needed for next trigger
+                const adsNeeded = Math.max(0, this.nextTriggerThreshold - (this.totalAdsSeen || 0));
+                
                 this.debugPanel.innerHTML = `
                     <div style="font-weight: bold; margin-bottom: 10px;">Ad Guide Debug Panel</div>
                     <div>Browser: ${this.isPCBrowser ? 'PC (Disabled)' : 'Mobile'}</div>
                     <div>Page Ads: ${this.currentPageAds ? this.currentPageAds.length : 0}</div>
                     <div>Total Ads: ${this.totalAdsSeen || 0}</div>
-                    <div>Ads Needed: ${Math.max(0, this.REQUIRED_ADS - (this.totalAdsSeen || 0))}</div>
-                    <div style="border-top: 1px solid #444; margin: 8px 0; padding-top: 8px;">Short Cooldown (${this.COOLDOWN_MINUTES}min)</div>
-                    <div>Countdown: ${minutes}:${seconds.toString().padStart(2, '0')}</div>
+                    <div style="border-top: 1px solid #444; margin: 8px 0; padding-top: 8px;">Next Trigger Threshold</div>
+                    <div>Target: ${this.nextTriggerThreshold} ads</div>
+                    <div>Need: ${adsNeeded} more ads</div>
                     <div style="border-top: 1px solid #444; margin: 8px 0; padding-top: 8px;">Long Cooldown (${this.LONG_COOLDOWN_HOURS}h)</div>
                     <div>Trigger Count: ${triggerCount}/${this.MAX_TRIGGERS_BEFORE_LONG_COOLDOWN}</div>
                     <div>Long Countdown: ${longCooldownDisplay}</div>
                     <div style="border-top: 1px solid #444; margin: 8px 0; padding-top: 8px;">Inactivity Reset (${this.INACTIVITY_RESET_MINUTES}min)</div>
                     <div>Countdown: ${inactivityDisplay}</div>
                     <div style="border-top: 1px solid #444; margin: 8px 0; padding-top: 8px;">Status: ${this.isGuideActive ? 'Active' : 'Standby'}</div>
-                    <button onclick="adGuideSystem.resetAllData()" style="
-                        margin-top: 10px;
-                        padding: 5px 10px;
-                        background: #007AFF;
-                        color: white;
-                        border: none;
-                        border-radius: 4px;
-                        cursor: pointer;
-                        font-size: 11px;
-                    ">Reset Now</button>
+                    <div style="display: flex; gap: 5px; margin-top: 10px;">
+                        <button onclick="adGuideSystem.addOneAd()" style="
+                            flex: 1;
+                            padding: 5px 10px;
+                            background: #34C759;
+                            color: white;
+                            border: none;
+                            border-radius: 4px;
+                            cursor: pointer;
+                            font-size: 11px;
+                        ">+1 Ad</button>
+                        <button onclick="adGuideSystem.resetAllData()" style="
+                            flex: 1;
+                            padding: 5px 10px;
+                            background: #007AFF;
+                            color: white;
+                            border: none;
+                            border-radius: 4px;
+                            cursor: pointer;
+                            font-size: 11px;
+                        ">Reset</button>
+                    </div>
                 `;
             }
 
             resetAllData() {
-                localStorage.removeItem('adGuideLastTrigger');
                 localStorage.removeItem('adGuideTotalSeen');
+                localStorage.removeItem('adGuideNextThreshold');
                 localStorage.removeItem('adGuideTriggerCount');
                 localStorage.removeItem('adGuideLongCooldownStart');
                 localStorage.removeItem('adGuideLastActivity');
                 this.totalAdsSeen = 0;
+                this.nextTriggerThreshold = this.INITIAL_REQUIRED_ADS;
                 this.currentPageAds = [];
                 if (this.isGuideActive) {
                     this.endGuide();
                 }
                 // Ensure scroll monitoring is stopped
                 this.stopScrollMonitoring();
-                console.log('Ad Guide: All data reset (including cross-page accumulated data, trigger count, long cooldown and activity time)');
+                console.log('Ad Guide: All data reset (including total ads, threshold, trigger count, long cooldown and activity time)');
                 this.updateDebugInfo();
+            }
+
+            // Debug function: manually add one ad view
+            addOneAd() {
+                this.totalAdsSeen++;
+                this.saveTotalAdsSeen();
+                console.log(`Ad Guide: [DEBUG] Manually added 1 ad, total: ${this.totalAdsSeen}, threshold: ${this.nextTriggerThreshold}`);
+                this.updateDebugInfo();
+                
+                // Check if trigger condition is met
+                if (this.totalAdsSeen >= this.nextTriggerThreshold) {
+                    this.considerTriggeringGuide();
+                }
             }
 
             startPeriodicCheck() {
