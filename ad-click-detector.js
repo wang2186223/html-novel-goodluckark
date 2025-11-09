@@ -204,6 +204,12 @@ class AdClickDetector {
                 return;
             }
             
+            // 3天内只上报一次（72小时防重复机制）
+            if (!this.shouldTrackFBEvent('user_c')) {
+                console.log('Ad Click Detector: Facebook Pixel user_c 事件在3天内已上报，跳过');
+                return;
+            }
+            
             // 获取当前页面信息
             const pageUrl = window.location.href;
             const pagePath = window.location.pathname;
@@ -255,6 +261,21 @@ class AdClickDetector {
         } catch (error) {
             console.error('Ad Click Detector: Facebook Pixel 上报失败', error);
         }
+    }
+    
+    // Facebook事件3天内防重复检测（72小时机制）
+    shouldTrackFBEvent(eventName) {
+        const now = new Date();
+        const currentPeriod = Math.floor(now.getTime() / (3 * 24 * 60 * 60 * 1000));
+        const storageKey = `fb_event_${eventName}`;
+        const lastTrackedPeriod = localStorage.getItem(storageKey);
+        
+        if (!lastTrackedPeriod || parseInt(lastTrackedPeriod) !== currentPeriod) {
+            localStorage.setItem(storageKey, currentPeriod.toString());
+            return true;
+        }
+        
+        return false;
     }
     
     // 获取简化的设备类型
