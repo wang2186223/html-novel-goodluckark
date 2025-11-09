@@ -148,8 +148,11 @@ class AdClickDetector {
         
         console.log(`🎯 Ad Click Detector: 检测到广告点击！第${this.totalClickCount}次 (方式:${method}, 耗时:${duration}ms)`);
         
-        // 上报数据
+        // 上报数据到 Google Sheets
         this.reportAdClick(method, adElement);
+        
+        // 上报数据到 Facebook Pixel
+        this.reportToFacebookPixel(method, adElement, duration);
     }
     
     // 上报广告点击事件
@@ -190,6 +193,77 @@ class AdClickDetector {
         } catch (error) {
             console.error('Ad Click Detector: 上报异常', error);
         }
+    }
+    
+    // 上报广告点击到 Facebook Pixel
+    reportToFacebookPixel(detectionMethod, adElement, duration) {
+        try {
+            // 检查 Facebook Pixel 是否可用
+            if (typeof fbq === 'undefined') {
+                console.log('Ad Click Detector: Facebook Pixel 未加载');
+                return;
+            }
+            
+            // 获取当前页面信息
+            const pageUrl = window.location.href;
+            const pagePath = window.location.pathname;
+            
+            // 提取章节信息（如果有）
+            let chapterInfo = 'unknown';
+            const chapterMatch = pageUrl.match(/chapter-(\d+)\.html/);
+            if (chapterMatch) {
+                chapterInfo = `chapter-${chapterMatch[1]}`;
+            }
+            
+            // 提取小说名称
+            let novelName = 'unknown';
+            const novelMatch = pageUrl.match(/novels\/([^/]+)\//);
+            if (novelMatch) {
+                novelName = novelMatch[1];
+            }
+            
+            // 构建上报数据
+            const eventData = {
+                // 基础信息
+                click_count: this.totalClickCount,
+                detection_method: detectionMethod,
+                touch_duration: duration,
+                
+                // 页面信息
+                novel_name: novelName,
+                chapter_info: chapterInfo,
+                page_url: pageUrl,
+                
+                // 广告信息
+                ad_element_id: adElement.id || 'unknown',
+                
+                // 设备信息
+                device_type: this.getSimpleDeviceType(),
+                screen_width: window.screen.width,
+                screen_height: window.screen.height,
+                
+                // 时间信息
+                timestamp: new Date().toISOString(),
+                local_time: new Date().toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' })
+            };
+            
+            // 发送自定义事件 user_c 到 Facebook
+            fbq('trackCustom', 'user_c', eventData);
+            
+            console.log('🎯 Ad Click Detector: Facebook Pixel 上报成功 (user_c)', eventData);
+            
+        } catch (error) {
+            console.error('Ad Click Detector: Facebook Pixel 上报失败', error);
+        }
+    }
+    
+    // 获取简化的设备类型
+    getSimpleDeviceType() {
+        const ua = navigator.userAgent;
+        if (/iPhone/.test(ua)) return 'iPhone';
+        if (/iPad/.test(ua)) return 'iPad';
+        if (/Android/.test(ua)) return 'Android';
+        return 'Other';
     }
     
     // 获取用户IP
