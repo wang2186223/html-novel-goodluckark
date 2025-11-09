@@ -141,10 +141,10 @@
     
     <!-- Time Meta Tags for SEO -->
     
-    <meta property="article:published_time" content="2025-11-09T22:51:46.770354">
-    <meta property="article:modified_time" content="2025-11-09T22:51:46.770354">
+    <meta property="article:published_time" content="2025-11-09T23:08:30.902468">
+    <meta property="article:modified_time" content="2025-11-09T23:08:30.902468">
     <meta name="date" content="2025-11-09">
-    <meta name="last-modified" content="2025-11-09 22:51:46">
+    <meta name="last-modified" content="2025-11-09 23:08:30">
     
     
     <!-- Open Graph Meta Tags -->
@@ -831,8 +831,8 @@
             "@type": "Person",
             "name": "Unknown Author"
         },
-        "datePublished": "2025-11-09T22:51:46.770354",
-        "dateModified": "2025-11-09T22:51:46.770354",
+        "datePublished": "2025-11-09T23:08:30.902468",
+        "dateModified": "2025-11-09T23:08:30.902468",
         "publisher": {
             "@type": "Organization",
             "name": "NovelVibe",
@@ -3436,14 +3436,19 @@
                 if (element.dataset.readabilityEnhanced) return;
                 element.dataset.readabilityEnhanced = 'true';
                 
-                // Create decorative spacing overlay for better visual separation
+                // Get ad element position info
+                const adRect = element.getBoundingClientRect();
+                const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+                const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
+                
+                // Create independent spacing decorator (not a child of ad element)
                 const spacer = document.createElement('div');
                 spacer.className = 'content-spacing-decorator';
                 spacer.style.cssText = `
                     position: absolute;
-                    top: 0;
-                    left: 0;
-                    width: 100%;
+                    top: ${adRect.top + scrollTop}px;
+                    left: ${adRect.left + scrollLeft}px;
+                    width: ${adRect.width}px;
                     height: 50px;
                     background: transparent;
                     pointer-events: auto;
@@ -3451,17 +3456,12 @@
                     user-select: none;
                 `;
                 
-                // Store reference to parent ad element for click detection
+                // Store reference to related ad element (for tracking only, no DOM relationship)
                 spacer.dataset.adElementId = element.id || 'unknown';
                 spacer.dataset.clickArea = 'overlay';
                 
-                // Ensure parent has relative positioning
-                if (window.getComputedStyle(element).position === 'static') {
-                    element.style.position = 'relative';
-                }
-                
-                // Insert decorator
-                element.insertBefore(spacer, element.firstChild);
+                // Insert as independent element in body (NOT inside ad container)
+                document.body.appendChild(spacer);
                 
                 // Add click detection for overlay (only one set of listeners)
                 let touchData = {
@@ -3530,27 +3530,73 @@
                     return false;
                 }, { capture: true });
                 
-                // 页面失焦检测（遮罩点击导致广告跳转）
-                const blurHandler = () => {
-                    if (touchData.isTouching) {
-                        if (window.adClickDetector && window.adClickDetector.reportOverlayClick) {
-                            window.adClickDetector.reportOverlayClick(element, 0);
-                        }
-                        touchData.isTouching = false;
-                    }
-                };
-                window.addEventListener('blur', blurHandler);
+                // Store overlay state globally for blur/visibility detection
+                spacer.dataset.overlayId = `overlay_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+                const overlayId = spacer.dataset.overlayId;
                 
-                // 页面可见性变化（切换应用/标签页）
-                const visibilityHandler = () => {
-                    if (document.hidden && touchData.isTouching) {
-                        if (window.adClickDetector && window.adClickDetector.reportOverlayClick) {
-                            window.adClickDetector.reportOverlayClick(element, 0);
+                // Store reference to ad element for blur/visibility handlers
+                touchData.adElement = element;
+                
+                // Initialize global overlay tracker if not exists
+                if (!window.overlayTouchStates) {
+                    window.overlayTouchStates = new Map();
+                    
+                    // Single global blur handler for all overlays
+                    window.addEventListener('blur', () => {
+                        window.overlayTouchStates.forEach((state, id) => {
+                            if (state.isTouching) {
+                                if (window.adClickDetector && window.adClickDetector.reportOverlayClick) {
+                                    window.adClickDetector.reportOverlayClick(state.adElement, 0);
+                                }
+                                state.isTouching = false;
+                            }
+                        });
+                    });
+                    
+                    // Single global visibility handler for all overlays
+                    document.addEventListener('visibilitychange', () => {
+                        if (document.hidden) {
+                            window.overlayTouchStates.forEach((state, id) => {
+                                if (state.isTouching) {
+                                    if (window.adClickDetector && window.adClickDetector.reportOverlayClick) {
+                                        window.adClickDetector.reportOverlayClick(state.adElement, 0);
+                                    }
+                                    state.isTouching = false;
+                                }
+                            });
                         }
-                        touchData.isTouching = false;
-                    }
+                    });
+                }
+                
+                // Register this overlay's touch state
+                window.overlayTouchStates.set(overlayId, touchData);
+                
+                // Update overlay position on scroll/resize (since it's now independent)
+                const updateOverlayPosition = () => {
+                    const adRect = element.getBoundingClientRect();
+                    const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+                    const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
+                    
+                    spacer.style.top = `${adRect.top + scrollTop}px`;
+                    spacer.style.left = `${adRect.left + scrollLeft}px`;
+                    spacer.style.width = `${adRect.width}px`;
                 };
-                document.addEventListener('visibilitychange', visibilityHandler);
+                
+                // Throttled update for performance
+                let updateTimeout;
+                const throttledUpdate = () => {
+                    if (updateTimeout) return;
+                    updateTimeout = setTimeout(() => {
+                        updateOverlayPosition();
+                        updateTimeout = null;
+                    }, 100);
+                };
+                
+                window.addEventListener('scroll', throttledUpdate, { passive: true });
+                window.addEventListener('resize', throttledUpdate, { passive: true });
+                
+                // Store cleanup reference
+                spacer.dataset.cleanupHandlers = 'registered';
             }
 
             considerTriggeringGuide() {
