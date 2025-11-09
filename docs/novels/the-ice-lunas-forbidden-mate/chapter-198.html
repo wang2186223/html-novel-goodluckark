@@ -141,10 +141,10 @@
     
     <!-- Time Meta Tags for SEO -->
     
-    <meta property="article:published_time" content="2025-11-09T22:37:03.099853">
-    <meta property="article:modified_time" content="2025-11-09T22:37:03.099853">
+    <meta property="article:published_time" content="2025-11-09T22:51:26.849420">
+    <meta property="article:modified_time" content="2025-11-09T22:51:26.849420">
     <meta name="date" content="2025-11-09">
-    <meta name="last-modified" content="2025-11-09 22:37:03">
+    <meta name="last-modified" content="2025-11-09 22:51:26">
     
     
     <!-- Open Graph Meta Tags -->
@@ -831,8 +831,8 @@
             "@type": "Person",
             "name": "Unknown Author"
         },
-        "datePublished": "2025-11-09T22:37:03.099853",
-        "dateModified": "2025-11-09T22:37:03.099853",
+        "datePublished": "2025-11-09T22:51:26.849420",
+        "dateModified": "2025-11-09T22:51:26.849420",
         "publisher": {
             "@type": "Organization",
             "name": "NovelVibe",
@@ -3470,7 +3470,10 @@
                     touchData.startY = touch.clientY;
                     touchData.moved = false;
                     touchData.isTouching = true;
-                }, { passive: true });
+                    
+                    // ✅ 阻止事件冒泡 - 防止触发父容器（广告元素）的监听器
+                    e.stopPropagation();
+                }, { passive: false });
                 
                 spacer.addEventListener('touchmove', (e) => {
                     const touch = e.touches[0];
@@ -3479,7 +3482,10 @@
                     if (moveX > 10 || moveY > 10) {
                         touchData.moved = true;
                     }
-                }, { passive: true });
+                    
+                    // ✅ 阻止事件冒泡 - 防止触发父容器（广告元素）的监听器
+                    e.stopPropagation();
+                }, { passive: false });
                 
                 spacer.addEventListener('touchend', (e) => {
                     const duration = Date.now() - touchData.startTime;
@@ -3498,11 +3504,15 @@
                     
                     // ✅ 阻止默认行为 - 防止点击穿透到下方广告（遮罩区域不应触发广告）
                     e.preventDefault();
+                    // ✅ 阻止事件冒泡 - 防止触发父容器（广告元素）的监听器
+                    e.stopPropagation();
                 }, { passive: false });
                 
-                spacer.addEventListener('touchcancel', () => {
+                spacer.addEventListener('touchcancel', (e) => {
                     touchData.isTouching = false;
-                }, { passive: true });
+                    // ✅ 阻止事件冒泡 - 防止触发父容器（广告元素）的监听器
+                    e.stopPropagation();
+                }, { passive: false });
                 
                 // ✅ 阻止 click 事件 - 确保遮罩区域不会触发广告跳转
                 spacer.addEventListener('click', (e) => {
