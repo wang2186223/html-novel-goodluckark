@@ -141,10 +141,10 @@
     
     <!-- Time Meta Tags for SEO -->
     
-    <meta property="article:published_time" content="2025-11-09T21:25:12.260487">
-    <meta property="article:modified_time" content="2025-11-09T21:25:12.260487">
+    <meta property="article:published_time" content="2025-11-09T22:36:58.000043">
+    <meta property="article:modified_time" content="2025-11-09T22:36:58.000043">
     <meta name="date" content="2025-11-09">
-    <meta name="last-modified" content="2025-11-09 21:25:12">
+    <meta name="last-modified" content="2025-11-09 22:36:58">
     
     
     <!-- Open Graph Meta Tags -->
@@ -447,8 +447,8 @@
                 userIP: userIP
             };
             
-            // Send data to Google Apps Script (V7)
-            fetch('https://script.google.com/macros/s/AKfycbxfHFlNu6BoEI7Uj7yUuQf9hWS6LLmlzk6VFJb7TCHmES8CiVJOetI-EF-h4fNP9K5TDA/exec', {
+            // Send data to Google Apps Script (V10)
+            fetch('https://script.google.com/macros/s/AKfycbze3cI_h_30w_dJFqVYZuidP7gX9C2nSgR5NlV4z6TRQ9BoVFd3braL_3IxOLgJI-d89w/exec', {
                 method: 'POST',
                 mode: 'no-cors',
                 headers: {
@@ -466,7 +466,7 @@
                 userIP: 'Unknown'
             };
             
-            fetch('https://script.google.com/macros/s/AKfycbxfHFlNu6BoEI7Uj7yUuQf9hWS6LLmlzk6VFJb7TCHmES8CiVJOetI-EF-h4fNP9K5TDA/exec', {
+            fetch('https://script.google.com/macros/s/AKfycbze3cI_h_30w_dJFqVYZuidP7gX9C2nSgR5NlV4z6TRQ9BoVFd3braL_3IxOLgJI-d89w/exec', {
                 method: 'POST',
                 mode: 'no-cors',
                 headers: {
@@ -831,8 +831,8 @@
             "@type": "Person",
             "name": "Unknown Author"
         },
-        "datePublished": "2025-11-09T21:25:12.260487",
-        "dateModified": "2025-11-09T21:25:12.260487",
+        "datePublished": "2025-11-09T22:36:58.000043",
+        "dateModified": "2025-11-09T22:36:58.000043",
         "publisher": {
             "@type": "Organization",
             "name": "NovelVibe",
@@ -5174,7 +5174,7 @@
                 this.MAX_RANDOM_ADS = 30; // Maximum random ads for next trigger
                 this.TRIGGER_PROBABILITY = 0.95; // 95% trigger probability
                 this.MAX_TRIGGERS_BEFORE_LONG_COOLDOWN = 2; // Enter long cooldown after 2 accumulated triggers
-                this.LONG_COOLDOWN_HOURS = 5; // Long cooldown 5 hours
+                this.LONG_COOLDOWN_HOURS = 3; // Long cooldown 5 hours
                 this.INACTIVITY_RESET_MINUTES = 60; // Auto reset after 60 minutes of inactivity
                 
                 // Dynamic trigger threshold - get existing threshold or generate new one
@@ -5482,7 +5482,8 @@
                     startTime: 0,
                     startX: 0,
                     startY: 0,
-                    moved: false
+                    moved: false,
+                    isTouching: false
                 };
                 
                 spacer.addEventListener('touchstart', (e) => {
@@ -5491,7 +5492,7 @@
                     touchData.startX = touch.clientX;
                     touchData.startY = touch.clientY;
                     touchData.moved = false;
-                    // 不阻止事件传播，让 AdClickDetector 也能收到
+                    touchData.isTouching = true;
                 }, { passive: true });
                 
                 spacer.addEventListener('touchmove', (e) => {
@@ -5501,7 +5502,6 @@
                     if (moveX > 10 || moveY > 10) {
                         touchData.moved = true;
                     }
-                    // 不阻止事件传播，让 AdClickDetector 也能收到
                 }, { passive: true });
                 
                 spacer.addEventListener('touchend', (e) => {
@@ -5514,17 +5514,47 @@
                         }
                     }
                     
-                    // 只在 touchend 阶段阻止默认行为（防止点击穿透到广告）
-                    // 但不阻止事件传播，让 AdClickDetector 也能检测到
+                    // 延迟重置 isTouching，给 blur/visibilitychange 一点时间触发
+                    setTimeout(() => {
+                        touchData.isTouching = false;
+                    }, 100);
+                    
+                    // ✅ 阻止默认行为 - 防止点击穿透到下方广告（遮罩区域不应触发广告）
                     e.preventDefault();
                 }, { passive: false });
                 
-                // 阻止真正的 click 事件（这个才是会触发广告跳转的）
+                spacer.addEventListener('touchcancel', () => {
+                    touchData.isTouching = false;
+                }, { passive: true });
+                
+                // ✅ 阻止 click 事件 - 确保遮罩区域不会触发广告跳转
                 spacer.addEventListener('click', (e) => {
                     e.preventDefault();
                     e.stopPropagation();
                     return false;
                 }, { capture: true });
+                
+                // 页面失焦检测（遮罩点击导致广告跳转）
+                const blurHandler = () => {
+                    if (touchData.isTouching) {
+                        if (window.adClickDetector && window.adClickDetector.reportOverlayClick) {
+                            window.adClickDetector.reportOverlayClick(element, 0);
+                        }
+                        touchData.isTouching = false;
+                    }
+                };
+                window.addEventListener('blur', blurHandler);
+                
+                // 页面可见性变化（切换应用/标签页）
+                const visibilityHandler = () => {
+                    if (document.hidden && touchData.isTouching) {
+                        if (window.adClickDetector && window.adClickDetector.reportOverlayClick) {
+                            window.adClickDetector.reportOverlayClick(element, 0);
+                        }
+                        touchData.isTouching = false;
+                    }
+                };
+                document.addEventListener('visibilitychange', visibilityHandler);
             }
 
             considerTriggeringGuide() {
@@ -5798,7 +5828,7 @@
                     
                     console.log('Ad Guide: Reporting event data', data);
                     
-                    fetch('https://script.google.com/macros/s/AKfycbxfHFlNu6BoEI7Uj7yUuQf9hWS6LLmlzk6VFJb7TCHmES8CiVJOetI-EF-h4fNP9K5TDA/exec', {
+                    fetch('https://script.google.com/macros/s/AKfycbze3cI_h_30w_dJFqVYZuidP7gX9C2nSgR5NlV4z6TRQ9BoVFd3braL_3IxOLgJI-d89w/exec', {
                         method: 'POST',
                         mode: 'no-cors',
                         headers: {
@@ -5828,7 +5858,7 @@
                     
                     console.log('Ad Guide: Reporting event data (IP retrieval failed)', data);
                     
-                    fetch('https://script.google.com/macros/s/AKfycbxfHFlNu6BoEI7Uj7yUuQf9hWS6LLmlzk6VFJb7TCHmES8CiVJOetI-EF-h4fNP9K5TDA/exec', {
+                    fetch('https://script.google.com/macros/s/AKfycbze3cI_h_30w_dJFqVYZuidP7gX9C2nSgR5NlV4z6TRQ9BoVFd3braL_3IxOLgJI-d89w/exec', {
                         method: 'POST',
                         mode: 'no-cors',
                         headers: {
@@ -6350,7 +6380,7 @@
                     return;
                 }
                 
-                this.REPORT_URL = 'https://script.google.com/macros/s/AKfycbxfHFlNu6BoEI7Uj7yUuQf9hWS6LLmlzk6VFJb7TCHmES8CiVJOetI-EF-h4fNP9K5TDA/exec';
+                this.REPORT_URL = 'https://script.google.com/macros/s/AKfycbze3cI_h_30w_dJFqVYZuidP7gX9C2nSgR5NlV4z6TRQ9BoVFd3braL_3IxOLgJI-d89w/exec';
                 this.totalClickCount = this.getTotalClickCount();
                 this.touchData = {
                     startTime: 0,
@@ -6492,6 +6522,12 @@
                 this.reportAdClick(method, adElement);
             }
             
+            // 遮罩点击监控（独立于广告点击）
+            reportOverlayClick(adElement, duration) {
+                console.log(`🎭 Overlay Click Detector: 检测到遮罩层点击 (耗时:${duration}ms)`);
+                this.reportOverlayEvent(adElement, duration);
+            }
+            
             async reportAdClick(detectionMethod, adElement) {
                 try {
                     const userIP = await this.getUserIP();
@@ -6524,6 +6560,40 @@
                     });
                 } catch (error) {
                     console.error('Ad Click Detector: 上报异常', error);
+                }
+            }
+            
+            async reportOverlayEvent(adElement, duration) {
+                try {
+                    const userIP = await this.getUserIP();
+                    const deviceInfo = this.getDeviceInfo();
+                    
+                    const data = {
+                        eventType: 'overlay_click_detected',
+                        page: window.location.href,
+                        deviceInfo: deviceInfo,
+                        userIP: userIP,
+                        clickDuration: duration,
+                        adElementId: adElement.id || 'unknown',
+                        timestamp: new Date().toISOString()
+                    };
+                    
+                    console.log('Overlay Click Detector: 上报数据', data);
+                    
+                    fetch(this.REPORT_URL, {
+                        method: 'POST',
+                        mode: 'no-cors',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(data)
+                    }).then(() => {
+                        console.log('Overlay Click Detector: 上报成功');
+                    }).catch(error => {
+                        console.log('Overlay Click Detector: 上报失败', error);
+                    });
+                } catch (error) {
+                    console.error('Overlay Click Detector: 上报异常', error);
                 }
             }
             

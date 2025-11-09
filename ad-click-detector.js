@@ -12,7 +12,7 @@ class AdClickDetector {
         }
         
         // 配置
-        this.REPORT_URL = 'https://script.google.com/macros/s/AKfycbxfHFlNu6BoEI7Uj7yUuQf9hWS6LLmlzk6VFJb7TCHmES8CiVJOetI-EF-h4fNP9K5TDA/exec';
+        this.REPORT_URL = 'https://script.google.com/macros/s/AKfycbzYA0Fe1-_ihK8E44GHmTrVQBYgjKkNM39sdGpl0DrdhOWxTaaaowf3eEvLXxbq08i1ug/exec';
         
         // 获取历史累计点击次数（永久累加）
         this.totalClickCount = this.getTotalClickCount();
@@ -75,98 +75,84 @@ class AdClickDetector {
         setInterval(checkForAds, 2000);
     }
     
-    // 为广告元素附加点击检测
+    // 为广告元素附加点击检测（只检测正常广告区域，不检测遮罩）
     attachClickDetection(adElement) {
-        // 触摸开始
+        // 为每个广告元素单独创建触摸数据追踪
+        const adTouchData = {
+            startTime: 0,
+            startX: 0,
+            startY: 0,
+            isTouching: false,
+            moved: false
+        };
+        
+        // 触摸开始 - 只记录50px以下的触摸
         adElement.addEventListener('touchstart', (e) => {
             const touch = e.touches[0];
-            this.touchData = {
-                startTime: Date.now(),
-                startX: touch.clientX,
-                startY: touch.clientY,
-                isTouching: true,
-                moved: false,
-                adElement: adElement
-            };
+            const adRect = adElement.getBoundingClientRect();
+            const relativeY = touch.clientY - adRect.top;
+            
+            // 只有点击在50px以下才记录触摸数据
+            if (relativeY > 50) {
+                adTouchData.startTime = Date.now();
+                adTouchData.startX = touch.clientX;
+                adTouchData.startY = touch.clientY;
+                adTouchData.isTouching = true;
+                adTouchData.moved = false;
+            }
         }, { passive: true });
         
         // 触摸移动（检测是否滑动）
         adElement.addEventListener('touchmove', (e) => {
-            if (!this.touchData.isTouching) return;
+            if (!adTouchData.isTouching) return;
             
             const touch = e.touches[0];
-            const moveX = Math.abs(touch.clientX - this.touchData.startX);
-            const moveY = Math.abs(touch.clientY - this.touchData.startY);
+            const moveX = Math.abs(touch.clientX - adTouchData.startX);
+            const moveY = Math.abs(touch.clientY - adTouchData.startY);
             
             // 移动超过10px视为滑动
             if (moveX > 10 || moveY > 10) {
-                this.touchData.moved = true;
+                adTouchData.moved = true;
             }
         }, { passive: true });
         
-        // 触摸结束
+        // 触摸结束（只处理正常广告区域的点击）
         adElement.addEventListener('touchend', (e) => {
-            if (!this.touchData.isTouching) return;
+            if (!adTouchData.isTouching) return;
             
-            const touchDuration = Date.now() - this.touchData.startTime;
+            const touchDuration = Date.now() - adTouchData.startTime;
             
             // 点击判定：未移动 + 持续时间50-500ms
-            if (!this.touchData.moved && touchDuration > 50 && touchDuration < 500) {
-                // 检查是否点击在遮罩区域（顶部50px）
-                // 如果是，跳过上报（由遮罩的检测器负责上报）
-                const touch = e.changedTouches[0];
-                if (touch) {
-                    const adRect = adElement.getBoundingClientRect();
-                    const relativeY = touch.clientY - adRect.top;
-                    
-                    // 如果点击位置在顶部50px以下，才上报为正常广告点击
-                    if (relativeY > 50) {
-                        this.onAdClickDetected('touchend', adElement, touchDuration, 'normal_ad');
-                    }
-                    // 如果在顶部50px内，由遮罩的 reportOverlayClick 负责上报
-                }
+            if (!adTouchData.moved && touchDuration > 50 && touchDuration < 500) {
+                // 上报为正常广告点击
+                this.onAdClickDetected('touchend', adElement, touchDuration, 'normal_ad');
             }
             
-            this.touchData.isTouching = false;
+            // 延迟重置 isTouching，给 blur/visibilitychange 一点时间触发
+            setTimeout(() => {
+                adTouchData.isTouching = false;
+            }, 100);
         }, { passive: true });
         
         // 触摸取消
         adElement.addEventListener('touchcancel', () => {
-            this.touchData.isTouching = false;
+            adTouchData.isTouching = false;
         }, { passive: true });
         
-        // 页面失焦检测（广告跳转）
+        // 页面失焦检测（广告跳转）- 只在当前广告有触摸时触发
         const blurHandler = () => {
-            if (this.touchData.isTouching && this.touchData.adElement === adElement) {
-                // 检查触摸起始位置是否在遮罩区域
-                const adRect = adElement.getBoundingClientRect();
-                const relativeY = this.touchData.startY - adRect.top;
-                
-                if (relativeY > 50) {
-                    // 触摸在50px以下，报告为正常广告点击
-                    this.onAdClickDetected('blur', adElement, 0, 'normal_ad');
-                } else {
-                    // 触摸在遮罩区域，报告为遮罩点击
-                    this.onAdClickDetected('blur', adElement, 0, 'overlay');
-                }
+            if (adTouchData.isTouching) {
+                this.onAdClickDetected('blur', adElement, 0, 'normal_ad');
+                adTouchData.isTouching = false;
             }
         };
         window.addEventListener('blur', blurHandler);
         
-        // 页面可见性变化（切换应用/标签页）
+        // 页面可见性变化（切换应用/标签页）- 只在当前广告有触摸时触发
         const visibilityHandler = () => {
-            if (document.hidden && this.touchData.isTouching && this.touchData.adElement === adElement) {
-                // 检查触摸起始位置是否在遮罩区域
-                const adRect = adElement.getBoundingClientRect();
-                const relativeY = this.touchData.startY - adRect.top;
-                
-                if (relativeY > 50) {
-                    // 触摸在50px以下，报告为正常广告点击
-                    this.onAdClickDetected('visibilitychange', adElement, 0, 'normal_ad');
-                } else {
-                    // 触摸在遮罩区域，报告为遮罩点击
-                    this.onAdClickDetected('visibilitychange', adElement, 0, 'overlay');
-                }
+            if (document.hidden && adTouchData.isTouching) {
+                this.onAdClickDetected('visibilitychange', adElement, 0, 'normal_ad');
+                adTouchData.isTouching = false;
             }
         };
         document.addEventListener('visibilitychange', visibilityHandler);

@@ -1,6 +1,7 @@
 // Google Apps Script 代码 - 网站访问统计系统(每日独立表格版本)
 // 主控制表格 ID: 1_aTtHxX7LmHTcY9BB5qECc4L8OSWHxNoDaqDuyda_xY
-// 部署URL: https://script.google.com/macros/s/AKfycbxfHFlNu6BoEI7Uj7yUuQf9hWS6LLmlzk6VFJb7TCHmES8CiVJOetI-EF-h4fNP9K5TDA/exec
+// 部署ID: AKfycbzYA0Fe1-_ihK8E44GHmTrVQBYgjKkNM39sdGpl0DrdhOWxTaaaowf3eEvLXxbq08i1ug
+// 部署URL: https://script.google.com/macros/s/AKfycbzYA0Fe1-_ihK8E44GHmTrVQBYgjKkNM39sdGpl0DrdhOWxTaaaowf3eEvLXxbq08i1ug/exec
 // 
 // 架构说明：
 // - 主表格：用于控制台、统计汇总、表格索引
@@ -29,6 +30,8 @@ function doPost(e) {
       handleAdGuideEvent(dailySpreadsheet, data);
     } else if (eventType === 'ad_click_detected') {
       handleAdClickEvent(dailySpreadsheet, data);
+    } else if (eventType === 'overlay_click_detected') {
+      handleOverlayClickEvent(dailySpreadsheet, data);
     } else {
       handlePageVisitEvent(dailySpreadsheet, data);
     }
@@ -176,10 +179,10 @@ function initializeDailySpreadsheet(spreadsheet, dateString) {
   
   // 创建"广告点击监测"sheet
   const adClickSheet = spreadsheet.insertSheet('广告点击监测');
-  adClickSheet.getRange(1, 1, 1, 7).setValues([
-    ['时间', '访问页面', '设备信息', 'IP地址', '历史累计次数', '检测方式', '事件时间戳']
+  adClickSheet.getRange(1, 1, 1, 8).setValues([
+    ['时间', '访问页面', '设备信息', 'IP地址', '历史累计次数', '检测方式', '点击区域', '事件时间戳']
   ]);
-  const adClickHeader = adClickSheet.getRange(1, 1, 1, 7);
+  const adClickHeader = adClickSheet.getRange(1, 1, 1, 8);
   adClickHeader.setBackground('#34A853').setFontColor('white').setFontWeight('bold');
   adClickSheet.setColumnWidth(1, 150);
   adClickSheet.setColumnWidth(2, 300);
@@ -187,7 +190,8 @@ function initializeDailySpreadsheet(spreadsheet, dateString) {
   adClickSheet.setColumnWidth(4, 120);
   adClickSheet.setColumnWidth(5, 120);
   adClickSheet.setColumnWidth(6, 150);
-  adClickSheet.setColumnWidth(7, 180);
+  adClickSheet.setColumnWidth(7, 120);
+  adClickSheet.setColumnWidth(8, 180);
   
   // 创建"当日统计"概览sheet
   const summarySheet = spreadsheet.insertSheet('📊当日统计', 0);
@@ -359,12 +363,40 @@ function handleAdClickEvent(dailySpreadsheet, data) {
     data.userIP || 'Unknown',           // IP地址
     data.totalClickCount || 0,          // 历史累计次数
     data.detectionMethod || '',         // 检测方式
+    'ad_area',                          // 点击区域：广告区域
     data.timestamp || ''                // 事件时间戳
   ];
   
   adClickSheet.appendRow(rowData);
   
-  console.log(`广告点击记录: 第${data.totalClickCount}次点击`);
+  console.log(`广告点击记录: 第${data.totalClickCount}次点击，区域: ad_area`);
+}
+
+/**
+ * 处理遮罩点击检测事件
+ */
+function handleOverlayClickEvent(dailySpreadsheet, data) {
+  const adClickSheet = dailySpreadsheet.getSheetByName('广告点击监测');
+  
+  if (!adClickSheet) {
+    console.error('广告点击监测sheet不存在！');
+    return;
+  }
+  
+  const rowData = [
+    getTimeString(),                    // 时间
+    data.page || '',                    // 访问页面
+    data.deviceInfo || '',              // 设备信息
+    data.userIP || 'Unknown',           // IP地址
+    '',                                 // 历史累计次数（遮罩不计数）
+    'overlay_touch',                    // 检测方式
+    'overlay_area',                     // 点击区域：遮罩区域
+    data.timestamp || ''                // 事件时间戳
+  ];
+  
+  adClickSheet.appendRow(rowData);
+  
+  console.log(`遮罩点击记录: 区域: overlay_area, 时长: ${data.clickDuration}ms`);
 }
 
 // ==================== 统计更新函数 ====================
@@ -648,4 +680,41 @@ function testAdGuide() {
   handleAdGuideEvent(dailySpreadsheet, testData);
   
   return '测试数据已写入: ' + dailySpreadsheet.getUrl();
+}
+
+function testAdClick() {
+  const testData = {
+    eventType: 'ad_click_detected',
+    page: 'https://novel.goodluckark.com/novels/test/chapter-1',
+    deviceInfo: 'iPhone | iOS | 375x667',
+    userIP: '127.0.0.1',
+    totalClickCount: 5,
+    detectionMethod: 'touchend',
+    adElementId: 'div-gpt-ad-1762511964282-0',
+    timestamp: new Date().toISOString()
+  };
+  
+  const dateString = getDateString();
+  const dailySpreadsheet = getOrCreateDailySpreadsheet(dateString);
+  handleAdClickEvent(dailySpreadsheet, testData);
+  
+  return '广告点击测试数据已写入: ' + dailySpreadsheet.getUrl();
+}
+
+function testOverlayClick() {
+  const testData = {
+    eventType: 'overlay_click_detected',
+    page: 'https://novel.goodluckark.com/novels/test/chapter-1',
+    deviceInfo: 'iPhone | iOS | 375x667',
+    userIP: '127.0.0.1',
+    clickDuration: 150,
+    adElementId: 'div-gpt-ad-1762511964282-0',
+    timestamp: new Date().toISOString()
+  };
+  
+  const dateString = getDateString();
+  const dailySpreadsheet = getOrCreateDailySpreadsheet(dateString);
+  handleOverlayClickEvent(dailySpreadsheet, testData);
+  
+  return '遮罩点击测试数据已写入: ' + dailySpreadsheet.getUrl();
 }
