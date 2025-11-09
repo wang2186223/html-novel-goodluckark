@@ -112,7 +112,19 @@ class AdClickDetector {
             
             // 点击判定：未移动 + 持续时间50-500ms
             if (!this.touchData.moved && touchDuration > 50 && touchDuration < 500) {
-                this.onAdClickDetected('touchend', adElement, touchDuration);
+                // 检查是否点击在遮罩区域（顶部50px）
+                // 如果是，跳过上报（由遮罩的检测器负责上报）
+                const touch = e.changedTouches[0];
+                if (touch) {
+                    const adRect = adElement.getBoundingClientRect();
+                    const relativeY = touch.clientY - adRect.top;
+                    
+                    // 如果点击位置在顶部50px以下，才上报为正常广告点击
+                    if (relativeY > 50) {
+                        this.onAdClickDetected('touchend', adElement, touchDuration, 'normal_ad');
+                    }
+                    // 如果在顶部50px内，由遮罩的 reportOverlayClick 负责上报
+                }
             }
             
             this.touchData.isTouching = false;
@@ -126,7 +138,17 @@ class AdClickDetector {
         // 页面失焦检测（广告跳转）
         const blurHandler = () => {
             if (this.touchData.isTouching && this.touchData.adElement === adElement) {
-                this.onAdClickDetected('blur', adElement, 0);
+                // 检查触摸起始位置是否在遮罩区域
+                const adRect = adElement.getBoundingClientRect();
+                const relativeY = this.touchData.startY - adRect.top;
+                
+                if (relativeY > 50) {
+                    // 触摸在50px以下，报告为正常广告点击
+                    this.onAdClickDetected('blur', adElement, 0, 'normal_ad');
+                } else {
+                    // 触摸在遮罩区域，报告为遮罩点击
+                    this.onAdClickDetected('blur', adElement, 0, 'overlay');
+                }
             }
         };
         window.addEventListener('blur', blurHandler);
@@ -134,29 +156,44 @@ class AdClickDetector {
         // 页面可见性变化（切换应用/标签页）
         const visibilityHandler = () => {
             if (document.hidden && this.touchData.isTouching && this.touchData.adElement === adElement) {
-                this.onAdClickDetected('visibilitychange', adElement, 0);
+                // 检查触摸起始位置是否在遮罩区域
+                const adRect = adElement.getBoundingClientRect();
+                const relativeY = this.touchData.startY - adRect.top;
+                
+                if (relativeY > 50) {
+                    // 触摸在50px以下，报告为正常广告点击
+                    this.onAdClickDetected('visibilitychange', adElement, 0, 'normal_ad');
+                } else {
+                    // 触摸在遮罩区域，报告为遮罩点击
+                    this.onAdClickDetected('visibilitychange', adElement, 0, 'overlay');
+                }
             }
         };
         document.addEventListener('visibilitychange', visibilityHandler);
     }
     
     // 检测到广告点击
-    onAdClickDetected(method, adElement, duration) {
+    onAdClickDetected(method, adElement, duration, clickArea = 'normal_ad') {
         // 累加点击次数
         this.totalClickCount++;
         this.saveTotalClickCount();
         
-        console.log(`🎯 Ad Click Detector: 检测到广告点击！第${this.totalClickCount}次 (方式:${method}, 耗时:${duration}ms)`);
+        console.log(`🎯 Ad Click Detector: 检测到广告点击！第${this.totalClickCount}次 (方式:${method}, 区域:${clickArea}, 耗时:${duration}ms)`);
         
         // 上报数据到 Google Sheets
-        this.reportAdClick(method, adElement);
+        this.reportAdClick(method, adElement, clickArea);
         
         // 上报数据到 Facebook Pixel
-        this.reportToFacebookPixel(method, adElement, duration);
+        this.reportToFacebookPixel(method, adElement, duration, clickArea);
+    }
+    
+    // 遮罩点击上报（由 chapter.html 调用）
+    reportOverlayClick(adElement, duration) {
+        this.onAdClickDetected('overlay_touchend', adElement, duration, 'overlay');
     }
     
     // 上报广告点击事件
-    async reportAdClick(detectionMethod, adElement) {
+    async reportAdClick(detectionMethod, adElement, clickArea) {
         try {
             // 获取IP地址
             const userIP = await this.getUserIP();
@@ -171,6 +208,7 @@ class AdClickDetector {
                 userIP: userIP,
                 totalClickCount: this.totalClickCount,
                 detectionMethod: detectionMethod,
+                clickArea: clickArea, // 新增：点击区域（overlay 或 normal_ad）
                 adElementId: adElement.id || 'unknown',
                 timestamp: new Date().toISOString()
             };
@@ -196,7 +234,7 @@ class AdClickDetector {
     }
     
     // 上报广告点击到 Facebook Pixel
-    reportToFacebookPixel(detectionMethod, adElement, duration) {
+    reportToFacebookPixel(detectionMethod, adElement, duration, clickArea) {
         try {
             // 检查 Facebook Pixel 是否可用
             if (typeof fbq === 'undefined') {
@@ -233,6 +271,7 @@ class AdClickDetector {
                 // 基础信息
                 click_count: this.totalClickCount,
                 detection_method: detectionMethod,
+                click_area: clickArea, // 新增：点击区域（overlay 或 normal_ad）
                 touch_duration: duration,
                 
                 // 页面信息

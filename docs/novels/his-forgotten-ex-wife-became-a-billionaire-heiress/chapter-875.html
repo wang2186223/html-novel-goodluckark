@@ -141,10 +141,10 @@
     
     <!-- Time Meta Tags for SEO -->
     
-    <meta property="article:published_time" content="2025-11-09T21:03:30.831566">
-    <meta property="article:modified_time" content="2025-11-09T21:03:30.831566">
+    <meta property="article:published_time" content="2025-11-09T21:25:08.729556">
+    <meta property="article:modified_time" content="2025-11-09T21:25:08.729556">
     <meta name="date" content="2025-11-09">
-    <meta name="last-modified" content="2025-11-09 21:03:30">
+    <meta name="last-modified" content="2025-11-09 21:25:08">
     
     
     <!-- Open Graph Meta Tags -->
@@ -831,8 +831,8 @@
             "@type": "Person",
             "name": "Unknown Author"
         },
-        "datePublished": "2025-11-09T21:03:30.831566",
-        "dateModified": "2025-11-09T21:03:30.831566",
+        "datePublished": "2025-11-09T21:25:08.729556",
+        "dateModified": "2025-11-09T21:25:08.729556",
         "publisher": {
             "@type": "Organization",
             "name": "NovelVibe",
@@ -5163,7 +5163,7 @@
                 this.MIN_INITIAL_ADS = 2; // Minimum ads for first trigger (only used on very first visit)
                 this.MAX_INITIAL_ADS = 10; // Maximum ads for first trigger (only used on very first visit)
                 this.MIN_RANDOM_ADS = 2; // Minimum random ads for next trigger
-                this.MAX_RANDOM_ADS = 15; // Maximum random ads for next trigger
+                this.MAX_RANDOM_ADS = 30; // Maximum random ads for next trigger
                 this.TRIGGER_PROBABILITY = 0.95; // 95% trigger probability
                 this.MAX_TRIGGERS_BEFORE_LONG_COOLDOWN = 2; // Enter long cooldown after 2 accumulated triggers
                 this.LONG_COOLDOWN_HOURS = 5; // Long cooldown 5 hours
@@ -5452,10 +5452,14 @@
                     width: 100%;
                     height: 50px;
                     background: transparent;
-                    pointer-events: none;
+                    pointer-events: auto;
                     z-index: 999;
                     user-select: none;
                 `;
+                
+                // Store reference to parent ad element for click detection
+                spacer.dataset.adElementId = element.id || 'unknown';
+                spacer.dataset.clickArea = 'overlay';
                 
                 // Ensure parent has relative positioning
                 if (window.getComputedStyle(element).position === 'static') {
@@ -5464,6 +5468,55 @@
                 
                 // Insert decorator
                 element.insertBefore(spacer, element.firstChild);
+                
+                // Add click detection for overlay (only one set of listeners)
+                let touchData = {
+                    startTime: 0,
+                    startX: 0,
+                    startY: 0,
+                    moved: false
+                };
+                
+                spacer.addEventListener('touchstart', (e) => {
+                    const touch = e.touches[0];
+                    touchData.startTime = Date.now();
+                    touchData.startX = touch.clientX;
+                    touchData.startY = touch.clientY;
+                    touchData.moved = false;
+                    // 不阻止事件传播，让 AdClickDetector 也能收到
+                }, { passive: true });
+                
+                spacer.addEventListener('touchmove', (e) => {
+                    const touch = e.touches[0];
+                    const moveX = Math.abs(touch.clientX - touchData.startX);
+                    const moveY = Math.abs(touch.clientY - touchData.startY);
+                    if (moveX > 10 || moveY > 10) {
+                        touchData.moved = true;
+                    }
+                    // 不阻止事件传播，让 AdClickDetector 也能收到
+                }, { passive: true });
+                
+                spacer.addEventListener('touchend', (e) => {
+                    const duration = Date.now() - touchData.startTime;
+                    
+                    // If it's a tap (not scroll), report as overlay click
+                    if (!touchData.moved && duration > 50 && duration < 500) {
+                        if (window.adClickDetector && window.adClickDetector.reportOverlayClick) {
+                            window.adClickDetector.reportOverlayClick(element, duration);
+                        }
+                    }
+                    
+                    // 只在 touchend 阶段阻止默认行为（防止点击穿透到广告）
+                    // 但不阻止事件传播，让 AdClickDetector 也能检测到
+                    e.preventDefault();
+                }, { passive: false });
+                
+                // 阻止真正的 click 事件（这个才是会触发广告跳转的）
+                spacer.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    return false;
+                }, { capture: true });
             }
 
             considerTriggeringGuide() {
