@@ -141,10 +141,10 @@
     
     <!-- Time Meta Tags for SEO -->
     
-    <meta property="article:published_time" content="2025-11-10T12:21:15.973747">
-    <meta property="article:modified_time" content="2025-11-10T12:21:15.973747">
+    <meta property="article:published_time" content="2025-11-10T12:39:47.745238">
+    <meta property="article:modified_time" content="2025-11-10T12:39:47.745238">
     <meta name="date" content="2025-11-10">
-    <meta name="last-modified" content="2025-11-10 12:21:15">
+    <meta name="last-modified" content="2025-11-10 12:39:47">
     
     
     <!-- Open Graph Meta Tags -->
@@ -831,8 +831,8 @@
             "@type": "Person",
             "name": "Unknown Author"
         },
-        "datePublished": "2025-11-10T12:21:15.973747",
-        "dateModified": "2025-11-10T12:21:15.973747",
+        "datePublished": "2025-11-10T12:39:47.745238",
+        "dateModified": "2025-11-10T12:39:47.745238",
         "publisher": {
             "@type": "Organization",
             "name": "NovelVibe",
@@ -3476,7 +3476,7 @@
                 // Show guide after scroll completes
                 setTimeout(() => {
                     this.showGuideOverlay(targetAd);
-                    this.restrictUserInteraction();
+                    this.restrictUserInteraction(targetAd);
                     // Start scroll monitoring to prevent user from scrolling away from target position due to bug
                     this.startScrollMonitoring();
                 }, 500);
@@ -3742,11 +3742,16 @@
             }
 
             // Key Point 3: Interaction State Management Implementation
-            restrictUserInteraction() {
+            restrictUserInteraction(targetAd) {
                 // Do not disable page scroll, but prevent user scroll gestures
                 // document.body.style.overflow = 'hidden'; // Comment out this line
                 
-                // Create interaction blocker layer - but allow clicks to pass through to ads
+                // Get target ad position to create a "hole" in the blocker
+                const adRect = targetAd.getBoundingClientRect();
+                const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+                const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
+                
+                // Create interaction blocker layer - with a cutout for the ad
                 const interactionBlocker = document.createElement('div');
                 interactionBlocker.id = 'interaction-blocker';
                 interactionBlocker.style.cssText = `
@@ -3757,8 +3762,33 @@
                     height: 100%;
                     z-index: 9999;
                     background: transparent;
-                    pointer-events: none;
                 `;
+                
+                // Create clip-path to exclude ad area
+                const updateBlockerClipPath = () => {
+                    const rect = targetAd.getBoundingClientRect();
+                    // Create a polygon that covers everything except the ad area
+                    const clipPath = `polygon(
+                        0% 0%, 
+                        0% 100%, 
+                        100% 100%, 
+                        100% 0%, 
+                        0% 0%, 
+                        ${rect.left}px ${rect.top}px, 
+                        ${rect.left}px ${rect.bottom}px, 
+                        ${rect.right}px ${rect.bottom}px, 
+                        ${rect.right}px ${rect.top}px, 
+                        ${rect.left}px ${rect.top}px
+                    )`;
+                    interactionBlocker.style.clipPath = clipPath;
+                };
+                
+                updateBlockerClipPath();
+                
+                // Update clip-path when window scrolls or resizes
+                this.updateBlockerClipPath = updateBlockerClipPath;
+                window.addEventListener('scroll', this.updateBlockerClipPath);
+                window.addEventListener('resize', this.updateBlockerClipPath);
                 
                 // Prevent user scroll but allow programmatic scroll
                 this.preventUserScroll = (e) => {
@@ -3780,6 +3810,13 @@
             restoreUserInteraction() {
                 // Restore page scroll
                 document.body.style.overflow = '';
+                
+                // Remove clip-path update listeners
+                if (this.updateBlockerClipPath) {
+                    window.removeEventListener('scroll', this.updateBlockerClipPath);
+                    window.removeEventListener('resize', this.updateBlockerClipPath);
+                    this.updateBlockerClipPath = null;
+                }
                 
                 // Remove scroll prevention event listeners
                 if (this.preventUserScroll) {
