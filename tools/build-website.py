@@ -283,6 +283,10 @@ class WebsiteBuilder:
             # 获取时间戳信息
             timestamps = self.get_novel_timestamps(novel_data)
             
+            # 生成随机打乱的广告顺序（每个页面都不同）
+            ad_slots = [1, 2, 3, 4, 5]
+            random.shuffle(ad_slots)
+            
             # 准备渲染数据（两个版本使用相同的数据）
             render_data = {
                 'chapter': {
@@ -300,6 +304,7 @@ class WebsiteBuilder:
                     'chapters': all_chapters,
                     'tags': novel_data['tags']
                 },
+                'ad_slots': ad_slots,  # 添加随机打乱的广告顺序
                 'timestamps': timestamps,
                 'prev_chapter': prev_chapter,
                 'next_chapter': next_chapter,
