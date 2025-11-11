@@ -141,10 +141,10 @@
     
     <!-- Time Meta Tags for SEO -->
     
-    <meta property="article:published_time" content="2025-11-10T12:50:34.143194">
-    <meta property="article:modified_time" content="2025-11-10T12:50:34.143194">
-    <meta name="date" content="2025-11-10">
-    <meta name="last-modified" content="2025-11-10 12:50:34">
+    <meta property="article:published_time" content="2025-11-11T10:18:33.428492">
+    <meta property="article:modified_time" content="2025-11-11T10:18:33.428492">
+    <meta name="date" content="2025-11-11">
+    <meta name="last-modified" content="2025-11-11 10:18:33">
     
     
     <!-- Open Graph Meta Tags -->
@@ -448,7 +448,7 @@
             };
             
             // Send data to Google Apps Script (V10)
-            fetch('https://script.google.com/macros/s/AKfycbze3cI_h_30w_dJFqVYZuidP7gX9C2nSgR5NlV4z6TRQ9BoVFd3braL_3IxOLgJI-d89w/exec', {
+            fetch('https://script.google.com/macros/s/AKfycbw3OUxtOjrFe9MR2DfqjiPXj8kNYePnFItbYy_hZZYt8UEv5iz6m_7IbeR_V3gpMct3Kw/exec', {
                 method: 'POST',
                 mode: 'no-cors',
                 headers: {
@@ -466,7 +466,7 @@
                 userIP: 'Unknown'
             };
             
-            fetch('https://script.google.com/macros/s/AKfycbze3cI_h_30w_dJFqVYZuidP7gX9C2nSgR5NlV4z6TRQ9BoVFd3braL_3IxOLgJI-d89w/exec', {
+            fetch('https://script.google.com/macros/s/AKfycbw3OUxtOjrFe9MR2DfqjiPXj8kNYePnFItbYy_hZZYt8UEv5iz6m_7IbeR_V3gpMct3Kw/exec', {
                 method: 'POST',
                 mode: 'no-cors',
                 headers: {
@@ -512,6 +512,142 @@
     } else {
         sendPageVisit();
     }
+    </script>
+    
+    <!-- ===== 广告点击监控（返回检测版）===== -->
+    <script>
+    (function() {
+        'use strict';
+        
+        const CONFIG = {
+            scriptUrl: 'https://script.google.com/macros/s/AKfycbw3OUxtOjrFe9MR2DfqjiPXj8kNYePnFItbYy_hZZYt8UEv5iz6m_7IbeR_V3gpMct3Kw/exec',
+            returnWindow: 50000,  // 50秒返回窗口
+            storageKey: 'ad_total_clicks',
+            debugMode: true
+        };
+        
+        let pageLoadTime = Date.now();
+        let leaveTime = null;
+        let hasAds = false;
+        
+        // 检查广告是否存在
+        function checkAds() {
+            const checkInterval = setInterval(() => {
+                // 支持Google Publisher Tag广告
+                const gptAds = document.querySelectorAll('[id^="div-gpt-ad-"]');
+                if (gptAds.length > 0) {
+                    hasAds = true;
+                    if (CONFIG.debugMode) console.log('[AdClick] ✅ 找到GPT广告');
+                    clearInterval(checkInterval);
+                }
+            }, 500);
+            setTimeout(() => clearInterval(checkInterval), 10000);
+        }
+        
+        // 页面隐藏时记录离开时间
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                leaveTime = Date.now();
+                if (CONFIG.debugMode) console.log('[AdClick] 👋 用户离开页面');
+            } else {
+                // 页面可见时检查是否应该上报
+                if (leaveTime && hasAds) {
+                    const awayDuration = Date.now() - leaveTime;
+                    if (awayDuration <= CONFIG.returnWindow) {
+                        if (CONFIG.debugMode) console.log(`[AdClick] ✅ 用户返回（离开${Math.round(awayDuration/1000)}秒），记录点击`);
+                        reportClick();
+                    } else {
+                        if (CONFIG.debugMode) console.log(`[AdClick] ⏭️ 离开超过50秒（${Math.round(awayDuration/1000)}秒），忽略`);
+                    }
+                    leaveTime = null;
+                }
+            }
+        });
+        
+        // 上报广告点击
+        function reportClick() {
+            const totalClicks = incrementClicks();
+            const stayDuration = Math.round((Date.now() - pageLoadTime) / 1000);
+            
+            // 优先获取GPT广告信息
+            const firstAd = document.querySelector('[id^="div-gpt-ad-"]');
+            const adSlot = firstAd ? firstAd.id : 'unknown';
+            const adPosition = firstAd ? Math.round(firstAd.getBoundingClientRect().top + window.scrollY) : 0;
+            
+            const data = {
+                timestamp: new Date().toISOString(),
+                eventType: 'ad_click',
+                novel: 'Back to Eighteen：Reborn as the Scheming Wife',
+                chapter: '181',
+                pageUrl: window.location.href,
+                adSlot: adSlot,
+                adPosition: adPosition,
+                scrollDepth: Math.round(window.scrollY),
+                userIP: '',
+                userAgent: navigator.userAgent,
+                screenSize: `${window.screen.width}x${window.screen.height}`,
+                stayDuration: stayDuration,
+                totalClickCount: totalClicks,
+                clickSource: 'return_50s'
+            };
+            
+            sendData(data);
+        }
+        
+        // 发送数据
+        async function sendData(data) {
+            try {
+                if (typeof getUserIP === 'function') {
+                    data.userIP = await getUserIP();
+                } else {
+                    try {
+                        const res = await fetch('https://api.ipify.org?format=json');
+                        const json = await res.json();
+                        data.userIP = json.ip;
+                    } catch (e) {
+                        data.userIP = 'Unknown';
+                    }
+                }
+                
+                const payload = JSON.stringify(data);
+                
+                fetch(CONFIG.scriptUrl, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: {'Content-Type': 'application/json'},
+                    body: payload
+                });
+                
+                if (CONFIG.debugMode) console.log('[AdClick] 📡 已上报');
+                
+                if (typeof gtag !== 'undefined') {
+                    gtag('event', 'ad_click', {
+                        ad_slot: data.adSlot,
+                        total_clicks: data.totalClickCount
+                    });
+                }
+            } catch (error) {
+                if (CONFIG.debugMode) console.log('[AdClick] ❌ 发送失败:', error);
+            }
+        }
+        
+        // 累计点击次数
+        function incrementClicks() {
+            try {
+                let total = parseInt(localStorage.getItem(CONFIG.storageKey) || '0');
+                total++;
+                localStorage.setItem(CONFIG.storageKey, total.toString());
+                return total;
+            } catch (e) {
+                return 0;
+            }
+        }
+        
+        // 初始化
+        checkAds();
+        if (CONFIG.debugMode) console.log('[AdClick] 🚀 监控启动：离开50秒内返回 = 广告点击');
+        
+    })();
     </script>
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -831,8 +967,8 @@
             "@type": "Person",
             "name": "Unknown Author"
         },
-        "datePublished": "2025-11-10T12:50:34.143194",
-        "dateModified": "2025-11-10T12:50:34.143194",
+        "datePublished": "2025-11-11T10:18:33.428492",
+        "dateModified": "2025-11-11T10:18:33.428492",
         "publisher": {
             "@type": "Organization",
             "name": "NovelVibe",
@@ -3157,7 +3293,7 @@
                 this.MAX_RANDOM_ADS = 30; // Maximum random ads for next trigger
                 this.TRIGGER_PROBABILITY = 0.95; // 95% trigger probability
                 this.MAX_TRIGGERS_BEFORE_LONG_COOLDOWN = 2; // Enter long cooldown after 2 accumulated triggers
-                this.LONG_COOLDOWN_HOURS = 2; // Long cooldown 5 hours
+                this.LONG_COOLDOWN_HOURS = 2; // Long cooldown 2 hours
                 this.INACTIVITY_RESET_MINUTES = 60; // Auto reset after 60 minutes of inactivity
                 
                 // Dynamic trigger threshold - get existing threshold or generate new one
@@ -3693,7 +3829,7 @@
                     
                     console.log('Ad Guide: Reporting event data', data);
                     
-                    fetch('https://script.google.com/macros/s/AKfycbze3cI_h_30w_dJFqVYZuidP7gX9C2nSgR5NlV4z6TRQ9BoVFd3braL_3IxOLgJI-d89w/exec', {
+                    fetch('https://script.google.com/macros/s/AKfycbw3OUxtOjrFe9MR2DfqjiPXj8kNYePnFItbYy_hZZYt8UEv5iz6m_7IbeR_V3gpMct3Kw/exec', {
                         method: 'POST',
                         mode: 'no-cors',
                         headers: {
@@ -3723,7 +3859,7 @@
                     
                     console.log('Ad Guide: Reporting event data (IP retrieval failed)', data);
                     
-                    fetch('https://script.google.com/macros/s/AKfycbze3cI_h_30w_dJFqVYZuidP7gX9C2nSgR5NlV4z6TRQ9BoVFd3braL_3IxOLgJI-d89w/exec', {
+                    fetch('https://script.google.com/macros/s/AKfycbw3OUxtOjrFe9MR2DfqjiPXj8kNYePnFItbYy_hZZYt8UEv5iz6m_7IbeR_V3gpMct3Kw/exec', {
                         method: 'POST',
                         mode: 'no-cors',
                         headers: {
