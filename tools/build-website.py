@@ -48,56 +48,7 @@ class WebsiteBuilder:
         
         self.site_url = config.get('site_url', 'https://example.github.io')
         
-    def get_file_timestamps(self, file_path: Path) -> Dict[str, str]:
-        """获取文件的创建时间和修改时间"""
-        try:
-            stat = file_path.stat()
-            
-            # 创建时间（在Windows上是st_ctime，在Unix/Linux上通常也是st_ctime）
-            created_time = datetime.fromtimestamp(stat.st_ctime)
-            # 修改时间
-            modified_time = datetime.fromtimestamp(stat.st_mtime)
-            
-            # 格式化为ISO 8601格式（SEO友好）
-            return {
-                'created_iso': created_time.isoformat(),
-                'modified_iso': modified_time.isoformat(),
-                'created_readable': created_time.strftime('%Y-%m-%d %H:%M:%S'),
-                'modified_readable': modified_time.strftime('%Y-%m-%d %H:%M:%S'),
-                'created_date': created_time.strftime('%Y-%m-%d'),
-                'modified_date': modified_time.strftime('%Y-%m-%d')
-            }
-        except Exception as e:
-            # 如果无法获取文件时间，使用当前时间
-            current_time = datetime.now()
-            return {
-                'created_iso': current_time.isoformat(),
-                'modified_iso': current_time.isoformat(),
-                'created_readable': current_time.strftime('%Y-%m-%d %H:%M:%S'),
-                'modified_readable': current_time.strftime('%Y-%m-%d %H:%M:%S'),
-                'created_date': current_time.strftime('%Y-%m-%d'),
-                'modified_date': current_time.strftime('%Y-%m-%d')
-            }
-    
-    def get_novel_timestamps(self, novel_data: Dict) -> Dict[str, str]:
-        """获取小说相关的时间戳"""
-        # 尝试从小说的源文件获取时间
-        novel_slug = novel_data.get('slug', '')
-        source_novel_path = self.source_path / novel_slug
-        
-        # 查找主要文本文件
-        main_file = None
-        if source_novel_path.exists():
-            for possible_file in ['书籍正文.txt', '正文.txt', 'content.txt']:
-                potential_path = source_novel_path / possible_file
-                if potential_path.exists():
-                    main_file = potential_path
-                    break
-        
-        if main_file and main_file.exists():
-            return self.get_file_timestamps(main_file)
-        else:
-            # 如果找不到源文件，使用当前时间
+    def scan_novels(self) -> Dict:
             current_time = datetime.now()
             return {
                 'created_iso': current_time.isoformat(),
@@ -166,12 +117,8 @@ class WebsiteBuilder:
         print("\n=== 第4步: 生成首页 ===")
         self.build_homepage(novels)
         
-        # 4. 生成站点地图
-        print("\n=== 第5步: 生成站点地图 ===")
-        self.generate_sitemap(novels)
-        
-        # 5. 复制静态资源
-        print("\n=== 第6步: 复制静态资源 ===")
+        # 4. 复制静态资源
+        print("\n=== 第5步: 复制静态资源 ===")
         self.copy_static_assets()
         
         print(f"\n✅ 网站构建完成!")
@@ -215,9 +162,6 @@ class WebsiteBuilder:
         # 处理封面URL
         cover_url = self.get_cover_url(novel_data)
         
-        # 获取时间戳信息
-        timestamps = self.get_novel_timestamps(novel_data)
-        
         # 渲染页面
         html_content = template.render(
             novel={
@@ -234,8 +178,6 @@ class WebsiteBuilder:
                 'chapters': chapters,
                 'url': f"/novels/{novel_data['slug']}/"
             },
-            timestamps=timestamps,
-            canonical_url=f"{self.site_url}/novels/{novel_data['slug']}/",
             site_url=self.site_url
         )
         
@@ -280,9 +222,6 @@ class WebsiteBuilder:
                     'url': f"/novels/{novel_data['slug']}/chapter-{ch['number']}"
                 })
             
-            # 获取时间戳信息
-            timestamps = self.get_novel_timestamps(novel_data)
-            
             # 生成随机打乱的广告顺序（每个页面都不同）
             ad_slots = [1, 2, 3, 4, 5]
             random.shuffle(ad_slots)
@@ -305,10 +244,8 @@ class WebsiteBuilder:
                     'tags': novel_data['tags']
                 },
                 'ad_slots': ad_slots,  # 添加随机打乱的广告顺序
-                'timestamps': timestamps,
                 'prev_chapter': prev_chapter,
                 'next_chapter': next_chapter,
-                'canonical_url': f"{self.site_url}/novels/{novel_data['slug']}/chapter-{chapter['number']}.html",
                 'site_url': self.site_url
             }
                 
@@ -358,17 +295,6 @@ class WebsiteBuilder:
         # 准备所有小说数据用于推荐区域
         all_novels = self.prepare_novel_cards(novel_list)
         
-        # 获取网站时间戳（使用当前时间）
-        current_time = datetime.now()
-        site_timestamps = {
-            'created_iso': current_time.isoformat(),
-            'modified_iso': current_time.isoformat(),
-            'created_readable': current_time.strftime('%Y-%m-%d %H:%M:%S'),
-            'modified_readable': current_time.strftime('%Y-%m-%d %H:%M:%S'),
-            'created_date': current_time.strftime('%Y-%m-%d'),
-            'modified_date': current_time.strftime('%Y-%m-%d')
-        }
-        
         # 渲染首页
         html_content = template.render(
             featured_novels=featured_novels,
@@ -377,8 +303,6 @@ class WebsiteBuilder:
             recommended_novels=recommended_novels,
             all_novels=all_novels,
             categories=categories,
-            timestamps=site_timestamps,
-            canonical_url=f"{self.site_url}/",
             site_url=self.site_url
         )
         
@@ -463,70 +387,6 @@ class WebsiteBuilder:
                         except Exception as e:
                             print(f"复制封面失败 {novel_data['title']}: {e}")
                             
-    def generate_sitemap(self, novels: Dict):
-        """生成站点地图 - 优化版本：每本小说只包含详情页和前10个章节"""
-        urlset = ET.Element('urlset')
-        urlset.set('xmlns', 'http://www.sitemaps.org/schemas/sitemap/0.9')
-        
-        # 添加首页
-        self.add_url_to_sitemap(urlset, '', priority='1.0', changefreq='daily')
-        
-        # 添加小说详情页和前10个章节页
-        for novel_data in novels.values():
-            novel_url = f"novels/{novel_data['slug']}/"
-            
-            # 小说详情页
-            self.add_url_to_sitemap(urlset, novel_url, priority='0.8', changefreq='weekly')
-            
-            # 只添加前10个章节到sitemap中，减少文件大小
-            chapters_to_include = novel_data['chapters'][:10]  # 只取前10个章节
-            for chapter in chapters_to_include:
-                chapter_url = f"novels/{novel_data['slug']}/chapter-{chapter['number']}.html"
-                self.add_url_to_sitemap(urlset, chapter_url, priority='0.6', changefreq='monthly')
-                
-        # 保存站点地图
-        tree = ET.ElementTree(urlset)
-        sitemap_file = self.output_path / 'sitemap.xml'
-        tree.write(str(sitemap_file), encoding='utf-8', xml_declaration=True)
-        print(f"生成站点地图: {sitemap_file}")
-        
-    def add_url_to_sitemap(self, urlset: ET.Element, path: str, 
-                          priority: str = '0.5', changefreq: str = 'monthly'):
-        """添加URL到站点地图"""
-        url_elem = ET.SubElement(urlset, 'url')
-        
-        loc = ET.SubElement(url_elem, 'loc')
-        loc.text = f"{self.site_url}/{path}"
-        
-        lastmod = ET.SubElement(url_elem, 'lastmod')
-        
-        # 根据实际文件的创建时间设置lastmod
-        if path == '':
-            # 首页使用index.html的时间
-            file_path = self.output_path / 'index.html'
-        else:
-            # 其他页面使用对应的文件路径
-            file_path = self.output_path / path
-        
-        if file_path.exists():
-            # 使用文件的创建时间
-            stat_result = file_path.stat()
-            # 在macOS上使用st_birthtime获取创建时间，在其他系统上回退到st_ctime
-            if hasattr(stat_result, 'st_birthtime'):
-                ctime = stat_result.st_birthtime
-            else:
-                ctime = stat_result.st_ctime
-            lastmod.text = datetime.fromtimestamp(ctime).strftime('%Y-%m-%d')
-        else:
-            # 如果文件不存在，使用当前时间
-            lastmod.text = datetime.now().strftime('%Y-%m-%d')
-        
-        changefreq_elem = ET.SubElement(url_elem, 'changefreq')
-        changefreq_elem.text = changefreq
-        
-        priority_elem = ET.SubElement(url_elem, 'priority')
-        priority_elem.text = priority
-        
     def copy_static_assets(self):
         """复制静态资源"""
         assets_dir = self.output_path / 'assets'

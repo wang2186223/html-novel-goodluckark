@@ -966,28 +966,28 @@
                 <p>The gambling table presented a stark contrast. The imposter Winner&#39;s side was piled high with chips, while Vivian Laurent&#39;s side stood nearly empty.</p>
                 <p>Finn Deross rubbed his hands anxiously. He wanted to support his mentor, but his pockets were emptier than his face. Those five million chips were his entire fortune.</p>
                 <p>Clack! A stack of chips suddenly landed in front of Vivian.</p>
-                <!-- Ad Position 2 - Displays Banner 2 -->
-                <div id='div-gpt-ad-1762511986518-0' style='min-width: 300px; min-height: 250px; text-align:center; margin: 20px 0;'>
+                <!-- Ad Position 2 - Displays Banner 3 -->
+                <div id='div-gpt-ad-1762512008111-0' style='min-width: 300px; min-height: 250px; text-align:center; margin: 20px 0;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762511986518-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512008111-0'); });
                   </script>
                 </div>
                 <p>Ethan Roscente stood with one hand in his pocket, his voice icy. &#34;I&#39;m betting on her.&#34;</p>
                 <p>The crowd erupted. A full hundred million in chips glittered under the lights.</p>
                 <p>&#34;Is this guy insane?&#34; &#34;Who cares? Quick, bet on Winner! We can split that hundred million!&#34; The crowd surged like a tide, chips flooding toward the imposter&#39;s side.</p>
-                <!-- Ad Position 3 - Displays Banner 1 -->
-                <div id='div-gpt-ad-1762511964282-0' style='min-width: 300px; min-height: 250px; text-align:center; margin: 20px 0;'>
+                <!-- Ad Position 3 - Displays Banner 2 -->
+                <div id='div-gpt-ad-1762511986518-0' style='min-width: 300px; min-height: 250px; text-align:center; margin: 20px 0;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762511964282-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762511986518-0'); });
                   </script>
                 </div>
                 <p>Vivian glanced at Ethan through her mask. This man had tried to stop her earlier, and now he was causing trouble. Throwing down a hundred million like it was nothing—what was his game?</p>
                 <p>The contrast grew more extreme. The imposter&#39;s side now resembled a small mountain with over a billion in chips. Vivian&#39;s side held only Ethan&#39;s lonely stack.</p>
                 <p>The game continued. The imposter had just played a straight. Now it was Vivian&#39;s turn.</p>
-                <!-- Ad Position 4 - Displays Banner 4 -->
-                <div id='div-gpt-ad-1762512031919-0' style='min-width: 300px; min-height: 250px; text-align:center; margin: 20px 0;'>
+                <!-- Ad Position 4 - Displays Banner 1 -->
+                <div id='div-gpt-ad-1762511964282-0' style='min-width: 300px; min-height: 250px; text-align:center; margin: 20px 0;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512031919-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762511964282-0'); });
                   </script>
                 </div>
                 <p>She calmly arranged her cards, a faint smile hidden beneath her mask. The hand was perfect—no need for any tricks.</p>
@@ -997,10 +997,10 @@
                 <p>&#34;Joker bomb!&#34; The imposter threw down his trump cards through gritted teeth.</p>
                 <p>Vivian spread her hands, signaling she couldn&#39;t top it. The imposter followed with a King, leaving just one final card in his hand.</p>
                 <p>The room held its breath. The outcome seemed decided.</p>
-                <!-- Ad Position 5 - Displays Banner 3 -->
-                <div id='div-gpt-ad-1762512008111-0' style='min-width: 300px; min-height: 250px; text-align:center; margin: 20px 0;'>
+                <!-- Ad Position 5 - Displays Banner 4 -->
+                <div id='div-gpt-ad-1762512031919-0' style='min-width: 300px; min-height: 250px; text-align:center; margin: 20px 0;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512008111-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512031919-0'); });
                   </script>
                 </div>
             </div>
@@ -5331,6 +5331,8 @@
                     // Long cooldown ended, reset trigger count and long cooldown time
                     this.saveTriggerCount(0);
                     localStorage.removeItem('adGuideLongCooldownStart');
+                    // Set flag: just exited long cooldown, next trigger should skip
+                    localStorage.setItem('adGuideJustExitedCooldown', 'true');
                     return false;
                 }
                 
@@ -5484,7 +5486,20 @@
                     return;
                 }
 
-                // Probability control: 79% trigger, 21% skip
+                // Check if just exited long cooldown - first trigger after cooldown must skip
+                const justExitedCooldown = localStorage.getItem('adGuideJustExitedCooldown');
+                if (justExitedCooldown === 'true') {
+                    console.log('Ad Guide: Just exited long cooldown, skipping first trigger (100%)');
+                    // Clear the flag and generate new threshold
+                    localStorage.removeItem('adGuideJustExitedCooldown');
+                    const randomAdsCount = this.generateRandomAdsCount();
+                    this.nextTriggerThreshold = this.totalAdsSeen + randomAdsCount;
+                    this.saveNextTriggerThreshold(this.nextTriggerThreshold);
+                    console.log(`Ad Guide: Next trigger at ${this.nextTriggerThreshold} ads (need ${randomAdsCount} more)`);
+                    return;
+                }
+
+                // Probability control: 95% trigger, 5% skip
                 const shouldTrigger = Math.random() < this.TRIGGER_PROBABILITY;
                 if (!shouldTrigger) {
                     console.log('Ad Guide: Skipped by probability control');
@@ -6224,6 +6239,10 @@
                 // Calculate ads needed for next trigger
                 const adsNeeded = Math.max(0, this.nextTriggerThreshold - (this.totalAdsSeen || 0));
                 
+                // Check just exited cooldown flag
+                const justExitedCooldown = localStorage.getItem('adGuideJustExitedCooldown');
+                const justExitedDisplay = justExitedCooldown === 'true' ? 'YES (Next skip)' : 'NO';
+                
                 this.debugPanel.innerHTML = `
                     <div style="font-weight: bold; margin-bottom: 10px;">Ad Guide Debug Panel</div>
                     <div>Browser: ${this.isPCBrowser ? 'PC (Disabled)' : 'Mobile'}</div>
@@ -6235,6 +6254,31 @@
                     <div style="border-top: 1px solid #444; margin: 8px 0; padding-top: 8px;">Long Cooldown (${this.LONG_COOLDOWN_HOURS}h)</div>
                     <div>Trigger Count: ${triggerCount}/${this.MAX_TRIGGERS_BEFORE_LONG_COOLDOWN}</div>
                     <div>Long Countdown: ${longCooldownDisplay}</div>
+                    <div>Just Exited: ${justExitedDisplay}</div>
+                    <div style="margin-top: 5px;">
+                        <input type="text" id="cooldown-time-input" placeholder="e.g., 10s, 2m, 1h" style="
+                            width: 100%;
+                            padding: 4px 6px;
+                            border: 1px solid #555;
+                            border-radius: 4px;
+                            background: #222;
+                            color: white;
+                            font-size: 11px;
+                            box-sizing: border-box;
+                        ">
+                    </div>
+                    <div style="margin-top: 5px;">
+                        <button onclick="adGuideSystem.setCooldownTime()" style="
+                            width: 100%;
+                            padding: 5px 10px;
+                            background: #FF9500;
+                            color: white;
+                            border: none;
+                            border-radius: 4px;
+                            cursor: pointer;
+                            font-size: 11px;
+                        ">Set Cooldown Time</button>
+                    </div>
                     <div style="border-top: 1px solid #444; margin: 8px 0; padding-top: 8px;">Inactivity Reset (${this.INACTIVITY_RESET_MINUTES}min)</div>
                     <div>Countdown: ${inactivityDisplay}</div>
                     <div style="border-top: 1px solid #444; margin: 8px 0; padding-top: 8px;">Status: ${this.isGuideActive ? 'Active' : 'Standby'}</div>
@@ -6269,6 +6313,7 @@
                 localStorage.removeItem('adGuideTriggerCount');
                 localStorage.removeItem('adGuideLongCooldownStart');
                 localStorage.removeItem('adGuideLastActivity');
+                localStorage.removeItem('adGuideJustExitedCooldown');
                 this.totalAdsSeen = 0;
                 this.nextTriggerThreshold = Math.floor(Math.random() * (this.MAX_INITIAL_ADS - this.MIN_INITIAL_ADS + 1)) + this.MIN_INITIAL_ADS;
                 this.currentPageAds = [];
@@ -6292,6 +6337,68 @@
                 if (this.totalAdsSeen >= this.nextTriggerThreshold) {
                     this.considerTriggeringGuide();
                 }
+            }
+
+            // Debug function: set custom cooldown time
+            setCooldownTime() {
+                const input = document.getElementById('cooldown-time-input');
+                if (!input) return;
+                
+                const timeString = input.value.trim().toLowerCase();
+                if (!timeString) {
+                    alert('Please enter a time value (e.g., 10s, 2m, 1h)');
+                    return;
+                }
+                
+                // Parse time string
+                let milliseconds = 0;
+                const timeMatch = timeString.match(/^(\d+(?:\.\d+)?)(s|m|h)$/);
+                
+                if (!timeMatch) {
+                    alert('Invalid format! Use: 10s (seconds), 2m (minutes), or 1h (hours)');
+                    return;
+                }
+                
+                const value = parseFloat(timeMatch[1]);
+                const unit = timeMatch[2];
+                
+                switch(unit) {
+                    case 's':
+                        milliseconds = value * 1000;
+                        break;
+                    case 'm':
+                        milliseconds = value * 60 * 1000;
+                        break;
+                    case 'h':
+                        milliseconds = value * 60 * 60 * 1000;
+                        break;
+                }
+                
+                // Calculate the timestamp for when cooldown should end
+                const cooldownEndTime = Date.now() + milliseconds;
+                const cooldownStartTime = cooldownEndTime - (this.LONG_COOLDOWN_HOURS * 60 * 60 * 1000);
+                
+                // Set the cooldown start time
+                this.saveLongCooldownStart(cooldownStartTime);
+                
+                // Set trigger count to enter cooldown state
+                if (this.getTriggerCount() < this.MAX_TRIGGERS_BEFORE_LONG_COOLDOWN) {
+                    this.saveTriggerCount(this.MAX_TRIGGERS_BEFORE_LONG_COOLDOWN);
+                }
+                
+                // Clear the just exited flag if it exists
+                localStorage.removeItem('adGuideJustExitedCooldown');
+                
+                console.log(`Ad Guide: [DEBUG] Long cooldown set to ${timeString} (${milliseconds}ms)`);
+                console.log(`Ad Guide: [DEBUG] Cooldown will end at: ${new Date(cooldownEndTime).toLocaleString()}`);
+                
+                // Clear input
+                input.value = '';
+                
+                // Update debug panel
+                this.updateDebugInfo();
+                
+                alert(`Long cooldown set to ${timeString}!\nWill end at: ${new Date(cooldownEndTime).toLocaleTimeString()}`);
             }
 
             startPeriodicCheck() {

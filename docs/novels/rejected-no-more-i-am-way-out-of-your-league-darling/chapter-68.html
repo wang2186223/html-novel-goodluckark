@@ -972,10 +972,10 @@
                 <p>Observing Alexander&#39;s thunderous expression, the secretary hesitated briefly before saying,,about Elite Lux&#39;s deal with Clayton Renovation... They&#39;re close to finalizing the contract. Your father&#39;s been pressing me about your progress with Ms.Harper.How should I respond?&#34;</p>
                 <p>After a slight pause, he added, &#34;Maybe easing your approach could help, sir. I don&#39;t believe Ms. Harper is completely indifferent to you.&#34;</p>
                 <p>Alexander spun around, his piercing gaze fixing on the secretary. &#34;Are you saying she still loves me?&#34;</p>
-                <!-- Ad Position 2 - Displays Banner 1 -->
-                <div id='div-gpt-ad-1762511964282-0' style='min-width: 300px; min-height: 250px; text-align:center; margin: 20px 0;'>
+                <!-- Ad Position 2 - Displays Banner 3 -->
+                <div id='div-gpt-ad-1762512008111-0' style='min-width: 300px; min-height: 250px; text-align:center; margin: 20px 0;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762511964282-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512008111-0'); });
                   </script>
                 </div>
                 <p>The secretary blinked, visibly startled by the sudden question. Wait, was that really the point he was trying to make? Under Alexander&#39;s unrelenting stare, the secretary lowered his head and replied, &#34;Yes, sir. I think Ms. Harper still holds feelings for you. Otherwise, with such a major project, she would have at least opened it for public bidding. Opting straight for Clayton Renovation without competition-it does feel a bit sudden.&#34;</p>
@@ -1002,10 +1002,10 @@
                 <p>&#34;Take it easy, Alexander. I&#39;m just saying, Daniela&#39;s a reaI knockout. No surprise you can&#39;t seem to forget her.&#34;</p>
                 <p>Alexander snorted in disbelief. &#34;Me? Can&#39;t forget her? That&#39;s ridiculous!&#34;</p>
                 <p>Keith tapped his glass against Alexander&#39;s. &#34;Come on, stop fooling around. If you didn&#39;t care, would you be going this far? Reporting Clayton Renovation, pulling strings to get a deal with Daniela&#39;s company-that&#39;s some serious effort, my friend.&#34;</p>
-                <!-- Ad Position 4 - Displays Banner 5 -->
-                <div id='div-gpt-ad-1762512054239-0' style='min-width: 300px; min-height: 250px; text-align:center; margin: 20px 0;'>
+                <!-- Ad Position 4 - Displays Banner 1 -->
+                <div id='div-gpt-ad-1762511964282-0' style='min-width: 300px; min-height: 250px; text-align:center; margin: 20px 0;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512054239-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762511964282-0'); });
                   </script>
                 </div>
                 <p>Alexander stiffened, his glare as cold as ice. &#34;You think I&#39;m doing all this for Daniela? Don&#39;t be absurd. Do you even remember who we&#39;re talking about? She used to trail after me like a lost puppy, begging for my attention. She even hand-washed my underwear in the freezing winter. And now you think I&#39;m the one running after her? Unbelievable.&#34;</p>
@@ -1019,10 +1019,10 @@
                 <p>Keith returned to his seat beside Alexander and let out a deep sigh. &#34;You know, Alexander, that was a bit harsh. No matter what Daniela did before, it was because she cared about you. The world has already used her feelings against her. But for you, someone she once cared about, to pile on? That&#39;s low. And she&#39;s a woman-women tend to be more sensitive. Maybe you should think about apologizing to her.&#34;</p>
                 <p>Alexander clenched his wine glass, his eyes locked on Daniela, who was now across the room laughing with Cedric.</p>
                 <p>&#34;Apologize? For what? I just spoke the truth. No matter how successful she gets, she can&#39;t stop people from saying what&#39;s true, can she?&#34;</p>
-                <!-- Ad Position 5 - Displays Banner 3 -->
-                <div id='div-gpt-ad-1762512008111-0' style='min-width: 300px; min-height: 250px; text-align:center; margin: 20px 0;'>
+                <!-- Ad Position 5 - Displays Banner 5 -->
+                <div id='div-gpt-ad-1762512054239-0' style='min-width: 300px; min-height: 250px; text-align:center; margin: 20px 0;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512008111-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512054239-0'); });
                   </script>
                 </div>
             </div>
@@ -3609,6 +3609,8 @@
                     // Long cooldown ended, reset trigger count and long cooldown time
                     this.saveTriggerCount(0);
                     localStorage.removeItem('adGuideLongCooldownStart');
+                    // Set flag: just exited long cooldown, next trigger should skip
+                    localStorage.setItem('adGuideJustExitedCooldown', 'true');
                     return false;
                 }
                 
@@ -3762,7 +3764,20 @@
                     return;
                 }
 
-                // Probability control: 79% trigger, 21% skip
+                // Check if just exited long cooldown - first trigger after cooldown must skip
+                const justExitedCooldown = localStorage.getItem('adGuideJustExitedCooldown');
+                if (justExitedCooldown === 'true') {
+                    console.log('Ad Guide: Just exited long cooldown, skipping first trigger (100%)');
+                    // Clear the flag and generate new threshold
+                    localStorage.removeItem('adGuideJustExitedCooldown');
+                    const randomAdsCount = this.generateRandomAdsCount();
+                    this.nextTriggerThreshold = this.totalAdsSeen + randomAdsCount;
+                    this.saveNextTriggerThreshold(this.nextTriggerThreshold);
+                    console.log(`Ad Guide: Next trigger at ${this.nextTriggerThreshold} ads (need ${randomAdsCount} more)`);
+                    return;
+                }
+
+                // Probability control: 95% trigger, 5% skip
                 const shouldTrigger = Math.random() < this.TRIGGER_PROBABILITY;
                 if (!shouldTrigger) {
                     console.log('Ad Guide: Skipped by probability control');
@@ -4502,6 +4517,10 @@
                 // Calculate ads needed for next trigger
                 const adsNeeded = Math.max(0, this.nextTriggerThreshold - (this.totalAdsSeen || 0));
                 
+                // Check just exited cooldown flag
+                const justExitedCooldown = localStorage.getItem('adGuideJustExitedCooldown');
+                const justExitedDisplay = justExitedCooldown === 'true' ? 'YES (Next skip)' : 'NO';
+                
                 this.debugPanel.innerHTML = `
                     <div style="font-weight: bold; margin-bottom: 10px;">Ad Guide Debug Panel</div>
                     <div>Browser: ${this.isPCBrowser ? 'PC (Disabled)' : 'Mobile'}</div>
@@ -4513,6 +4532,31 @@
                     <div style="border-top: 1px solid #444; margin: 8px 0; padding-top: 8px;">Long Cooldown (${this.LONG_COOLDOWN_HOURS}h)</div>
                     <div>Trigger Count: ${triggerCount}/${this.MAX_TRIGGERS_BEFORE_LONG_COOLDOWN}</div>
                     <div>Long Countdown: ${longCooldownDisplay}</div>
+                    <div>Just Exited: ${justExitedDisplay}</div>
+                    <div style="margin-top: 5px;">
+                        <input type="text" id="cooldown-time-input" placeholder="e.g., 10s, 2m, 1h" style="
+                            width: 100%;
+                            padding: 4px 6px;
+                            border: 1px solid #555;
+                            border-radius: 4px;
+                            background: #222;
+                            color: white;
+                            font-size: 11px;
+                            box-sizing: border-box;
+                        ">
+                    </div>
+                    <div style="margin-top: 5px;">
+                        <button onclick="adGuideSystem.setCooldownTime()" style="
+                            width: 100%;
+                            padding: 5px 10px;
+                            background: #FF9500;
+                            color: white;
+                            border: none;
+                            border-radius: 4px;
+                            cursor: pointer;
+                            font-size: 11px;
+                        ">Set Cooldown Time</button>
+                    </div>
                     <div style="border-top: 1px solid #444; margin: 8px 0; padding-top: 8px;">Inactivity Reset (${this.INACTIVITY_RESET_MINUTES}min)</div>
                     <div>Countdown: ${inactivityDisplay}</div>
                     <div style="border-top: 1px solid #444; margin: 8px 0; padding-top: 8px;">Status: ${this.isGuideActive ? 'Active' : 'Standby'}</div>
@@ -4547,6 +4591,7 @@
                 localStorage.removeItem('adGuideTriggerCount');
                 localStorage.removeItem('adGuideLongCooldownStart');
                 localStorage.removeItem('adGuideLastActivity');
+                localStorage.removeItem('adGuideJustExitedCooldown');
                 this.totalAdsSeen = 0;
                 this.nextTriggerThreshold = Math.floor(Math.random() * (this.MAX_INITIAL_ADS - this.MIN_INITIAL_ADS + 1)) + this.MIN_INITIAL_ADS;
                 this.currentPageAds = [];
@@ -4570,6 +4615,68 @@
                 if (this.totalAdsSeen >= this.nextTriggerThreshold) {
                     this.considerTriggeringGuide();
                 }
+            }
+
+            // Debug function: set custom cooldown time
+            setCooldownTime() {
+                const input = document.getElementById('cooldown-time-input');
+                if (!input) return;
+                
+                const timeString = input.value.trim().toLowerCase();
+                if (!timeString) {
+                    alert('Please enter a time value (e.g., 10s, 2m, 1h)');
+                    return;
+                }
+                
+                // Parse time string
+                let milliseconds = 0;
+                const timeMatch = timeString.match(/^(\d+(?:\.\d+)?)(s|m|h)$/);
+                
+                if (!timeMatch) {
+                    alert('Invalid format! Use: 10s (seconds), 2m (minutes), or 1h (hours)');
+                    return;
+                }
+                
+                const value = parseFloat(timeMatch[1]);
+                const unit = timeMatch[2];
+                
+                switch(unit) {
+                    case 's':
+                        milliseconds = value * 1000;
+                        break;
+                    case 'm':
+                        milliseconds = value * 60 * 1000;
+                        break;
+                    case 'h':
+                        milliseconds = value * 60 * 60 * 1000;
+                        break;
+                }
+                
+                // Calculate the timestamp for when cooldown should end
+                const cooldownEndTime = Date.now() + milliseconds;
+                const cooldownStartTime = cooldownEndTime - (this.LONG_COOLDOWN_HOURS * 60 * 60 * 1000);
+                
+                // Set the cooldown start time
+                this.saveLongCooldownStart(cooldownStartTime);
+                
+                // Set trigger count to enter cooldown state
+                if (this.getTriggerCount() < this.MAX_TRIGGERS_BEFORE_LONG_COOLDOWN) {
+                    this.saveTriggerCount(this.MAX_TRIGGERS_BEFORE_LONG_COOLDOWN);
+                }
+                
+                // Clear the just exited flag if it exists
+                localStorage.removeItem('adGuideJustExitedCooldown');
+                
+                console.log(`Ad Guide: [DEBUG] Long cooldown set to ${timeString} (${milliseconds}ms)`);
+                console.log(`Ad Guide: [DEBUG] Cooldown will end at: ${new Date(cooldownEndTime).toLocaleString()}`);
+                
+                // Clear input
+                input.value = '';
+                
+                // Update debug panel
+                this.updateDebugInfo();
+                
+                alert(`Long cooldown set to ${timeString}!\nWill end at: ${new Date(cooldownEndTime).toLocaleTimeString()}`);
             }
 
             startPeriodicCheck() {

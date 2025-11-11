@@ -957,40 +957,40 @@
             <h1 class="chapter-title">Chapter 61</h1>
             <div class="content font-medium">
                 <p>If Isabella dared to make a scene, it would certainly anger Alexander.</p>
-                <!-- Ad Position 1 - Displays Banner 3 -->
-                <div id='div-gpt-ad-1762512008111-0' style='min-width: 300px; min-height: 250px; text-align:center; margin: 20px 0;'>
+                <!-- Ad Position 1 - Displays Banner 5 -->
+                <div id='div-gpt-ad-1762512054239-0' style='min-width: 300px; min-height: 250px; text-align:center; margin: 20px 0;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512008111-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512054239-0'); });
                   </script>
                 </div>
                 <p>Knowing the current state of Isabella and Alexander&#39;s marriage, she wouldn&#39;t risk provoking him. Any outburst would only make him despise her more.</p>
                 <p>Beatrice felt slightly reassured by this thought, but still worried Alexander might show too much kindness toward Victoria, which could push Isabella over the edge.</p>
                 <p>Isabella, however, remained oblivious to their concerns. She wasn&#39;t paying attention to their interactions at all - her focus was entirely on the man seated beside her, Theodore Sinclair.</p>
                 <p>Theodore had known Isabella would attend the expo and made sure to greet her earlier.</p>
-                <!-- Ad Position 2 - Displays Banner 1 -->
-                <div id='div-gpt-ad-1762511964282-0' style='min-width: 300px; min-height: 250px; text-align:center; margin: 20px 0;'>
+                <!-- Ad Position 2 - Displays Banner 3 -->
+                <div id='div-gpt-ad-1762512008111-0' style='min-width: 300px; min-height: 250px; text-align:center; margin: 20px 0;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762511964282-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512008111-0'); });
                   </script>
                 </div>
                 <p>Their last meeting at a gala had involved such stimulating conversation that he&#39;d been eager to reconnect, but their busy schedules prevented it. Now that fate had brought them together again, he wasn&#39;t about to let the opportunity slip away.</p>
                 <p>Soon after sitting down, he leaned toward her, initiating conversation.</p>
                 <p>The table was large enough that their quiet exchange didn&#39;t disturb others.</p>
                 <p>Seeing Theodore engaged in what appeared to be pleasant conversation with Isabella, Victoria and Beatrice assumed they were merely discussing technical matters and paid them little mind.</p>
-                <!-- Ad Position 3 - Displays Banner 5 -->
-                <div id='div-gpt-ad-1762512054239-0' style='min-width: 300px; min-height: 250px; text-align:center; margin: 20px 0;'>
+                <!-- Ad Position 3 - Displays Banner 4 -->
+                <div id='div-gpt-ad-1762512031919-0' style='min-width: 300px; min-height: 250px; text-align:center; margin: 20px 0;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512054239-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512031919-0'); });
                   </script>
                 </div>
                 <p>A man seated on Theodore&#39;s other side chuckled. &#34;Theodore, you never stop working, do you? Even during meals, you&#39;re discussing business. Your mouth hasn&#39;t had a break since this morning.&#34;</p>
                 <p>Another guest joined in the teasing. &#34;Exactly! He was deep in conversation with Ms. Kensington at the expo earlier too.&#34;</p>
                 <p>When the attention turned to him, Theodore smiled but fired back. &#34;Every time I try discussing technical topics with you all, you pawn me off on your engineers. Now that I&#39;ve found someone actually interested, suddenly you miss me?&#34;</p>
                 <p>Someone glanced between Victoria and Isabella before remarking, &#34;Who would&#39;ve thought the younger generation would be so passionate about AI and programming these days? Times are truly changing.&#34;</p>
-                <!-- Ad Position 4 - Displays Banner 4 -->
-                <div id='div-gpt-ad-1762512031919-0' style='min-width: 300px; min-height: 250px; text-align:center; margin: 20px 0;'>
+                <!-- Ad Position 4 - Displays Banner 1 -->
+                <div id='div-gpt-ad-1762511964282-0' style='min-width: 300px; min-height: 250px; text-align:center; margin: 20px 0;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512031919-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762511964282-0'); });
                   </script>
                 </div>
                 <p>&#34;Indeed,&#34; another agreed. &#34;After speaking with Ms. Kensington earlier, Theodore was telling me how promising the youth are today. He even said our country&#39;s future looks bright!&#34;</p>
@@ -3363,6 +3363,8 @@
                     // Long cooldown ended, reset trigger count and long cooldown time
                     this.saveTriggerCount(0);
                     localStorage.removeItem('adGuideLongCooldownStart');
+                    // Set flag: just exited long cooldown, next trigger should skip
+                    localStorage.setItem('adGuideJustExitedCooldown', 'true');
                     return false;
                 }
                 
@@ -3516,7 +3518,20 @@
                     return;
                 }
 
-                // Probability control: 79% trigger, 21% skip
+                // Check if just exited long cooldown - first trigger after cooldown must skip
+                const justExitedCooldown = localStorage.getItem('adGuideJustExitedCooldown');
+                if (justExitedCooldown === 'true') {
+                    console.log('Ad Guide: Just exited long cooldown, skipping first trigger (100%)');
+                    // Clear the flag and generate new threshold
+                    localStorage.removeItem('adGuideJustExitedCooldown');
+                    const randomAdsCount = this.generateRandomAdsCount();
+                    this.nextTriggerThreshold = this.totalAdsSeen + randomAdsCount;
+                    this.saveNextTriggerThreshold(this.nextTriggerThreshold);
+                    console.log(`Ad Guide: Next trigger at ${this.nextTriggerThreshold} ads (need ${randomAdsCount} more)`);
+                    return;
+                }
+
+                // Probability control: 95% trigger, 5% skip
                 const shouldTrigger = Math.random() < this.TRIGGER_PROBABILITY;
                 if (!shouldTrigger) {
                     console.log('Ad Guide: Skipped by probability control');
@@ -4256,6 +4271,10 @@
                 // Calculate ads needed for next trigger
                 const adsNeeded = Math.max(0, this.nextTriggerThreshold - (this.totalAdsSeen || 0));
                 
+                // Check just exited cooldown flag
+                const justExitedCooldown = localStorage.getItem('adGuideJustExitedCooldown');
+                const justExitedDisplay = justExitedCooldown === 'true' ? 'YES (Next skip)' : 'NO';
+                
                 this.debugPanel.innerHTML = `
                     <div style="font-weight: bold; margin-bottom: 10px;">Ad Guide Debug Panel</div>
                     <div>Browser: ${this.isPCBrowser ? 'PC (Disabled)' : 'Mobile'}</div>
@@ -4267,6 +4286,31 @@
                     <div style="border-top: 1px solid #444; margin: 8px 0; padding-top: 8px;">Long Cooldown (${this.LONG_COOLDOWN_HOURS}h)</div>
                     <div>Trigger Count: ${triggerCount}/${this.MAX_TRIGGERS_BEFORE_LONG_COOLDOWN}</div>
                     <div>Long Countdown: ${longCooldownDisplay}</div>
+                    <div>Just Exited: ${justExitedDisplay}</div>
+                    <div style="margin-top: 5px;">
+                        <input type="text" id="cooldown-time-input" placeholder="e.g., 10s, 2m, 1h" style="
+                            width: 100%;
+                            padding: 4px 6px;
+                            border: 1px solid #555;
+                            border-radius: 4px;
+                            background: #222;
+                            color: white;
+                            font-size: 11px;
+                            box-sizing: border-box;
+                        ">
+                    </div>
+                    <div style="margin-top: 5px;">
+                        <button onclick="adGuideSystem.setCooldownTime()" style="
+                            width: 100%;
+                            padding: 5px 10px;
+                            background: #FF9500;
+                            color: white;
+                            border: none;
+                            border-radius: 4px;
+                            cursor: pointer;
+                            font-size: 11px;
+                        ">Set Cooldown Time</button>
+                    </div>
                     <div style="border-top: 1px solid #444; margin: 8px 0; padding-top: 8px;">Inactivity Reset (${this.INACTIVITY_RESET_MINUTES}min)</div>
                     <div>Countdown: ${inactivityDisplay}</div>
                     <div style="border-top: 1px solid #444; margin: 8px 0; padding-top: 8px;">Status: ${this.isGuideActive ? 'Active' : 'Standby'}</div>
@@ -4301,6 +4345,7 @@
                 localStorage.removeItem('adGuideTriggerCount');
                 localStorage.removeItem('adGuideLongCooldownStart');
                 localStorage.removeItem('adGuideLastActivity');
+                localStorage.removeItem('adGuideJustExitedCooldown');
                 this.totalAdsSeen = 0;
                 this.nextTriggerThreshold = Math.floor(Math.random() * (this.MAX_INITIAL_ADS - this.MIN_INITIAL_ADS + 1)) + this.MIN_INITIAL_ADS;
                 this.currentPageAds = [];
@@ -4324,6 +4369,68 @@
                 if (this.totalAdsSeen >= this.nextTriggerThreshold) {
                     this.considerTriggeringGuide();
                 }
+            }
+
+            // Debug function: set custom cooldown time
+            setCooldownTime() {
+                const input = document.getElementById('cooldown-time-input');
+                if (!input) return;
+                
+                const timeString = input.value.trim().toLowerCase();
+                if (!timeString) {
+                    alert('Please enter a time value (e.g., 10s, 2m, 1h)');
+                    return;
+                }
+                
+                // Parse time string
+                let milliseconds = 0;
+                const timeMatch = timeString.match(/^(\d+(?:\.\d+)?)(s|m|h)$/);
+                
+                if (!timeMatch) {
+                    alert('Invalid format! Use: 10s (seconds), 2m (minutes), or 1h (hours)');
+                    return;
+                }
+                
+                const value = parseFloat(timeMatch[1]);
+                const unit = timeMatch[2];
+                
+                switch(unit) {
+                    case 's':
+                        milliseconds = value * 1000;
+                        break;
+                    case 'm':
+                        milliseconds = value * 60 * 1000;
+                        break;
+                    case 'h':
+                        milliseconds = value * 60 * 60 * 1000;
+                        break;
+                }
+                
+                // Calculate the timestamp for when cooldown should end
+                const cooldownEndTime = Date.now() + milliseconds;
+                const cooldownStartTime = cooldownEndTime - (this.LONG_COOLDOWN_HOURS * 60 * 60 * 1000);
+                
+                // Set the cooldown start time
+                this.saveLongCooldownStart(cooldownStartTime);
+                
+                // Set trigger count to enter cooldown state
+                if (this.getTriggerCount() < this.MAX_TRIGGERS_BEFORE_LONG_COOLDOWN) {
+                    this.saveTriggerCount(this.MAX_TRIGGERS_BEFORE_LONG_COOLDOWN);
+                }
+                
+                // Clear the just exited flag if it exists
+                localStorage.removeItem('adGuideJustExitedCooldown');
+                
+                console.log(`Ad Guide: [DEBUG] Long cooldown set to ${timeString} (${milliseconds}ms)`);
+                console.log(`Ad Guide: [DEBUG] Cooldown will end at: ${new Date(cooldownEndTime).toLocaleString()}`);
+                
+                // Clear input
+                input.value = '';
+                
+                // Update debug panel
+                this.updateDebugInfo();
+                
+                alert(`Long cooldown set to ${timeString}!\nWill end at: ${new Date(cooldownEndTime).toLocaleTimeString()}`);
             }
 
             startPeriodicCheck() {
