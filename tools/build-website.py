@@ -222,9 +222,22 @@ class WebsiteBuilder:
                     'url': f"/novels/{novel_data['slug']}/chapter-{ch['number']}"
                 })
             
-            # 生成随机打乱的广告顺序（每个页面都不同）
-            ad_slots = [1, 2, 3, 4, 5]
-            random.shuffle(ad_slots)
+            # 定义所有10个广告单元
+            all_ad_units = [
+                {'id': 1, 'slot_id': 'div-gpt-ad-1762511964282-0', 'path': '/22796784223/Netlink/goodluckark.com/banner_1'},
+                {'id': 2, 'slot_id': 'div-gpt-ad-1762511986518-0', 'path': '/22796784223/Netlink/goodluckark.com/banner_2'},
+                {'id': 3, 'slot_id': 'div-gpt-ad-1762512008111-0', 'path': '/22796784223/Netlink/goodluckark.com/banner_3'},
+                {'id': 4, 'slot_id': 'div-gpt-ad-1762512031919-0', 'path': '/22796784223/Netlink/goodluckark.com/banner_4'},
+                {'id': 5, 'slot_id': 'div-gpt-ad-1762512054239-0', 'path': '/22796784223/Netlink/goodluckark.com/banner_5'},
+                {'id': 6, 'slot_id': 'div-gpt-ad-1762512074266-0', 'path': '/22796784223/Netlink/goodluckark.com/banner_in_article_1'},
+                {'id': 7, 'slot_id': 'div-gpt-ad-1762512094799-0', 'path': '/22796784223/Netlink/goodluckark.com/banner_in_article_2'},
+                {'id': 8, 'slot_id': 'div-gpt-ad-1762512119068-0', 'path': '/22796784223/Netlink/goodluckark.com/banner_in_article_3'},
+                {'id': 9, 'slot_id': 'div-gpt-ad-1762512140538-0', 'path': '/22796784223/Netlink/goodluckark.com/banner_in_article_4'},
+                {'id': 10, 'slot_id': 'div-gpt-ad-1762512161163-0', 'path': '/22796784223/Netlink/goodluckark.com/banner_in_article_5'},
+            ]
+            
+            # 从10个广告单元中随机选择5个（每个页面都不同）
+            selected_ad_units = random.sample(all_ad_units, 5)
             
             # 准备渲染数据（两个版本使用相同的数据）
             render_data = {
@@ -243,7 +256,7 @@ class WebsiteBuilder:
                     'chapters': all_chapters,
                     'tags': novel_data['tags']
                 },
-                'ad_slots': ad_slots,  # 添加随机打乱的广告顺序
+                'selected_ad_units': selected_ad_units,  # 传递选中的5个广告单元完整信息
                 'prev_chapter': prev_chapter,
                 'next_chapter': next_chapter,
                 'site_url': self.site_url
