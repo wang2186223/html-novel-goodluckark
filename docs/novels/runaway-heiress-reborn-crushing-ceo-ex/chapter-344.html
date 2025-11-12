@@ -116,6 +116,369 @@
     })();
     </script>
     
+    <!-- Reading Limit System -->
+    <script>
+    (function() {
+        'use strict';
+        
+        // ===== Configuration =====
+        const CONFIG = {
+            COOLDOWN_HOURS: 3,
+            CHAPTER_LIMIT_BASE: 80,  // 80, 160, 240...
+        };
+        
+        // ===== Utility Functions =====
+        
+        /**
+         * Get local date string (YYYY-MM-DD)
+         */
+        function getLocalDateString() {
+            const now = new Date();
+            return now.toLocaleDateString('en-CA');  // Format: 2025-11-12
+        }
+        
+        /**
+         * Get current chapter limit based on cooldown count
+         */
+        function getChapterLimit() {
+            const cooldownCount = parseInt(localStorage.getItem('readingLimitCooldownCount') || '0');
+            return CONFIG.CHAPTER_LIMIT_BASE * (cooldownCount + 1);
+        }
+        
+        /**
+         * Reset daily data
+         */
+        function resetDailyData(today) {
+            localStorage.setItem('readingLimitDate', today);
+            localStorage.setItem('readingLimitChapterCount', '0');
+            localStorage.setItem('readingLimitCooldownCount', '0');
+            localStorage.setItem('readingLimitIsInCooldown', 'false');
+            localStorage.removeItem('readingLimitCooldownStart');
+            localStorage.removeItem('readingLimitCooldownDuration');
+        }
+        
+        /**
+         * Check if date changed and reset if needed
+         */
+        function checkDailyReset() {
+            const today = getLocalDateString();
+            const storedDate = localStorage.getItem('readingLimitDate');
+            
+            if (storedDate !== today) {
+                resetDailyData(today);
+                return true;
+            }
+            return false;
+        }
+        
+        /**
+         * Check cooldown status
+         */
+        function checkCooldownStatus() {
+            const isInCooldown = localStorage.getItem('readingLimitIsInCooldown') === 'true';
+            if (!isInCooldown) return { active: false };
+            
+            const startTime = parseInt(localStorage.getItem('readingLimitCooldownStart') || '0');
+            const duration = parseInt(localStorage.getItem('readingLimitCooldownDuration') || '0');
+            const now = Date.now();
+            const elapsed = now - startTime;
+            
+            if (elapsed >= duration) {
+                // Cooldown ended
+                endCooldown();
+                return { active: false };
+            }
+            
+            // Still in cooldown
+            const remaining = duration - elapsed;
+            return {
+                active: true,
+                remainingMs: remaining,
+                remainingHours: Math.floor(remaining / (60 * 60 * 1000)),
+                remainingMinutes: Math.floor((remaining % (60 * 60 * 1000)) / (60 * 1000)),
+                remainingSeconds: Math.floor((remaining % (60 * 1000)) / 1000)
+            };
+        }
+        
+        /**
+         * Start cooldown
+         */
+        function startCooldown() {
+            const now = Date.now();
+            const cooldownDuration = CONFIG.COOLDOWN_HOURS * 60 * 60 * 1000;
+            
+            localStorage.setItem('readingLimitCooldownStart', now.toString());
+            localStorage.setItem('readingLimitCooldownDuration', cooldownDuration.toString());
+            localStorage.setItem('readingLimitIsInCooldown', 'true');
+            
+            // Increment cooldown count
+            const count = parseInt(localStorage.getItem('readingLimitCooldownCount') || '0');
+            localStorage.setItem('readingLimitCooldownCount', (count + 1).toString());
+        }
+        
+        /**
+         * End cooldown
+         */
+        function endCooldown() {
+            localStorage.setItem('readingLimitIsInCooldown', 'false');
+            localStorage.removeItem('readingLimitCooldownStart');
+            localStorage.removeItem('readingLimitCooldownDuration');
+        }
+        
+        /**
+         * Increment chapter count
+         */
+        function incrementChapterCount() {
+            const current = parseInt(localStorage.getItem('readingLimitChapterCount') || '0');
+            localStorage.setItem('readingLimitChapterCount', (current + 1).toString());
+            return current + 1;
+        }
+        
+        /**
+         * Get current chapter count
+         */
+        function getCurrentChapterCount() {
+            return parseInt(localStorage.getItem('readingLimitChapterCount') || '0');
+        }
+        
+        /**
+         * Check if should enter cooldown
+         */
+        function shouldEnterCooldown(currentCount) {
+            const limit = getChapterLimit();
+            return currentCount >= limit;
+        }
+        
+        // ===== UI Functions =====
+        
+        /**
+         * Show cooldown overlay
+         */
+        function showCooldownOverlay() {
+            // Remove existing overlay if any
+            const existing = document.getElementById('cooldown-overlay');
+            if (existing) existing.remove();
+            
+            const overlay = document.createElement('div');
+            overlay.id = 'cooldown-overlay';
+            overlay.innerHTML = `
+                <div class="cooldown-container">
+                    <div class="cooldown-icon">⏳</div>
+                    <h2 class="cooldown-title">Reading Limit Reached</h2>
+                    <p class="cooldown-message">
+                        You've enjoyed <span class="chapters-read" id="chapters-read-count">80</span> chapters today!
+                    </p>
+                    <div class="cooldown-timer">
+                        <span class="timer-value" id="timer-display">00:00:00</span>
+                    </div>
+                    <p class="cooldown-hint">
+                        Feel free to come back in 
+                        <strong class="time-remaining" id="time-remaining-text">3 hours</strong> 
+                        to resume the ad-supported experience.
+                    </p>
+                    <div class="cooldown-progress">
+                        <div class="progress-bar" id="progress-bar"></div>
+                    </div>
+                    <p class="cooldown-footer">
+                        🌟 Thank you for your support!
+                    </p>
+                </div>
+            `;
+            
+            document.body.appendChild(overlay);
+            updateCooldownTimer();
+        }
+        
+        /**
+         * Hide cooldown overlay
+         */
+        function hideCooldownOverlay() {
+            const overlay = document.getElementById('cooldown-overlay');
+            if (overlay) overlay.remove();
+        }
+        
+        /**
+         * Update cooldown timer
+         */
+        let timerInterval = null;
+        function updateCooldownTimer() {
+            const status = checkCooldownStatus();
+            
+            if (!status.active) {
+                // Clear interval to prevent unnecessary updates
+                if (timerInterval) {
+                    clearInterval(timerInterval);
+                    timerInterval = null;
+                }
+                hideCooldownOverlay();
+                // Don't reload automatically, just hide overlay
+                // User can continue reading after cooldown ends
+                return;
+            }
+            
+            // Update timer display
+            const hours = String(status.remainingHours).padStart(2, '0');
+            const minutes = String(status.remainingMinutes).padStart(2, '0');
+            const seconds = String(status.remainingSeconds).padStart(2, '0');
+            
+            const timerElement = document.getElementById('timer-display');
+            if (timerElement) {
+                timerElement.textContent = `${hours}:${minutes}:${seconds}`;
+            }
+            
+            // Update remaining text
+            const totalHours = Math.ceil(status.remainingMs / (60 * 60 * 1000));
+            const remainingText = document.getElementById('time-remaining-text');
+            if (remainingText) {
+                remainingText.textContent = `${totalHours} ${totalHours > 1 ? 'hours' : 'hour'}`;
+            }
+            
+            // Update chapters read
+            const chaptersRead = getCurrentChapterCount();
+            const chaptersElement = document.getElementById('chapters-read-count');
+            if (chaptersElement) {
+                chaptersElement.textContent = chaptersRead;
+            }
+            
+            // Update progress bar
+            const totalDuration = CONFIG.COOLDOWN_HOURS * 60 * 60 * 1000;
+            const progress = ((totalDuration - status.remainingMs) / totalDuration) * 100;
+            const progressBar = document.getElementById('progress-bar');
+            if (progressBar) {
+                progressBar.style.width = `${progress}%`;
+            }
+        }
+        
+        // ===== Main Initialization =====
+        
+        /**
+         * Initialize reading limit system
+         */
+        function initReadingLimit() {
+            // Step 1: Check daily reset
+            checkDailyReset();
+            
+            // Step 2: Check cooldown status
+            const cooldown = checkCooldownStatus();
+            if (cooldown.active) {
+                showCooldownOverlay();
+                // Update timer every second
+                timerInterval = setInterval(updateCooldownTimer, 1000);
+                return;
+            }
+            
+            // Step 3: Increment chapter count
+            const newCount = incrementChapterCount();
+            
+            // Step 4: Check if should enter cooldown
+            if (shouldEnterCooldown(newCount)) {
+                startCooldown();
+                showCooldownOverlay();
+                timerInterval = setInterval(updateCooldownTimer, 1000);
+            }
+        }
+        
+        // ===== Console Commands =====
+        
+        window.ReadingLimitControl = {
+            status: function() {
+                const data = {
+                    date: localStorage.getItem('readingLimitDate'),
+                    chapters: parseInt(localStorage.getItem('readingLimitChapterCount') || '0'),
+                    limit: getChapterLimit(),
+                    cooldownCount: parseInt(localStorage.getItem('readingLimitCooldownCount') || '0'),
+                    isInCooldown: localStorage.getItem('readingLimitIsInCooldown') === 'true',
+                    cooldownStart: localStorage.getItem('readingLimitCooldownStart'),
+                    cooldownDuration: localStorage.getItem('readingLimitCooldownDuration')
+                };
+                console.table(data);
+                return data;
+            },
+            
+            reset: function() {
+                if (confirm('⚠️ Reset all reading limits? This will clear all data.')) {
+                    localStorage.removeItem('readingLimitDate');
+                    localStorage.removeItem('readingLimitChapterCount');
+                    localStorage.removeItem('readingLimitCooldownStart');
+                    localStorage.removeItem('readingLimitCooldownDuration');
+                    localStorage.removeItem('readingLimitIsInCooldown');
+                    localStorage.removeItem('readingLimitCooldownCount');
+                    console.log('✅ All reading limits have been reset!');
+                    location.reload();
+                }
+            },
+            
+            addChapters: function(count = 1) {
+                const current = parseInt(localStorage.getItem('readingLimitChapterCount') || '0');
+                const newCount = current + count;
+                localStorage.setItem('readingLimitChapterCount', newCount.toString());
+                console.log(`✅ Added ${count} chapters. Total: ${newCount}`);
+                location.reload();
+            },
+            
+            setChapters: function(count) {
+                localStorage.setItem('readingLimitChapterCount', count.toString());
+                console.log(`✅ Set chapter count to: ${count}`);
+                location.reload();
+            },
+            
+            endCooldown: function() {
+                localStorage.setItem('readingLimitIsInCooldown', 'false');
+                console.log('✅ Cooldown ended immediately!');
+                location.reload();
+            },
+            
+            startCooldown: function() {
+                const now = Date.now();
+                localStorage.setItem('readingLimitCooldownStart', now.toString());
+                localStorage.setItem('readingLimitCooldownDuration', (CONFIG.COOLDOWN_HOURS * 60 * 60 * 1000).toString());
+                localStorage.setItem('readingLimitIsInCooldown', 'true');
+                console.log(`✅ Cooldown started for ${CONFIG.COOLDOWN_HOURS} hours!`);
+                location.reload();
+            },
+            
+            help: function() {
+                console.log(`
+🔧 Reading Limit Control Commands:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📊 View Status:
+   ReadingLimitControl.status()
+
+🔄 Reset Everything:
+   ReadingLimitControl.reset()
+
+📖 Add Chapters:
+   ReadingLimitControl.addChapters(1)
+   ReadingLimitControl.addChapters(10)
+
+🎯 Set Specific Count:
+   ReadingLimitControl.setChapters(79)
+   ReadingLimitControl.setChapters(80)
+
+⏱️ Cooldown Control:
+   ReadingLimitControl.endCooldown()
+   ReadingLimitControl.startCooldown()
+
+❓ Help:
+   ReadingLimitControl.help()
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+                `);
+            }
+        };
+        
+        // Execute on page load
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initReadingLimit);
+        } else {
+            initReadingLimit();
+        }
+        
+        // Show help on load
+        console.log('💡 Reading Limit System loaded. Type ReadingLimitControl.help() for commands.');
+    })();
+    </script>
+    
     <!-- Disable Console Output -->
     <script>
     (function() {
@@ -138,13 +501,13 @@
     <title>Chapter 344 - Runaway Heiress Reborn： Crushing CEO Ex | NovelVibe</title>
     
     <!-- Google tag (gtag.js) -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-62HR245J7Y"></script>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-1TFKEB1Q55"></script>
     <script>
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
       gtag('js', new Date());
 
-      gtag('config', 'G-62HR245J7Y');
+      gtag('config', 'G-1TFKEB1Q55');
     </script>
     
     <!-- Google Publisher Tag (GPT) - 动态加载选中的5个广告单元 -->
@@ -154,15 +517,15 @@
       googletag.cmd.push(function() {
         // Define ad slots for the chapter page (randomly selected 5 out of 10)
         
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_2', [300, 250], 'div-gpt-ad-1762512094799-0').addService(googletag.pubads());
+        
         googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_1', [300, 250], 'div-gpt-ad-1762512074266-0').addService(googletag.pubads());
         
         googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_4', [300, 250], 'div-gpt-ad-1762512031919-0').addService(googletag.pubads());
         
         googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_3', [300, 250], 'div-gpt-ad-1762512008111-0').addService(googletag.pubads());
         
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_5', [300, 250], 'div-gpt-ad-1762512054239-0').addService(googletag.pubads());
-        
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_1', [300, 250], 'div-gpt-ad-1762511964282-0').addService(googletag.pubads());
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_2', [300, 250], 'div-gpt-ad-1762511986518-0').addService(googletag.pubads());
         
         googletag.pubads().enableSingleRequest();
         googletag.enableServices();
@@ -651,6 +1014,150 @@
             --secondary-bg: #2C2C2E;
             --border-color: #38383A;
         }
+        
+        /* ===== Reading Limit Cooldown Overlay ===== */
+        #cooldown-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 999999;
+            animation: fadeIn 0.3s ease-in;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        .cooldown-container {
+            text-align: center;
+            max-width: 500px;
+            padding: 40px 30px;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            animation: slideUp 0.5s ease-out;
+        }
+        
+        @keyframes slideUp {
+            from {
+                transform: translateY(50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+        
+        .cooldown-icon {
+            font-size: 80px;
+            margin-bottom: 20px;
+            animation: pulse 2s ease-in-out infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+        
+        .cooldown-title {
+            color: #ffffff;
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 15px;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        
+        .cooldown-message {
+            color: #e0e0e0;
+            font-size: 16px;
+            margin-bottom: 25px;
+            line-height: 1.6;
+        }
+        
+        .chapters-read {
+            color: #ffd700;
+            font-weight: 700;
+            font-size: 18px;
+        }
+        
+        .cooldown-timer {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 20px;
+            border-radius: 12px;
+            margin: 25px 0;
+        }
+        
+        .timer-value {
+            font-size: 48px;
+            font-weight: 700;
+            color: #ffd700;
+            font-family: 'Courier New', monospace;
+            letter-spacing: 3px;
+            text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+        }
+        
+        .cooldown-hint {
+            color: #e0e0e0;
+            font-size: 14px;
+            margin-bottom: 20px;
+            line-height: 1.8;
+        }
+        
+        .time-remaining {
+            color: #ffd700;
+            font-weight: 700;
+        }
+        
+        .cooldown-progress {
+            background: rgba(0, 0, 0, 0.3);
+            height: 8px;
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 20px 0;
+        }
+        
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #4CAF50, #8BC34A);
+            border-radius: 4px;
+            transition: width 1s linear;
+            box-shadow: 0 0 10px rgba(76, 175, 80, 0.5);
+        }
+        
+        .cooldown-footer {
+            color: #b0b0b0;
+            font-size: 12px;
+            margin-top: 25px;
+            font-style: italic;
+        }
+        
+        /* Mobile responsiveness */
+        @media (max-width: 600px) {
+            .cooldown-container {
+                margin: 20px;
+                padding: 30px 20px;
+            }
+            
+            .cooldown-icon {
+                font-size: 60px;
+            }
+            
+            .cooldown-title {
+                font-size: 22px;
+            }
+            
+            .timer-value {
+                font-size: 36px;
+            }
+        }
 
         * {
             margin: 0;
@@ -963,40 +1470,40 @@
             <h1 class="chapter-title">Chapter 344</h1>
             <div class="content font-medium">
                 <p>Isabella carved out time that afternoon to brief Nathaniel on the incident. &#34;You&#39;ll need to redirect the conflict&#39;s focus,&#34; she advised.</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_1 -->
-                <div id='div-gpt-ad-1762512074266-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_2 -->
+                <div id='div-gpt-ad-1762512094799-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512074266-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512094799-0'); });
                   </script>
                 </div>
                 <p>He caught her meaning instantly. A slow grin spread across his face. &#34;Understood. I know exactly how to handle this.&#34;</p>
                 <p>Moments later, Nathaniel&#39;s phone buzzed with Victoria&#39;s call. He answered with deliberate casualness.</p>
                 <p>&#34;Mr. Graves, I assume you&#39;re aware of this morning&#39;s... misunderstanding.&#34;</p>
                 <p>His chuckle was razor-sharp. &#34;Ms. Kensington, are you referring to when your family slandered my team&#39;s competence? Or perhaps when they accused us of breaching contract terms?&#34;</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_4 -->
-                <div id='div-gpt-ad-1762512031919-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_1 -->
+                <div id='div-gpt-ad-1762512074266-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512031919-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512074266-0'); });
                   </script>
                 </div>
                 <p>Victoria backpedaled. &#34;My apologies, Mr. Graves. Genevieve acted inappropriately. I&#39;ll ensure—&#34;</p>
                 <p>Nathaniel cut her off. &#34;More concerning is how you dismissed my employee for defending our company&#39;s reputation. Tell me, does that sound like professional conduct to you?&#34;</p>
                 <p>His voice turned glacial. &#34;Your actions constitute defamation against Sterling Innovations. Collaboration requires mutual respect—something you&#39;ve clearly forgotten.&#34;</p>
                 <p>The line crackled with tension. &#34;Effective immediately, I&#39;m terminating our contract. Expect legal documentation regarding reputational damages.&#34;</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_3 -->
-                <div id='div-gpt-ad-1762512008111-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_4 -->
+                <div id='div-gpt-ad-1762512031919-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512008111-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512031919-0'); });
                   </script>
                 </div>
                 <p>Victoria&#39;s breath hitched. She&#39;d anticipated placating him over Genevieve&#39;s tantrum—not becoming the primary target. &#34;This is hardly worth dissolving our partnership over—&#34;</p>
                 <p>&#34;My schedule is packed, Ms. Kensington. I&#39;ll await your formal response.&#34; The call disconnected with finality.</p>
                 <p>Nathaniel immediately dialed Isabella. &#34;Done. Full recording secured.&#34;</p>
                 <p>&#34;Excellent work,&#34; she murmured.</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_5 -->
-                <div id='div-gpt-ad-1762512054239-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_3 -->
+                <div id='div-gpt-ad-1762512008111-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512054239-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512008111-0'); });
                   </script>
                 </div>
                 <p>Isabella had orchestrated this precisely. She knew Victoria would underestimate Nathaniel&#39;s retaliation, mistaking this as a simple personnel dispute.</p>
@@ -1004,10 +1511,10 @@
                 <p>Nathaniel snorted. &#34;Honestly, Alexander shoulders the blame here. He owns twelve companies—why hand Innovatech to Victoria?&#34;</p>
                 <p>His voice darkened. &#34;He never considered how this would put you in an impossible position.&#34;</p>
                 <p>Isabella remained expressionless, though the truth of his words resonated. Some betrayals cut too deep to acknowledge.</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_1 -->
-                <div id='div-gpt-ad-1762511964282-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_2 -->
+                <div id='div-gpt-ad-1762511986518-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762511964282-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762511986518-0'); });
                   </script>
                 </div>
             </div>
@@ -4199,14 +4706,17 @@
                     position: fixed;
                     top: 10px;
                     right: 10px;
-                    width: 250px;
-                    background: rgba(0, 0, 0, 0.9);
+                    width: 280px;
+                    max-height: 90vh;
+                    overflow-y: auto;
+                    background: rgba(0, 0, 0, 0.95);
                     color: white;
-                    padding: 15px;
+                    padding: 12px;
                     border-radius: 8px;
                     font-size: 12px;
                     z-index: 20000;
                     font-family: monospace;
+                    box-shadow: 0 4px 20px rgba(0,0,0,0.5);
                 `;
                 
                 document.body.appendChild(this.debugPanel);
@@ -4278,66 +4788,183 @@
                 const justExitedCooldown = localStorage.getItem('adGuideJustExitedCooldown');
                 const justExitedDisplay = justExitedCooldown === 'true' ? 'YES (Next skip)' : 'NO';
                 
+                // Get Reading Limit data
+                const rlDate = localStorage.getItem('readingLimitDate') || 'Not Set';
+                const rlChapters = parseInt(localStorage.getItem('readingLimitChapterCount') || '0');
+                const rlCooldownCount = parseInt(localStorage.getItem('readingLimitCooldownCount') || '0');
+                const rlIsInCooldown = localStorage.getItem('readingLimitIsInCooldown') === 'true';
+                const rlLimit = 80 * (rlCooldownCount + 1);
+                
+                let rlCooldownDisplay = 'Not Active';
+                if (rlIsInCooldown) {
+                    const cooldownStart = parseInt(localStorage.getItem('readingLimitCooldownStart') || '0');
+                    const cooldownDuration = parseInt(localStorage.getItem('readingLimitCooldownDuration') || '0');
+                    const remaining = Math.max(0, cooldownDuration - (now - cooldownStart));
+                    const hours = Math.floor(remaining / (60 * 60 * 1000));
+                    const minutes = Math.floor((remaining % (60 * 60 * 1000)) / (60 * 1000));
+                    const seconds = Math.floor((remaining % (60 * 1000)) / 1000);
+                    rlCooldownDisplay = `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                }
+                
                 this.debugPanel.innerHTML = `
-                    <div style="font-weight: bold; margin-bottom: 10px;">Ad Guide Debug Panel</div>
-                    <div>Browser: ${this.isPCBrowser ? 'PC (Disabled)' : 'Mobile'}</div>
-                    <div>Page Ads: ${this.currentPageAds ? this.currentPageAds.length : 0}</div>
-                    <div>Total Ads: ${this.totalAdsSeen || 0}</div>
-                    <div style="border-top: 1px solid #444; margin: 8px 0; padding-top: 8px;">Next Trigger Threshold</div>
-                    <div>Target: ${this.nextTriggerThreshold} ads</div>
-                    <div>Need: ${adsNeeded} more ads</div>
-                    <div style="border-top: 1px solid #444; margin: 8px 0; padding-top: 8px;">Long Cooldown (${this.LONG_COOLDOWN_HOURS}h)</div>
-                    <div>Trigger Count: ${triggerCount}/${this.MAX_TRIGGERS_BEFORE_LONG_COOLDOWN}</div>
-                    <div>Long Countdown: ${longCooldownDisplay}</div>
-                    <div>Just Exited: ${justExitedDisplay}</div>
-                    <div style="margin-top: 5px;">
-                        <input type="text" id="cooldown-time-input" placeholder="e.g., 10s, 2m, 1h" style="
-                            width: 100%;
-                            padding: 4px 6px;
-                            border: 1px solid #555;
-                            border-radius: 4px;
-                            background: #222;
-                            color: white;
-                            font-size: 11px;
-                            box-sizing: border-box;
-                        ">
+                    <div style="font-weight: bold; margin-bottom: 10px; font-size: 13px;">🔧 Debug Panel</div>
+                    
+                    <!-- Ad Guide System -->
+                    <div style="background: rgba(255,255,255,0.05); padding: 8px; border-radius: 4px; margin-bottom: 10px;">
+                        <div style="font-weight: bold; margin-bottom: 5px; color: #FF9500;">📢 Ad Guide System</div>
+                        <div>Browser: ${this.isPCBrowser ? 'PC (Disabled)' : 'Mobile'}</div>
+                        <div>Page Ads: ${this.currentPageAds ? this.currentPageAds.length : 0}</div>
+                        <div>Total Ads: ${this.totalAdsSeen || 0}</div>
+                        <div style="border-top: 1px solid #444; margin: 5px 0; padding-top: 5px;">Next Trigger</div>
+                        <div>Target: ${this.nextTriggerThreshold} | Need: ${adsNeeded}</div>
+                        <div style="border-top: 1px solid #444; margin: 5px 0; padding-top: 5px;">Long Cooldown (${this.LONG_COOLDOWN_HOURS}h)</div>
+                        <div>Count: ${triggerCount}/${this.MAX_TRIGGERS_BEFORE_LONG_COOLDOWN} | ${longCooldownDisplay}</div>
+                        <div>Just Exited: ${justExitedDisplay}</div>
+                        <div style="margin-top: 5px;">
+                            <input type="text" id="cooldown-time-input" placeholder="10s, 2m, 1h" style="
+                                width: 100%;
+                                padding: 4px 6px;
+                                border: 1px solid #555;
+                                border-radius: 4px;
+                                background: #222;
+                                color: white;
+                                font-size: 11px;
+                                box-sizing: border-box;
+                            ">
+                        </div>
+                        <div style="margin-top: 5px;">
+                            <button onclick="adGuideSystem.setCooldownTime()" style="
+                                width: 100%;
+                                padding: 5px 10px;
+                                background: #FF9500;
+                                color: white;
+                                border: none;
+                                border-radius: 4px;
+                                cursor: pointer;
+                                font-size: 11px;
+                            ">Set Cooldown</button>
+                        </div>
+                        <div style="border-top: 1px solid #444; margin: 5px 0; padding-top: 5px;">Inactivity (${this.INACTIVITY_RESET_MINUTES}min)</div>
+                        <div>Countdown: ${inactivityDisplay}</div>
+                        <div style="margin-top: 5px;">Status: ${this.isGuideActive ? '🟢 Active' : '⚪ Standby'}</div>
+                        <div style="display: flex; gap: 5px; margin-top: 8px;">
+                            <button onclick="adGuideSystem.addOneAd()" style="
+                                flex: 1;
+                                padding: 5px 10px;
+                                background: #34C759;
+                                color: white;
+                                border: none;
+                                border-radius: 4px;
+                                cursor: pointer;
+                                font-size: 11px;
+                            ">+1 Ad</button>
+                            <button onclick="adGuideSystem.resetAllData()" style="
+                                flex: 1;
+                                padding: 5px 10px;
+                                background: #007AFF;
+                                color: white;
+                                border: none;
+                                border-radius: 4px;
+                                cursor: pointer;
+                                font-size: 11px;
+                            ">Reset</button>
+                        </div>
                     </div>
-                    <div style="margin-top: 5px;">
-                        <button onclick="adGuideSystem.setCooldownTime()" style="
-                            width: 100%;
-                            padding: 5px 10px;
-                            background: #FF9500;
-                            color: white;
-                            border: none;
-                            border-radius: 4px;
-                            cursor: pointer;
-                            font-size: 11px;
-                        ">Set Cooldown Time</button>
-                    </div>
-                    <div style="border-top: 1px solid #444; margin: 8px 0; padding-top: 8px;">Inactivity Reset (${this.INACTIVITY_RESET_MINUTES}min)</div>
-                    <div>Countdown: ${inactivityDisplay}</div>
-                    <div style="border-top: 1px solid #444; margin: 8px 0; padding-top: 8px;">Status: ${this.isGuideActive ? 'Active' : 'Standby'}</div>
-                    <div style="display: flex; gap: 5px; margin-top: 10px;">
-                        <button onclick="adGuideSystem.addOneAd()" style="
-                            flex: 1;
-                            padding: 5px 10px;
-                            background: #34C759;
-                            color: white;
-                            border: none;
-                            border-radius: 4px;
-                            cursor: pointer;
-                            font-size: 11px;
-                        ">+1 Ad</button>
-                        <button onclick="adGuideSystem.resetAllData()" style="
-                            flex: 1;
-                            padding: 5px 10px;
-                            background: #007AFF;
-                            color: white;
-                            border: none;
-                            border-radius: 4px;
-                            cursor: pointer;
-                            font-size: 11px;
-                        ">Reset</button>
+                    
+                    <!-- Reading Limit System -->
+                    <div style="background: rgba(255,255,255,0.05); padding: 8px; border-radius: 4px;">
+                        <div style="font-weight: bold; margin-bottom: 5px; color: #FF6B6B;">📚 Reading Limit</div>
+                        <div>Date: ${rlDate}</div>
+                        <div>Chapters: ${rlChapters} / ${rlLimit}</div>
+                        <div>Cooldown Count: ${rlCooldownCount}</div>
+                        <div>Status: ${rlIsInCooldown ? '❄️ Cooling' : '✅ Active'}</div>
+                        <div>Remaining: ${rlCooldownDisplay}</div>
+                        <div style="display: flex; gap: 5px; margin-top: 8px;">
+                            <button onclick="if(window.ReadingLimitControl) ReadingLimitControl.addChapters(1)" style="
+                                flex: 1;
+                                padding: 5px 10px;
+                                background: #5AC8FA;
+                                color: white;
+                                border: none;
+                                border-radius: 4px;
+                                cursor: pointer;
+                                font-size: 11px;
+                            ">+1 Ch</button>
+                            <button onclick="if(window.ReadingLimitControl) ReadingLimitControl.addChapters(10)" style="
+                                flex: 1;
+                                padding: 5px 10px;
+                                background: #5856D6;
+                                color: white;
+                                border: none;
+                                border-radius: 4px;
+                                cursor: pointer;
+                                font-size: 11px;
+                            ">+10 Ch</button>
+                        </div>
+                        <div style="display: flex; gap: 5px; margin-top: 5px;">
+                            <button onclick="if(window.ReadingLimitControl) ReadingLimitControl.setChapters(79)" style="
+                                flex: 1;
+                                padding: 5px 10px;
+                                background: #666;
+                                color: white;
+                                border: none;
+                                border-radius: 4px;
+                                cursor: pointer;
+                                font-size: 10px;
+                            ">→79</button>
+                            <button onclick="if(window.ReadingLimitControl) ReadingLimitControl.setChapters(80)" style="
+                                flex: 1;
+                                padding: 5px 10px;
+                                background: #666;
+                                color: white;
+                                border: none;
+                                border-radius: 4px;
+                                cursor: pointer;
+                                font-size: 10px;
+                            ">→80</button>
+                            <button onclick="if(window.ReadingLimitControl) ReadingLimitControl.setChapters(159)" style="
+                                flex: 1;
+                                padding: 5px 10px;
+                                background: #666;
+                                color: white;
+                                border: none;
+                                border-radius: 4px;
+                                cursor: pointer;
+                                font-size: 10px;
+                            ">→159</button>
+                            <button onclick="if(window.ReadingLimitControl) ReadingLimitControl.setChapters(160)" style="
+                                flex: 1;
+                                padding: 5px 10px;
+                                background: #666;
+                                color: white;
+                                border: none;
+                                border-radius: 4px;
+                                cursor: pointer;
+                                font-size: 10px;
+                            ">→160</button>
+                        </div>
+                        <div style="display: flex; gap: 5px; margin-top: 5px;">
+                            <button onclick="if(window.ReadingLimitControl) ReadingLimitControl.endCooldown()" style="
+                                flex: 1;
+                                padding: 5px 10px;
+                                background: #FF9500;
+                                color: white;
+                                border: none;
+                                border-radius: 4px;
+                                cursor: pointer;
+                                font-size: 11px;
+                            ">End Cool</button>
+                            <button onclick="if(window.ReadingLimitControl) ReadingLimitControl.reset()" style="
+                                flex: 1;
+                                padding: 5px 10px;
+                                background: #FF3B30;
+                                color: white;
+                                border: none;
+                                border-radius: 4px;
+                                cursor: pointer;
+                                font-size: 11px;
+                            ">Reset All</button>
+                        </div>
                     </div>
                 `;
             }
