@@ -148,10 +148,10 @@ function initializeDailySpreadsheet(spreadsheet, dateString) {
   
   // 创建"页面访问"sheet
   const visitSheet = spreadsheet.insertSheet('页面访问');
-  visitSheet.getRange(1, 1, 1, 6).setValues([
-    ['时间', '访问页面', '用户属性', 'IP地址', '累计章节', '累计广告数']
+  visitSheet.getRange(1, 1, 1, 7).setValues([
+    ['时间', '访问页面', '用户属性', 'IP地址', '累计章节', '累计广告数', '累计失败广告数']
   ]);
-  const visitHeader = visitSheet.getRange(1, 1, 1, 6);
+  const visitHeader = visitSheet.getRange(1, 1, 1, 7);
   visitHeader.setBackground('#4285f4').setFontColor('white').setFontWeight('bold');
   visitSheet.setColumnWidth(1, 150);
   visitSheet.setColumnWidth(2, 300);
@@ -159,23 +159,25 @@ function initializeDailySpreadsheet(spreadsheet, dateString) {
   visitSheet.setColumnWidth(4, 120);
   visitSheet.setColumnWidth(5, 100);  // 累计章节
   visitSheet.setColumnWidth(6, 110);  // 累计广告数
+  visitSheet.setColumnWidth(7, 120);  // 累计失败广告数
   
-  // 创建"广告引导"sheet
+  // 创建“广告引导”sheet
   const adGuideSheet = spreadsheet.insertSheet('广告引导');
-  adGuideSheet.getRange(1, 1, 1, 9).setValues([
-    ['时间', '访问页面', '用户属性', 'IP地址', '累计广告数', '当前页广告数', '触发次数', '最大触发次数', '事件时间戳']
+  adGuideSheet.getRange(1, 1, 1, 10).setValues([
+    ['时间', '访问页面', '用户属性', 'IP地址', '累计广告数', '累计失败广告数', '当前页广告数', '触发次数', '最大触发次数', '事件时间戳']
   ]);
-  const adGuideHeader = adGuideSheet.getRange(1, 1, 1, 9);
+  const adGuideHeader = adGuideSheet.getRange(1, 1, 1, 10);
   adGuideHeader.setBackground('#FF6B6B').setFontColor('white').setFontWeight('bold');
   adGuideSheet.setColumnWidth(1, 150);
   adGuideSheet.setColumnWidth(2, 300);
   adGuideSheet.setColumnWidth(3, 200);
   adGuideSheet.setColumnWidth(4, 120);
-  adGuideSheet.setColumnWidth(5, 100);
-  adGuideSheet.setColumnWidth(6, 120);
-  adGuideSheet.setColumnWidth(7, 100);
-  adGuideSheet.setColumnWidth(8, 120);
-  adGuideSheet.setColumnWidth(9, 180);
+  adGuideSheet.setColumnWidth(5, 100);  // 累计广告数
+  adGuideSheet.setColumnWidth(6, 120);  // 累计失败广告数
+  adGuideSheet.setColumnWidth(7, 120);  // 当前页广告数
+  adGuideSheet.setColumnWidth(8, 100);  // 触发次数
+  adGuideSheet.setColumnWidth(9, 120);  // 最大触发次数
+  adGuideSheet.setColumnWidth(10, 180); // 事件时间戳
   
   // 创建"广告点击"sheet
   const adClickSheet = spreadsheet.insertSheet('广告点击');
@@ -316,7 +318,8 @@ function handlePageVisitEvent(dailySpreadsheet, data) {
     data.userAgent || '',         // 用户属性
     data.userIP || 'Unknown',     // IP地址
     data.chapterCount || 0,       // 累计章节
-    data.adCount || 0             // 累计广告数
+    data.adCount || 0,            // 累计广告数
+    data.failedAdCount || 0       // 累计失败广告数
   ];
   
   visitSheet.appendRow(rowData);
@@ -344,6 +347,7 @@ function handleAdGuideEvent(dailySpreadsheet, data) {
     data.userAgent || '',
     data.userIP || 'Unknown',
     data.totalAdsSeen || 0,
+    data.totalFailedAds || 0,
     data.currentPageAds || 0,
     data.triggerCount || 0,
     data.maxTriggers || 3,
