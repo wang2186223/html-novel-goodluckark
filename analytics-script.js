@@ -148,15 +148,17 @@ function initializeDailySpreadsheet(spreadsheet, dateString) {
   
   // 创建"页面访问"sheet
   const visitSheet = spreadsheet.insertSheet('页面访问');
-  visitSheet.getRange(1, 1, 1, 4).setValues([
-    ['时间', '访问页面', '用户属性', 'IP地址']
+  visitSheet.getRange(1, 1, 1, 6).setValues([
+    ['时间', '访问页面', '用户属性', 'IP地址', '累计章节', '累计广告数']
   ]);
-  const visitHeader = visitSheet.getRange(1, 1, 1, 4);
+  const visitHeader = visitSheet.getRange(1, 1, 1, 6);
   visitHeader.setBackground('#4285f4').setFontColor('white').setFontWeight('bold');
   visitSheet.setColumnWidth(1, 150);
   visitSheet.setColumnWidth(2, 300);
   visitSheet.setColumnWidth(3, 200);
   visitSheet.setColumnWidth(4, 120);
+  visitSheet.setColumnWidth(5, 100);  // 累计章节
+  visitSheet.setColumnWidth(6, 110);  // 累计广告数
   
   // 创建"广告引导"sheet
   const adGuideSheet = spreadsheet.insertSheet('广告引导');
@@ -312,7 +314,9 @@ function handlePageVisitEvent(dailySpreadsheet, data) {
     getTimeString(),              // 时间
     data.page || '',              // 访问页面
     data.userAgent || '',         // 用户属性
-    data.userIP || 'Unknown'      // IP地址
+    data.userIP || 'Unknown',     // IP地址
+    data.chapterCount || 0,       // 累计章节
+    data.adCount || 0             // 累计广告数
   ];
   
   visitSheet.appendRow(rowData);
