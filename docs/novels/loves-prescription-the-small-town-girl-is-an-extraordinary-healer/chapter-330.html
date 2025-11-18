@@ -519,11 +519,11 @@
         
         googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_1', [300, 250], 'div-gpt-ad-1762512074266-0').addService(googletag.pubads());
         
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_1', [300, 250], 'div-gpt-ad-1762511964282-0').addService(googletag.pubads());
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_4', [300, 250], 'div-gpt-ad-1762512031919-0').addService(googletag.pubads());
         
         googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_5', [300, 250], 'div-gpt-ad-1762512161163-0').addService(googletag.pubads());
         
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_5', [300, 250], 'div-gpt-ad-1762512054239-0').addService(googletag.pubads());
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_1', [300, 250], 'div-gpt-ad-1762511964282-0').addService(googletag.pubads());
         
         googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_3', [300, 250], 'div-gpt-ad-1762512008111-0').addService(googletag.pubads());
         
@@ -1511,10 +1511,10 @@
                 <p>Verena cast a sidelong glance at Luis, who was engrossed in his work, a mischievous smile tugging at her lips.</p>
                 <p>She lowered her eyes and typed swiftly. &#34;Why ddon&#39;t you message him yourself? I have no wish to sit and watch your love games.&#34; Hardly had the screen dimmed when it chimed again.</p>
                 <p>Unlocking it, she found herself faced with Miranda&#39;s reply.</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_1 -->
-                <div id='div-gpt-ad-1762511964282-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_4 -->
+                <div id='div-gpt-ad-1762512031919-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762511964282-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512031919-0'); });
                   </script>
                 </div>
                 <p>&#34;Who asked you to watch? Last time I let you off without charge. I was practically a saint.&#34;</p>
@@ -1539,10 +1539,10 @@
                 <p>After a beat of silence, his voice grew low. &#34;Did she truly say that?&#34;</p>
                 <p>Seeing his reaction, Verena laughed inwardly but kept her expression calm. With feigned innocence, she nodded. &#34;Absolutely true. Anyway, I&#39;ve delivered the message, and I&#39;ve said what I needed to. Luis, I&#39;ll leave you to your work.&#34;</p>
                 <p>Suppressing her smile, she gathered her laptop and slipped out of the office.</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_5 -->
-                <div id='div-gpt-ad-1762512054239-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_1 -->
+                <div id='div-gpt-ad-1762511964282-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512054239-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762511964282-0'); });
                   </script>
                 </div>
                 <p>Luis pressed his lips together, made no move to stop her, and turned back to his papers. On the surface, it was as though her words were a passing breeze that left not a ripple in his heart.</p>
@@ -3445,6 +3445,41 @@
                 localStorage.setItem('adGuideFailedAds', count.toString());
             }
 
+            // Get local date string (YYYY-MM-DD format)
+            getLocalDateString() {
+                return new Date().toLocaleDateString('en-CA'); // ISO 8601 format
+            }
+
+            // Check and perform daily reset
+            checkDailyReset() {
+                const storedDate = localStorage.getItem('adGuideDate');
+                const today = this.getLocalDateString();
+                
+                if (storedDate !== today) {
+                    console.log(`Ad Guide: Date changed from ${storedDate} to ${today}, performing daily reset`);
+                    this.resetDailyData();
+                    localStorage.setItem('adGuideDate', today);
+                }
+            }
+
+            // Reset all daily data (called when date changes)
+            resetDailyData() {
+                // Clear all ad guide related data
+                localStorage.removeItem('adGuideTotalSeen');
+                localStorage.removeItem('adGuideFailedAds');
+                localStorage.removeItem('adGuideNextThreshold');
+                localStorage.removeItem('adGuideTriggerCount');
+                localStorage.removeItem('adGuideLongCooldownStart');
+                localStorage.removeItem('adGuideJustExitedCooldown');
+                
+                // Reset instance variables
+                this.totalAdsSeen = 0;
+                this.nextTriggerThreshold = Math.floor(Math.random() * (this.MAX_INITIAL_ADS - this.MIN_INITIAL_ADS + 1)) + this.MIN_INITIAL_ADS;
+                this.currentPageAds = [];
+                
+                console.log('Ad Guide: Daily data reset completed');
+            }
+
             // Get next trigger threshold (dynamic)
             getNextTriggerThreshold() {
                 const stored = localStorage.getItem('adGuideNextThreshold');
@@ -3542,6 +3577,9 @@
             init() {
                 // If PC browser, skip initialization
                 if (this.isPCBrowser) return;
+                
+                // Check and perform daily reset (date change detection)
+                this.checkDailyReset();
                 
                 // Check if user left for more than 60 minutes, auto reset if so
                 this.checkInactivityReset();
@@ -4448,12 +4486,16 @@
                     rlCooldownDisplay = `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
                 }
                 
+                // Get Ad Guide date
+                const adGuideDate = localStorage.getItem('adGuideDate') || 'Not Set';
+                
                 this.debugPanel.innerHTML = `
                     <div style="font-weight: bold; margin-bottom: 10px; font-size: 13px;">🔧 Debug Panel</div>
                     
                     <!-- Ad Guide System -->
                     <div style="background: rgba(255,255,255,0.05); padding: 8px; border-radius: 4px; margin-bottom: 10px;">
                         <div style="font-weight: bold; margin-bottom: 5px; color: #FF9500;">📢 Ad Guide System</div>
+                        <div>Date: ${adGuideDate}</div>
                         <div>Browser: ${this.isPCBrowser ? 'PC (Disabled)' : 'Mobile'}</div>
                         <div>Page Ads: ${this.currentPageAds ? this.currentPageAds.length : 0}</div>
                         <div>Total Ads: ${this.totalAdsSeen || 0}</div>

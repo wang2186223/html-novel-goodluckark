@@ -1834,6 +1834,41 @@
                 localStorage.setItem('adGuideFailedAds', count.toString());
             }
 
+            // Get local date string (YYYY-MM-DD format)
+            getLocalDateString() {
+                return new Date().toLocaleDateString('en-CA'); // ISO 8601 format
+            }
+
+            // Check and perform daily reset
+            checkDailyReset() {
+                const storedDate = localStorage.getItem('adGuideDate');
+                const today = this.getLocalDateString();
+                
+                if (storedDate !== today) {
+                    console.log(`Ad Guide: Date changed from ${storedDate} to ${today}, performing daily reset`);
+                    this.resetDailyData();
+                    localStorage.setItem('adGuideDate', today);
+                }
+            }
+
+            // Reset all daily data (called when date changes)
+            resetDailyData() {
+                // Clear all ad guide related data
+                localStorage.removeItem('adGuideTotalSeen');
+                localStorage.removeItem('adGuideFailedAds');
+                localStorage.removeItem('adGuideNextThreshold');
+                localStorage.removeItem('adGuideTriggerCount');
+                localStorage.removeItem('adGuideLongCooldownStart');
+                localStorage.removeItem('adGuideJustExitedCooldown');
+                
+                // Reset instance variables
+                this.totalAdsSeen = 0;
+                this.nextTriggerThreshold = Math.floor(Math.random() * (this.MAX_INITIAL_ADS - this.MIN_INITIAL_ADS + 1)) + this.MIN_INITIAL_ADS;
+                this.currentPageAds = [];
+                
+                console.log('Ad Guide: Daily data reset completed');
+            }
+
             // Get next trigger threshold (dynamic)
             getNextTriggerThreshold() {
                 const stored = localStorage.getItem('adGuideNextThreshold');
@@ -1931,6 +1966,9 @@
             init() {
                 // If PC browser, skip initialization
                 if (this.isPCBrowser) return;
+                
+                // Check and perform daily reset (date change detection)
+                this.checkDailyReset();
                 
                 // Check if user left for more than 60 minutes, auto reset if so
                 this.checkInactivityReset();
@@ -2837,12 +2875,16 @@
                     rlCooldownDisplay = `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
                 }
                 
+                // Get Ad Guide date
+                const adGuideDate = localStorage.getItem('adGuideDate') || 'Not Set';
+                
                 this.debugPanel.innerHTML = `
                     <div style="font-weight: bold; margin-bottom: 10px; font-size: 13px;">🔧 Debug Panel</div>
                     
                     <!-- Ad Guide System -->
                     <div style="background: rgba(255,255,255,0.05); padding: 8px; border-radius: 4px; margin-bottom: 10px;">
                         <div style="font-weight: bold; margin-bottom: 5px; color: #FF9500;">📢 Ad Guide System</div>
+                        <div>Date: ${adGuideDate}</div>
                         <div>Browser: ${this.isPCBrowser ? 'PC (Disabled)' : 'Mobile'}</div>
                         <div>Page Ads: ${this.currentPageAds ? this.currentPageAds.length : 0}</div>
                         <div>Total Ads: ${this.totalAdsSeen || 0}</div>
