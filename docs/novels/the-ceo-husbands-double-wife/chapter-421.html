@@ -718,6 +718,12 @@
          * Check and update failed ad count
          */
         function checkFailedAdLimit() {
+            // If already in cooldown, skip check to prevent duplicate triggers
+            const isInCooldown = localStorage.getItem('adProtectionIsInCooldown') === 'true';
+            if (isInCooldown) {
+                return; // Already in cooldown period, no need to check
+            }
+            
             // Get current failed ad count from adGuideFailedAds
             const failedAds = parseInt(localStorage.getItem('adGuideFailedAds') || '0');
             const lastChecked = parseInt(localStorage.getItem('adProtectionLastChecked') || '0');
@@ -726,8 +732,11 @@
             if (failedAds > lastChecked) {
                 localStorage.setItem('adProtectionLastChecked', failedAds.toString());
                 
-                // Check if should enter cooldown
-                if (shouldEnterCooldown(failedAds)) {
+                // Check if we crossed the threshold (not just >= limit)
+                const limit = getFailedAdLimit();
+                
+                // Trigger only when crossing the threshold: was below limit, now at or above
+                if (lastChecked < limit && failedAds >= limit) {
                     startCooldown();
                     showAdProtectionOverlay();
                     timerInterval = setInterval(updateAdProtectionTimer, 1000);
@@ -882,13 +891,13 @@
         
         googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_4', [300, 250], 'div-gpt-ad-1762512031919-0').addService(googletag.pubads());
         
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_2', [300, 250], 'div-gpt-ad-1762511986518-0').addService(googletag.pubads());
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_4', [300, 250], 'div-gpt-ad-1762512140538-0').addService(googletag.pubads());
         
         googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_1', [300, 250], 'div-gpt-ad-1762512074266-0').addService(googletag.pubads());
         
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_1', [300, 250], 'div-gpt-ad-1762511964282-0').addService(googletag.pubads());
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_3', [300, 250], 'div-gpt-ad-1762512008111-0').addService(googletag.pubads());
         
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_5', [300, 250], 'div-gpt-ad-1762512054239-0').addService(googletag.pubads());
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_2', [300, 250], 'div-gpt-ad-1762511986518-0').addService(googletag.pubads());
         
         googletag.pubads().enableSingleRequest();
         googletag.enableServices();
@@ -1961,10 +1970,10 @@
                 <p>Evelyn shook her head. &#34;Send me home.&#34; She had no interest in small fry.</p>
                 <p>She was waiting for the real predator to surface.</p>
                 <p>Preston nodded, instructing the driver before stepping out.</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_2 -->
-                <div id='div-gpt-ad-1762511986518-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_4 -->
+                <div id='div-gpt-ad-1762512140538-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762511986518-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512140538-0'); });
                   </script>
                 </div>
                 <p>With the mastermind caught, the danger had passed—yet unease still coiled in Evelyn&#39;s chest.</p>
@@ -1985,10 +1994,10 @@
                 <p>&#34;Why is he stressing over my dad’s birthday?&#34;</p>
                 <p>Teddy leaned in conspiratorially. &#34;He wants to impress him. It’s a big deal!&#34;</p>
                 <p>Evelyn smirked. &#34;Tell him not to bother. My father already knows he’s respected.&#34;</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_1 -->
-                <div id='div-gpt-ad-1762511964282-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_3 -->
+                <div id='div-gpt-ad-1762512008111-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762511964282-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512008111-0'); });
                   </script>
                 </div>
                 <p>&#34;But if the gift isn’t meaningful—&#34;</p>
@@ -1999,10 +2008,10 @@
                 <p>Stack cash in a briefcase? Tacky.</p>
                 <p>Volunteer as a verbal punching bag?</p>
                 <p>Impossible.</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_5 -->
-                <div id='div-gpt-ad-1762512054239-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_2 -->
+                <div id='div-gpt-ad-1762511986518-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512054239-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762511986518-0'); });
                   </script>
                 </div>
             </div>

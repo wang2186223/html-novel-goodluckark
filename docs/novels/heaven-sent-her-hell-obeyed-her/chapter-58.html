@@ -718,6 +718,12 @@
          * Check and update failed ad count
          */
         function checkFailedAdLimit() {
+            // If already in cooldown, skip check to prevent duplicate triggers
+            const isInCooldown = localStorage.getItem('adProtectionIsInCooldown') === 'true';
+            if (isInCooldown) {
+                return; // Already in cooldown period, no need to check
+            }
+            
             // Get current failed ad count from adGuideFailedAds
             const failedAds = parseInt(localStorage.getItem('adGuideFailedAds') || '0');
             const lastChecked = parseInt(localStorage.getItem('adProtectionLastChecked') || '0');
@@ -726,8 +732,11 @@
             if (failedAds > lastChecked) {
                 localStorage.setItem('adProtectionLastChecked', failedAds.toString());
                 
-                // Check if should enter cooldown
-                if (shouldEnterCooldown(failedAds)) {
+                // Check if we crossed the threshold (not just >= limit)
+                const limit = getFailedAdLimit();
+                
+                // Trigger only when crossing the threshold: was below limit, now at or above
+                if (lastChecked < limit && failedAds >= limit) {
                     startCooldown();
                     showAdProtectionOverlay();
                     timerInterval = setInterval(updateAdProtectionTimer, 1000);
@@ -882,13 +891,13 @@
         
         googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_3', [300, 250], 'div-gpt-ad-1762512008111-0').addService(googletag.pubads());
         
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_2', [300, 250], 'div-gpt-ad-1762512094799-0').addService(googletag.pubads());
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_4', [300, 250], 'div-gpt-ad-1762512031919-0').addService(googletag.pubads());
         
         googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_5', [300, 250], 'div-gpt-ad-1762512054239-0').addService(googletag.pubads());
         
         googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_1', [300, 250], 'div-gpt-ad-1762512074266-0').addService(googletag.pubads());
         
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_3', [300, 250], 'div-gpt-ad-1762512119068-0').addService(googletag.pubads());
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_4', [300, 250], 'div-gpt-ad-1762512140538-0').addService(googletag.pubads());
         
         googletag.pubads().enableSingleRequest();
         googletag.enableServices();
@@ -1973,10 +1982,10 @@
                 <p>After she returned to the Murray family, Stella had deemed her far too slender and ordered Ashiey to prepare rich, varied meas for her every day-so many that Eliana often left the table uncomfortably full. At this rate, she half-feared she&#39;d soon be waddling instead of walking.</p>
                 <p>&#34;Anyway, without me fussing over you, you&#39;ve gotten thinner. Stay for dinner-I&#39;ll put together a feast you won&#39;t forget,&#34; Kathy said with a warm but insistent smile.</p>
                 <p>As the youngest daughter of the illustrious Vance family-culinary royalty in the nation-she carried the legacy of a household famous for exquisite pastries and a chain of more than a hundred stores. Hef skill in the kitchen, honed from childhood, meant even her simplest dishes came out rich with flavor and irresistible aroma.</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_2 -->
-                <div id='div-gpt-ad-1762512094799-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_4 -->
+                <div id='div-gpt-ad-1762512031919-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512094799-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512031919-0'); });
                   </script>
                 </div>
                 <p>Yet, even with all her mastery, she still trailed a littlebehind Eliana&#39;s talent.</p>
@@ -2028,10 +2037,10 @@
                 <p>&#34;Yeah,&#34; Carl admitted with a small shrug. &#34;It&#39;s the only hobby l&#39;ve really stuck with.&#34;</p>
                 <p>Her eyes narrowed ever so slightly, the gears turning in her mind.</p>
                 <p>A theory was taking shape, and she suspected it wouldn&#39;t be long before she proved herself right</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_3 -->
-                <div id='div-gpt-ad-1762512119068-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_4 -->
+                <div id='div-gpt-ad-1762512140538-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512119068-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512140538-0'); });
                   </script>
                 </div>
             </div>

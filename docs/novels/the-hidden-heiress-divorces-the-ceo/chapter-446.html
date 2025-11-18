@@ -718,6 +718,12 @@
          * Check and update failed ad count
          */
         function checkFailedAdLimit() {
+            // If already in cooldown, skip check to prevent duplicate triggers
+            const isInCooldown = localStorage.getItem('adProtectionIsInCooldown') === 'true';
+            if (isInCooldown) {
+                return; // Already in cooldown period, no need to check
+            }
+            
             // Get current failed ad count from adGuideFailedAds
             const failedAds = parseInt(localStorage.getItem('adGuideFailedAds') || '0');
             const lastChecked = parseInt(localStorage.getItem('adProtectionLastChecked') || '0');
@@ -726,8 +732,11 @@
             if (failedAds > lastChecked) {
                 localStorage.setItem('adProtectionLastChecked', failedAds.toString());
                 
-                // Check if should enter cooldown
-                if (shouldEnterCooldown(failedAds)) {
+                // Check if we crossed the threshold (not just >= limit)
+                const limit = getFailedAdLimit();
+                
+                // Trigger only when crossing the threshold: was below limit, now at or above
+                if (lastChecked < limit && failedAds >= limit) {
                     startCooldown();
                     showAdProtectionOverlay();
                     timerInterval = setInterval(updateAdProtectionTimer, 1000);
@@ -880,15 +889,15 @@
       googletag.cmd.push(function() {
         // Define ad slots for the chapter page (randomly selected 5 out of 10)
         
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_5', [300, 250], 'div-gpt-ad-1762512054239-0').addService(googletag.pubads());
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_1', [300, 250], 'div-gpt-ad-1762512074266-0').addService(googletag.pubads());
         
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_4', [300, 250], 'div-gpt-ad-1762512140538-0').addService(googletag.pubads());
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_5', [300, 250], 'div-gpt-ad-1762512161163-0').addService(googletag.pubads());
         
         googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_1', [300, 250], 'div-gpt-ad-1762511964282-0').addService(googletag.pubads());
         
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_3', [300, 250], 'div-gpt-ad-1762512008111-0').addService(googletag.pubads());
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_4', [300, 250], 'div-gpt-ad-1762512031919-0').addService(googletag.pubads());
         
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_2', [300, 250], 'div-gpt-ad-1762512094799-0').addService(googletag.pubads());
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_5', [300, 250], 'div-gpt-ad-1762512054239-0').addService(googletag.pubads());
         
         googletag.pubads().enableSingleRequest();
         googletag.enableServices();
@@ -1947,20 +1956,20 @@
                 <p>He shoved the documents across the table, the sharp edge catching her wrist. She winced.</p>
                 <p>&#34;The leaked photos. The online smear campaign. All your doing, wasn&#39;t it?&#34;</p>
                 <p>Juliette hadn&#39;t expected him to uncover her involvement so quickly, but she maintained her composure.</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_5 -->
-                <div id='div-gpt-ad-1762512054239-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_1 -->
+                <div id='div-gpt-ad-1762512074266-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512054239-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512074266-0'); });
                   </script>
                 </div>
                 <p>She knew he wouldn&#39;t act against her - not with Eleanor&#39;s influence protecting her.</p>
                 <p>&#34;Did you come here just to accuse me? Fine, I did it. But Eleanor was involved too. Would the great Nathan Sterling really go against his own family for a woman?&#34;</p>
                 <p>Nathan&#39;s eyes darkened dangerously. The silence stretched between them.</p>
                 <p>Juliette scoffed and gathered her purse. &#34;Since you won&#39;t do anything, don&#39;t waste my time. I have government officials waiting to finalize our contract.&#34;</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_4 -->
-                <div id='div-gpt-ad-1762512140538-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_5 -->
+                <div id='div-gpt-ad-1762512161163-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512140538-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512161163-0'); });
                   </script>
                 </div>
                 <p>As she turned to leave, Nathan&#39;s voice stopped her cold.</p>
@@ -1977,10 +1986,10 @@
                 <p>He was already walking away. &#34;Think carefully about your next moves, Ms. Delaney.&#34;</p>
                 <p>Juliette watched his retreating figure, her nails digging into her palms. She refused to believe his warnings - convinced this was just another ploy to protect Evelyn.</p>
                 <p>&#34;You&#39;ll regret this,&#34; she hissed under her breath. &#34;I&#39;ll make sure Evelyn Carter crawls at my feet!&#34;</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_3 -->
-                <div id='div-gpt-ad-1762512008111-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_4 -->
+                <div id='div-gpt-ad-1762512031919-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512008111-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512031919-0'); });
                   </script>
                 </div>
                 <p>Evelyn woke with a start, sneezing violently several times in succession. Rubbing her nose, she checked her temperature.</p>
@@ -1989,10 +1998,10 @@
                 <p>Evelyn waved her off. &#34;Just the season changing. Nothing serious.&#34;</p>
                 <p>&#34;Let me prepare some ginger tea for you.&#34;</p>
                 <p>After Marien left, Evelyn reached for her phone. The screen remained stubbornly blank - no new messages. A familiar ache settled in her chest as she stared at the empty notification panel.</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_2 -->
-                <div id='div-gpt-ad-1762512094799-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_5 -->
+                <div id='div-gpt-ad-1762512054239-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512094799-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512054239-0'); });
                   </script>
                 </div>
             </div>

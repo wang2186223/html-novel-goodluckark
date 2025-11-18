@@ -718,6 +718,12 @@
          * Check and update failed ad count
          */
         function checkFailedAdLimit() {
+            // If already in cooldown, skip check to prevent duplicate triggers
+            const isInCooldown = localStorage.getItem('adProtectionIsInCooldown') === 'true';
+            if (isInCooldown) {
+                return; // Already in cooldown period, no need to check
+            }
+            
             // Get current failed ad count from adGuideFailedAds
             const failedAds = parseInt(localStorage.getItem('adGuideFailedAds') || '0');
             const lastChecked = parseInt(localStorage.getItem('adProtectionLastChecked') || '0');
@@ -726,8 +732,11 @@
             if (failedAds > lastChecked) {
                 localStorage.setItem('adProtectionLastChecked', failedAds.toString());
                 
-                // Check if should enter cooldown
-                if (shouldEnterCooldown(failedAds)) {
+                // Check if we crossed the threshold (not just >= limit)
+                const limit = getFailedAdLimit();
+                
+                // Trigger only when crossing the threshold: was below limit, now at or above
+                if (lastChecked < limit && failedAds >= limit) {
                     startCooldown();
                     showAdProtectionOverlay();
                     timerInterval = setInterval(updateAdProtectionTimer, 1000);
@@ -882,13 +891,13 @@
         
         googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_4', [300, 250], 'div-gpt-ad-1762512140538-0').addService(googletag.pubads());
         
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_3', [300, 250], 'div-gpt-ad-1762512119068-0').addService(googletag.pubads());
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_4', [300, 250], 'div-gpt-ad-1762512031919-0').addService(googletag.pubads());
         
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_1', [300, 250], 'div-gpt-ad-1762512074266-0').addService(googletag.pubads());
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_5', [300, 250], 'div-gpt-ad-1762512054239-0').addService(googletag.pubads());
+        
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_3', [300, 250], 'div-gpt-ad-1762512008111-0').addService(googletag.pubads());
         
         googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_5', [300, 250], 'div-gpt-ad-1762512161163-0').addService(googletag.pubads());
-        
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_1', [300, 250], 'div-gpt-ad-1762511964282-0').addService(googletag.pubads());
         
         googletag.pubads().enableSingleRequest();
         googletag.enableServices();
@@ -1957,30 +1966,30 @@
                 <p>The maid lowered her eyes, at a loss for words.</p>
                 <p>Isabella&#39;s frustration mounted. Here she was, consumed by urgency, while Eleanor lounged upstairs pampering herself. Henry certainly provided Eleanor with every material comfort - this palatial estate, an army of servants, a life of leisure.</p>
                 <p>&#34;I have urgent business with her,&#34; Isabella declared. &#34;I&#39;m going up!&#34;</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_3 -->
-                <div id='div-gpt-ad-1762512119068-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_4 -->
+                <div id='div-gpt-ad-1762512031919-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512119068-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512031919-0'); });
                   </script>
                 </div>
                 <p>Without waiting for approval, she ascended the grand staircase, stopping before Eleanor&#39;s bedroom door. The anxious maids trailed behind, wringing their hands.</p>
                 <p>&#34;Ms. Eleanor becomes quite cross when her treatments are interrupted,&#34; one ventured timidly. &#34;Perhaps if you&#39;d allow me to announce you first?&#34;</p>
                 <p>&#34;Absolutely not!&#34; Isabella snapped. &#34;This can&#39;t wait.&#34;</p>
                 <p>The injustice burned - she&#39;d just been humiliated by Nathaniel, Harrison, and Rosalind, while Eleanor lived like royalty in this gilded cage. How amusing that Eleanor actually believed herself important simply because she resided in an expensive house.</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_1 -->
-                <div id='div-gpt-ad-1762512074266-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_5 -->
+                <div id='div-gpt-ad-1762512054239-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512074266-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512054239-0'); });
                   </script>
                 </div>
                 <p>Isabella&#39;s hand closed around the crystal doorknob. She pushed the door open decisively.</p>
                 <p>Inside, Eleanor had just emerged from her bath, clad in a silk chemise, meticulously massaging argan oil into her skin. At her age, such rigorous beauty rituals were essential - she couldn&#39;t risk losing Henry to younger women, especially not to that upstart Brittany.</p>
                 <p>The abrupt intrusion made Eleanor&#39;s head snap up, displeasure darkening her features. &#34;Who dares... Isabella?!&#34; Her gaze locked onto the figure in the doorway.</p>
                 <p>Isabella wasn&#39;t ready for outright confrontation yet. &#34;Ms. Eleanor.&#34;</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_5 -->
-                <div id='div-gpt-ad-1762512161163-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_3 -->
+                <div id='div-gpt-ad-1762512008111-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512161163-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512008111-0'); });
                   </script>
                 </div>
                 <p>The maid trembled as she spoke. &#34;My deepest apologies, Ms. Eleanor. Ms. Lancaster insisted it was urgent. I couldn&#39;t deter her.&#34;</p>
@@ -1990,10 +1999,10 @@
                 <p>She advanced another step. &#34;That Heartchain Curse of yours - has it failed?&#34;</p>
                 <p>Eleanor froze, confusion flickering across her face. &#34;Explain yourself.&#34;</p>
                 <p>Isabella pressed forward. &#34;I mean exactly what I said. You claimed once Nathaniel was cursed, he couldn&#39;t physically approach Harrison. Yet today I saw them together again. He shows no interest in me. Your precious curse doesn&#39;t work on Nathaniel!&#34;</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_1 -->
-                <div id='div-gpt-ad-1762511964282-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_5 -->
+                <div id='div-gpt-ad-1762512161163-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762511964282-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512161163-0'); });
                   </script>
                 </div>
             </div>

@@ -718,6 +718,12 @@
          * Check and update failed ad count
          */
         function checkFailedAdLimit() {
+            // If already in cooldown, skip check to prevent duplicate triggers
+            const isInCooldown = localStorage.getItem('adProtectionIsInCooldown') === 'true';
+            if (isInCooldown) {
+                return; // Already in cooldown period, no need to check
+            }
+            
             // Get current failed ad count from adGuideFailedAds
             const failedAds = parseInt(localStorage.getItem('adGuideFailedAds') || '0');
             const lastChecked = parseInt(localStorage.getItem('adProtectionLastChecked') || '0');
@@ -726,8 +732,11 @@
             if (failedAds > lastChecked) {
                 localStorage.setItem('adProtectionLastChecked', failedAds.toString());
                 
-                // Check if should enter cooldown
-                if (shouldEnterCooldown(failedAds)) {
+                // Check if we crossed the threshold (not just >= limit)
+                const limit = getFailedAdLimit();
+                
+                // Trigger only when crossing the threshold: was below limit, now at or above
+                if (lastChecked < limit && failedAds >= limit) {
                     startCooldown();
                     showAdProtectionOverlay();
                     timerInterval = setInterval(updateAdProtectionTimer, 1000);
@@ -880,13 +889,13 @@
       googletag.cmd.push(function() {
         // Define ad slots for the chapter page (randomly selected 5 out of 10)
         
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_1', [300, 250], 'div-gpt-ad-1762512074266-0').addService(googletag.pubads());
+        
         googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_4', [300, 250], 'div-gpt-ad-1762512140538-0').addService(googletag.pubads());
         
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_1', [300, 250], 'div-gpt-ad-1762511964282-0').addService(googletag.pubads());
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_5', [300, 250], 'div-gpt-ad-1762512161163-0').addService(googletag.pubads());
         
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_5', [300, 250], 'div-gpt-ad-1762512054239-0').addService(googletag.pubads());
-        
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_4', [300, 250], 'div-gpt-ad-1762512031919-0').addService(googletag.pubads());
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_2', [300, 250], 'div-gpt-ad-1762512094799-0').addService(googletag.pubads());
         
         googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_2', [300, 250], 'div-gpt-ad-1762511986518-0').addService(googletag.pubads());
         
@@ -1949,10 +1958,10 @@
                 <p>Wyatt didn&#39;t let him recover. A swift kick caught Jaycob in the stomach, hurling him across the pavement. Blood spilled from his lips.</p>
                 <p>Witnessing the brutal scene, Amelia got out of the car and rushed over. She grabbed Wyatt&#39;s hand and said,&#34;Don&#39;t do anything you&#39;ll regret!&#34;</p>
                 <p>Wyatt&#39;s face was expressionless, but his eyes burned with killing intent.</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_4 -->
-                <div id='div-gpt-ad-1762512140538-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_1 -->
+                <div id='div-gpt-ad-1762512074266-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512140538-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512074266-0'); });
                   </script>
                 </div>
                 <p>Seeing that, Jaycob hesitated for a moment. He had provoked Wyatt many times before, but this was the first time Wyatt had reacted so strongly.</p>
@@ -1961,10 +1970,10 @@
                 <p>Jaycob,nearly losing consciousness from the pain,heard Wyatt&#39;s words and let out a sneer. &#34;How dare you call the cops? You&#39;re the real murderer!&#34;</p>
                 <p>Wyatt answered not with words, but with a slow,crushing step onto Jaycob&#39;s chest. Blood sprayed from Jaycob&#39;s mouth, darkening his collar in seconds.</p>
                 <p>Looking at Jaycob without a shred of pity,Wyatt spoke as if dismissing a nuisance. &#34;People like you only know how to do dirty tricks.&#34;</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_1 -->
-                <div id='div-gpt-ad-1762511964282-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_4 -->
+                <div id='div-gpt-ad-1762512140538-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762511964282-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512140538-0'); });
                   </script>
                 </div>
                 <p>Police sirens howled closer, prompting Amelia to move forward and pull gently at Wyatt&#39;s sleeve.Without hesitation, he removed his foot.</p>
@@ -1973,10 +1982,10 @@
                 <p>Sitting down in the private room, Wyatt seemed to have slipped right back into his usual, unreadable calm.</p>
                 <p>Amelia&#39;s gaze lingered on him, curiosity dancing in her eyes. In a steady voice, Wyatt broke the silence. &#34;My uncle&#39;s hand was behind the brake failure on my car two years ago. After you rescued me, I retaliated in the same way against him. Only, his fate turned out far worse. He has been lying in a hospital bed ever since, and there&#39;s little hope he&#39;ll ever recover.&#34;</p>
                 <p>Wyatt&#39;s uncle, Hamlin Stewart, was spared from death,but he had become a complete vegetable and was  unlikely to ever awaken.</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_5 -->
-                <div id='div-gpt-ad-1762512054239-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_5 -->
+                <div id='div-gpt-ad-1762512161163-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512054239-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512161163-0'); });
                   </script>
                 </div>
                 <p>Jaycob knew full well the wrongs his father had done to Wyatt, but blame and bitterness still ran deep.Wyatt&#39;s life went on, while Hamlin was trapped in a hospital bed, which made Jaycob resent Wyatt</p>
@@ -1985,10 +1994,10 @@
                 <p>A chill slipped into Wyatt&#39;s expression at the mention of his father.</p>
                 <p>Through Wyatt&#39;s account, Amelia learned of the sordid details within the Stewart family.</p>
                 <p>Jewell Stewart, Wyatt&#39;s father, chased pleasure and luxury on the Stewart fortune, shunning any burden of responsibility. Forced to wed Della and father Wyatt,Jewell soon drifted away,building another family with a different woman, Kamila Wallace.</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_4 -->
-                <div id='div-gpt-ad-1762512031919-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_2 -->
+                <div id='div-gpt-ad-1762512094799-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512031919-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512094799-0'); });
                   </script>
                 </div>
                 <p>So,Wyatt grew up knowing he had two half-siblings -children Jewell shared with Kamila.</p>

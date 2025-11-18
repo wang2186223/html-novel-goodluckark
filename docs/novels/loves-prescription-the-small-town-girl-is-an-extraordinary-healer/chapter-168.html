@@ -718,6 +718,12 @@
          * Check and update failed ad count
          */
         function checkFailedAdLimit() {
+            // If already in cooldown, skip check to prevent duplicate triggers
+            const isInCooldown = localStorage.getItem('adProtectionIsInCooldown') === 'true';
+            if (isInCooldown) {
+                return; // Already in cooldown period, no need to check
+            }
+            
             // Get current failed ad count from adGuideFailedAds
             const failedAds = parseInt(localStorage.getItem('adGuideFailedAds') || '0');
             const lastChecked = parseInt(localStorage.getItem('adProtectionLastChecked') || '0');
@@ -726,8 +732,11 @@
             if (failedAds > lastChecked) {
                 localStorage.setItem('adProtectionLastChecked', failedAds.toString());
                 
-                // Check if should enter cooldown
-                if (shouldEnterCooldown(failedAds)) {
+                // Check if we crossed the threshold (not just >= limit)
+                const limit = getFailedAdLimit();
+                
+                // Trigger only when crossing the threshold: was below limit, now at or above
+                if (lastChecked < limit && failedAds >= limit) {
                     startCooldown();
                     showAdProtectionOverlay();
                     timerInterval = setInterval(updateAdProtectionTimer, 1000);
@@ -880,15 +889,15 @@
       googletag.cmd.push(function() {
         // Define ad slots for the chapter page (randomly selected 5 out of 10)
         
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_1', [300, 250], 'div-gpt-ad-1762511964282-0').addService(googletag.pubads());
-        
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_2', [300, 250], 'div-gpt-ad-1762511986518-0').addService(googletag.pubads());
-        
         googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_1', [300, 250], 'div-gpt-ad-1762512074266-0').addService(googletag.pubads());
+        
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_1', [300, 250], 'div-gpt-ad-1762511964282-0').addService(googletag.pubads());
         
         googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_3', [300, 250], 'div-gpt-ad-1762512008111-0').addService(googletag.pubads());
         
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_5', [300, 250], 'div-gpt-ad-1762512054239-0').addService(googletag.pubads());
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_4', [300, 250], 'div-gpt-ad-1762512031919-0').addService(googletag.pubads());
+        
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_2', [300, 250], 'div-gpt-ad-1762511986518-0').addService(googletag.pubads());
         
         googletag.pubads().enableSingleRequest();
         googletag.enableServices();
@@ -1955,10 +1964,10 @@
                 <p>Kaia accompanied Bobby to Slater&#39;s residence.</p>
                 <p>When Slater appeared from the stairs and caught sight of her behind Bobby, his expression tightened.&#34;Why did you bring her here?&#34;</p>
                 <p>His voice carried disdain, yet Kaia chose to interpret it another way. She convinced herself he was only too embarrassed to admit he needed her help after he posted on social media to expose her lies.</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_1 -->
-                <div id='div-gpt-ad-1762511964282-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_1 -->
+                <div id='div-gpt-ad-1762512074266-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762511964282-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512074266-0'); });
                   </script>
                 </div>
                 <p>Before Bobby had the chance to explain, Kaia spoke first. &#34;Slater, pain in the legs isn&#39;t something to overlook. Why don&#39;t you allow me to check on your grandfather&#39;s condition before it gets worse?&#34; Her poise and warm demeanor caught Slater off guard,leaving him staring for a moment before he blurted out, &#34;What are you talking about?&#34;</p>
@@ -1973,10 +1982,10 @@
                 <p>He turned to Bobby and asked, &#34;What&#39;s this about? Did you deliberately play her?&#34;</p>
                 <p>Putting on an air of mystery, Bobby answered,&#34;Too complicated to explain now. I&#39;ll tell you later.&#34;</p>
                 <p>Left fuming with no outlet, Kaia thought about calling friends to drink away her anger, but the reminder that she had to speak with Danica kept her from doing so.</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_2 -->
-                <div id='div-gpt-ad-1762511986518-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_1 -->
+                <div id='div-gpt-ad-1762511964282-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762511986518-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762511964282-0'); });
                   </script>
                 </div>
                 <p>Instead,she treated herself to dessert at a restaurant and,once the time was right, hailed a cab toward the Bennett Mansion.</p>
@@ -1991,10 +2000,10 @@
                 <p>Casting a cold glance her way, Danica asked, &#34;Talk.What&#39;s wrong with lsaac?&#34;</p>
                 <p>Still catching her breath, Kaia blurted out, &#34;Mrs.Bennett,Isaac...Isaac and Katelyn...&#34;</p>
                 <p>She let her words trail off, her expression deliberately troubled.</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_1 -->
-                <div id='div-gpt-ad-1762512074266-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_3 -->
+                <div id='div-gpt-ad-1762512008111-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512074266-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512008111-0'); });
                   </script>
                 </div>
                 <p>Danica&#39;s hands stilled and she sat upright, her tone sharp. &#34;What about Isaac and Katelyn?&#34;</p>
@@ -2009,10 +2018,10 @@
                 <p>When Danica switched on the light, a storm of emotions surged through her. &#34;Isaac, you actually-&#34;</p>
                 <p>She cut herself off mid-sentence, her brow furrowing.&#34;Wait. Who is this man?&#34;</p>
                 <p>With a faint smile,Katelyn retorted, &#34;Don&#39;t tell me you can&#39;t even recognize lsaac?&#34;</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_3 -->
-                <div id='div-gpt-ad-1762512008111-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_4 -->
+                <div id='div-gpt-ad-1762512031919-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512008111-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512031919-0'); });
                   </script>
                 </div>
                 <p>But when her eyes shifted upward, her expression froze in place. The man beside her wasn&#39;t Isaac at all.She had been in bed with someone else.</p>
@@ -2030,10 +2039,10 @@
                 <p>His eyes hardened, his voice like ice. &#34;Cruel? You&#39;re my mother, yet you judge me without a shred of truth.Did it occur to you that she schemed against me first,and what you&#39;re seeing is my answer to her trap?&#34;</p>
                 <p>Earlier tensions between them only fueled Danica&#39;s fury, and she retorted, &#34;Even if that&#39;s true, you went too far! How can she show her face again after this?&#34;</p>
                 <p>Isaac let out a sharp scoff. &#34;If I hadn&#39;t fought back,I would have been the one lying in that bed. How do you expect me to face Verena after that?&#34;</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_5 -->
-                <div id='div-gpt-ad-1762512054239-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_2 -->
+                <div id='div-gpt-ad-1762511986518-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512054239-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762511986518-0'); });
                   </script>
                 </div>
             </div>

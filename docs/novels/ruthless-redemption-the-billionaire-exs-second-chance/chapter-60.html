@@ -718,6 +718,12 @@
          * Check and update failed ad count
          */
         function checkFailedAdLimit() {
+            // If already in cooldown, skip check to prevent duplicate triggers
+            const isInCooldown = localStorage.getItem('adProtectionIsInCooldown') === 'true';
+            if (isInCooldown) {
+                return; // Already in cooldown period, no need to check
+            }
+            
             // Get current failed ad count from adGuideFailedAds
             const failedAds = parseInt(localStorage.getItem('adGuideFailedAds') || '0');
             const lastChecked = parseInt(localStorage.getItem('adProtectionLastChecked') || '0');
@@ -726,8 +732,11 @@
             if (failedAds > lastChecked) {
                 localStorage.setItem('adProtectionLastChecked', failedAds.toString());
                 
-                // Check if should enter cooldown
-                if (shouldEnterCooldown(failedAds)) {
+                // Check if we crossed the threshold (not just >= limit)
+                const limit = getFailedAdLimit();
+                
+                // Trigger only when crossing the threshold: was below limit, now at or above
+                if (lastChecked < limit && failedAds >= limit) {
                     startCooldown();
                     showAdProtectionOverlay();
                     timerInterval = setInterval(updateAdProtectionTimer, 1000);
@@ -880,15 +889,15 @@
       googletag.cmd.push(function() {
         // Define ad slots for the chapter page (randomly selected 5 out of 10)
         
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_4', [300, 250], 'div-gpt-ad-1762512031919-0').addService(googletag.pubads());
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_5', [300, 250], 'div-gpt-ad-1762512054239-0').addService(googletag.pubads());
         
         googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_5', [300, 250], 'div-gpt-ad-1762512161163-0').addService(googletag.pubads());
         
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_2', [300, 250], 'div-gpt-ad-1762512094799-0').addService(googletag.pubads());
-        
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_1', [300, 250], 'div-gpt-ad-1762511964282-0').addService(googletag.pubads());
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_4', [300, 250], 'div-gpt-ad-1762512031919-0').addService(googletag.pubads());
         
         googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_1', [300, 250], 'div-gpt-ad-1762512074266-0').addService(googletag.pubads());
+        
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_4', [300, 250], 'div-gpt-ad-1762512140538-0').addService(googletag.pubads());
         
         googletag.pubads().enableSingleRequest();
         googletag.enableServices();
@@ -1946,10 +1955,10 @@
                 <p>&#34;Eleanor, get back here right now!&#34; Edward&#39;s furious voice exploded through the phone, shattering the fragile calm in the car.</p>
                 <p>Eleanor wasn&#39;t surprised. She simply ended the call and turned her gaze back to Nathaniel, her eyes pleading silently.</p>
                 <p>Before she could speak, Nathaniel&#39;s voice cut through the air, cold and commanding. &#34;To the Harrison residence.&#34;</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_4 -->
-                <div id='div-gpt-ad-1762512031919-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_5 -->
+                <div id='div-gpt-ad-1762512054239-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512031919-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512054239-0'); });
                   </script>
                 </div>
                 <p>Her heart sank, but she quickly masked her emotions. She lowered her gaze and let out a soft, bitter laugh. Of course. He wouldn&#39;t even grant her the smallest mercy.</p>
@@ -1964,19 +1973,19 @@
                 <p>The moment she stepped out of the car, Isabella rushed toward her, her expression a mix of concern and thinly veiled hostility. Her sharp eyes immediately landed on Nathaniel, and she quickly adjusted her tone.</p>
                 <p>&#34;Nathaniel, why are you here? Did you... bring Eleanor here?&#34; Her gaze flicked toward Eleanor as she spoke, a hint of something darker lurking beneath her polite facade.</p>
                 <p>But Eleanor didn&#39;t even spare Isabella a glance. She brushed past her and headed inside, her steps steady despite the storm brewing within.</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_2 -->
-                <div id='div-gpt-ad-1762512094799-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_4 -->
+                <div id='div-gpt-ad-1762512031919-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512094799-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512031919-0'); });
                   </script>
                 </div>
                 <p>Isabella reached for Nathaniel&#39;s hand, her voice softening. &#34;Nathaniel, don&#39;t go in yet. Daddy is furious tonight. I&#39;ve never seen him this angry before.&#34;</p>
                 <p>Eleanor wasn&#39;t walking particularly fast, so she naturally overheard Isabella&#39;s words. But even then, her footsteps didn&#39;t falter. She moved toward the light, her silhouette unwavering, as if she were unafraid of whatever awaited her.</p>
                 <p>Nathaniel&#39;s brows furrowed slightly as he watched her, a flicker of something unreadable crossing his features.</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_1 -->
-                <div id='div-gpt-ad-1762511964282-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_1 -->
+                <div id='div-gpt-ad-1762512074266-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762511964282-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512074266-0'); });
                   </script>
                 </div>
                 <p>Isabella continued, her voice trembling with feigned guilt. &#34;I&#39;m sorry, Nathaniel. We all knew we shouldn&#39;t have kept this from you. We should have told you before you and Eleanor got married, but she begged us not to say a word. As her sister, I had no choice.&#34;</p>
@@ -1986,10 +1995,10 @@
                 <p>The moment Eleanor stepped into the house, Edward&#39;s hand came down hard across her face. The force of the slap sent her reeling, her ears ringing and the metallic taste of blood filling her mouth. But Edward wasn&#39;t done.</p>
                 <p>He grabbed a nearby vase and hurled it at her, his rage unchecked. The porcelain shattered against the wall, missing her by inches, but the message was clear.</p>
                 <p>Eleanor stood her ground, her chin lifted defiantly, even as the world around her seemed to crumble.</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_1 -->
-                <div id='div-gpt-ad-1762512074266-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_4 -->
+                <div id='div-gpt-ad-1762512140538-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512074266-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512140538-0'); });
                   </script>
                 </div>
             </div>

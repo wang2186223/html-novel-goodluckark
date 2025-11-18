@@ -718,6 +718,12 @@
          * Check and update failed ad count
          */
         function checkFailedAdLimit() {
+            // If already in cooldown, skip check to prevent duplicate triggers
+            const isInCooldown = localStorage.getItem('adProtectionIsInCooldown') === 'true';
+            if (isInCooldown) {
+                return; // Already in cooldown period, no need to check
+            }
+            
             // Get current failed ad count from adGuideFailedAds
             const failedAds = parseInt(localStorage.getItem('adGuideFailedAds') || '0');
             const lastChecked = parseInt(localStorage.getItem('adProtectionLastChecked') || '0');
@@ -726,8 +732,11 @@
             if (failedAds > lastChecked) {
                 localStorage.setItem('adProtectionLastChecked', failedAds.toString());
                 
-                // Check if should enter cooldown
-                if (shouldEnterCooldown(failedAds)) {
+                // Check if we crossed the threshold (not just >= limit)
+                const limit = getFailedAdLimit();
+                
+                // Trigger only when crossing the threshold: was below limit, now at or above
+                if (lastChecked < limit && failedAds >= limit) {
                     startCooldown();
                     showAdProtectionOverlay();
                     timerInterval = setInterval(updateAdProtectionTimer, 1000);
@@ -880,15 +889,15 @@
       googletag.cmd.push(function() {
         // Define ad slots for the chapter page (randomly selected 5 out of 10)
         
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_1', [300, 250], 'div-gpt-ad-1762512074266-0').addService(googletag.pubads());
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_5', [300, 250], 'div-gpt-ad-1762512161163-0').addService(googletag.pubads());
         
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_3', [300, 250], 'div-gpt-ad-1762512008111-0').addService(googletag.pubads());
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_2', [300, 250], 'div-gpt-ad-1762511986518-0').addService(googletag.pubads());
+        
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_1', [300, 250], 'div-gpt-ad-1762512074266-0').addService(googletag.pubads());
         
         googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_4', [300, 250], 'div-gpt-ad-1762512140538-0').addService(googletag.pubads());
         
         googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_2', [300, 250], 'div-gpt-ad-1762512094799-0').addService(googletag.pubads());
-        
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_2', [300, 250], 'div-gpt-ad-1762511986518-0').addService(googletag.pubads());
         
         googletag.pubads().enableSingleRequest();
         googletag.enableServices();
@@ -1953,10 +1962,10 @@
                 <p>Eliana answered with a simple nod. Sean studied her for a beat. &#34;You&#39;re clearly not interested in marrying himn, but have you thought about what happens once people hear he called it off? Some might think twice before approaching you, let alone marrying you!&#34;</p>
                 <p>A short, dry laugh escaped Eliana. &#34;You think marriage is the only way forward? I&#39;m doing perfectly fine without it.&#34;</p>
                 <p>&#34;It&#39;s fine if you never marry,&#34; Sean said quickly. &#34;We&#39;ll make sure you&#39;re taken care of. I just don&#39;t want to see you dragged through the mud by people who gossip for sport.&#34;</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_1 -->
-                <div id='div-gpt-ad-1762512074266-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_5 -->
+                <div id='div-gpt-ad-1762512161163-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512074266-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512161163-0'); });
                   </script>
                 </div>
                 <p>Her voice stayed even. &#34;What people say isn&#39;t mine to control, and I&#39;m not wasting energy caring about it. If that&#39;s all, I&#39;m leaving.&#34;</p>
@@ -1969,10 +1978,10 @@
                 <p>If they learned Sean had cost them their prized boxing manual, there was every chance they&#39;d come for him again.</p>
                 <p>Until Stella regained her strength, Sean&#39;s safety was non-negotiable.</p>
                 <p>A taxi carried her back toward the Murrays&#39; estate.</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_3 -->
-                <div id='div-gpt-ad-1762512008111-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_2 -->
+                <div id='div-gpt-ad-1762511986518-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512008111-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762511986518-0'); });
                   </script>
                 </div>
                 <p>When it rolled to a stop, she spotted Stella standing in the doorway, worry etched across her face. Her plan to slip in quietly vanished. With no escape, she squared her shoulders and stepped out.</p>
@@ -1985,10 +1994,10 @@
                 <p>&#34;Then why ignore my calls?&#34; Stella asked.</p>
                 <p>Pulling her phone from her pocket, Eliana saw the screen was spiderwebbed with cracks, the device dead.&#34;It&#39;s broken.&#34;</p>
                 <p>Stella let out a breath of relief. &#34;If you&#39;re safe, that&#39;s what matters. Forget the phone.&#34;</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_4 -->
-                <div id='div-gpt-ad-1762512140538-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_1 -->
+                <div id='div-gpt-ad-1762512074266-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512140538-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512074266-0'); });
                   </script>
                 </div>
                 <p>She turned to Carl. &#34;Get her a new one.&#34; Then, taking Eliana by the arm and leading her toward the house,she asked, &#34;Who did you see today?&#34;</p>
@@ -2001,10 +2010,10 @@
                 <p>She had thought Tristan was the best choice to protect Eliana, yet learning he already had someone in his life threw all her plans into disarray.</p>
                 <p>&#34;I told him straight,&#34; Eliana continued. &#34;We can be friends, but marriage is off the table. He also asked me to pass along an apology to you.&#34;</p>
                 <p>For a long moment, Stella didn&#39;trespond. Then she exhaled slowly. &#34;If he already has a girlfriend, then we won&#39;t interfere...I truly didn&#39;t know. Had I known, I wouldn&#39;t have tried to push the two of you together.&#34;</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_2 -->
-                <div id='div-gpt-ad-1762512094799-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_4 -->
+                <div id='div-gpt-ad-1762512140538-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512094799-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512140538-0'); });
                   </script>
                 </div>
                 <p>&#34;Well, now you do,&#34; Eliana said lightly.</p>
@@ -2020,10 +2029,10 @@
                 <p>Eliana&#39;s face remained composed,her only response a small nod of acknowledgment.</p>
                 <p>The door swung open, and Sawyer stepped in from outside.</p>
                 <p>After giving Eliana a quick nod of greeting, he turned to Damon. &#34;Any word on Sean? Something big just happened&#34;</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_2 -->
-                <div id='div-gpt-ad-1762511986518-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_2 -->
+                <div id='div-gpt-ad-1762512094799-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762511986518-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512094799-0'); });
                   </script>
                 </div>
             </div>
