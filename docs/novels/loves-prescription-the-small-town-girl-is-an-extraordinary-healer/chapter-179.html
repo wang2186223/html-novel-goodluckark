@@ -479,6 +479,369 @@
     })();
     </script>
     
+    <!-- Ad Protection System -->
+    <script>
+    (function() {
+        'use strict';
+        
+        // ===== Configuration =====
+        const CONFIG = {
+            COOLDOWN_HOURS: 5,
+            FAILED_AD_LIMIT_BASE: 100,  // 100, 200, 300...
+        };
+        
+        // ===== Utility Functions =====
+        
+        /**
+         * Get local date string (YYYY-MM-DD)
+         */
+        function getLocalDateString() {
+            const now = new Date();
+            return now.toLocaleDateString('en-CA');  // Format: 2025-11-18
+        }
+        
+        /**
+         * Get current failed ad limit based on cooldown count
+         */
+        function getFailedAdLimit() {
+            const cooldownCount = parseInt(localStorage.getItem('adProtectionCooldownCount') || '0');
+            return CONFIG.FAILED_AD_LIMIT_BASE * (cooldownCount + 1);
+        }
+        
+        /**
+         * Reset daily data
+         */
+        function resetDailyData(today) {
+            localStorage.setItem('adProtectionDate', today);
+            localStorage.setItem('adProtectionCooldownCount', '0');
+            localStorage.setItem('adProtectionIsInCooldown', 'false');
+            localStorage.removeItem('adProtectionCooldownStart');
+            localStorage.removeItem('adProtectionCooldownDuration');
+            localStorage.removeItem('adProtectionLastChecked');
+        }
+        
+        /**
+         * Check if date changed and reset if needed
+         */
+        function checkDailyReset() {
+            const today = getLocalDateString();
+            const storedDate = localStorage.getItem('adProtectionDate');
+            
+            if (storedDate !== today) {
+                resetDailyData(today);
+                return true;
+            }
+            return false;
+        }
+        
+        /**
+         * Check cooldown status
+         */
+        function checkCooldownStatus() {
+            const isInCooldown = localStorage.getItem('adProtectionIsInCooldown') === 'true';
+            if (!isInCooldown) return { active: false };
+            
+            const startTime = parseInt(localStorage.getItem('adProtectionCooldownStart') || '0');
+            const duration = parseInt(localStorage.getItem('adProtectionCooldownDuration') || '0');
+            const now = Date.now();
+            const elapsed = now - startTime;
+            
+            if (elapsed >= duration) {
+                // Cooldown ended
+                endCooldown();
+                return { active: false };
+            }
+            
+            // Still in cooldown
+            const remaining = duration - elapsed;
+            return {
+                active: true,
+                remainingMs: remaining,
+                remainingHours: Math.floor(remaining / (60 * 60 * 1000)),
+                remainingMinutes: Math.floor((remaining % (60 * 60 * 1000)) / (60 * 1000)),
+                remainingSeconds: Math.floor((remaining % (60 * 1000)) / 1000)
+            };
+        }
+        
+        /**
+         * Start cooldown
+         */
+        function startCooldown() {
+            const now = Date.now();
+            const cooldownDuration = CONFIG.COOLDOWN_HOURS * 60 * 60 * 1000;
+            
+            localStorage.setItem('adProtectionCooldownStart', now.toString());
+            localStorage.setItem('adProtectionCooldownDuration', cooldownDuration.toString());
+            localStorage.setItem('adProtectionIsInCooldown', 'true');
+            
+            // Increment cooldown count
+            const count = parseInt(localStorage.getItem('adProtectionCooldownCount') || '0');
+            localStorage.setItem('adProtectionCooldownCount', (count + 1).toString());
+        }
+        
+        /**
+         * End cooldown
+         */
+        function endCooldown() {
+            localStorage.setItem('adProtectionIsInCooldown', 'false');
+            localStorage.removeItem('adProtectionCooldownStart');
+            localStorage.removeItem('adProtectionCooldownDuration');
+        }
+        
+        /**
+         * Get current failed ad count (from adGuideFailedAds)
+         */
+        function getCurrentFailedAdCount() {
+            return parseInt(localStorage.getItem('adGuideFailedAds') || '0');
+        }
+        
+        /**
+         * Check if should enter cooldown
+         */
+        function shouldEnterCooldown(currentCount) {
+            const limit = getFailedAdLimit();
+            return currentCount >= limit;
+        }
+        
+        // ===== UI Functions =====
+        
+        /**
+         * Show ad protection overlay
+         */
+        function showAdProtectionOverlay() {
+            // Remove existing overlay if any
+            const existing = document.getElementById('ad-protection-overlay');
+            if (existing) existing.remove();
+            
+            const overlay = document.createElement('div');
+            overlay.id = 'ad-protection-overlay';
+            overlay.innerHTML = `
+                <div class="ad-protection-container">
+                    <div class="ad-protection-icon">🛡️</div>
+                    <h2 class="ad-protection-title">Ad Protection Limit Reached</h2>
+                    <p class="ad-protection-message">
+                        Your daily limit for free novels has been reached.
+                    </p>
+                    <div class="ad-protection-timer">
+                        <span class="timer-value" id="ad-protection-timer-display">00:00:00</span>
+                    </div>
+                    <p class="ad-protection-hint">
+                        Please return in 
+                        <strong class="time-remaining" id="ad-protection-time-remaining-text">5 hours</strong>.
+                    </p>
+                    <div class="ad-protection-progress">
+                        <div class="progress-bar" id="ad-protection-progress-bar"></div>
+                    </div>
+                    <p class="ad-protection-footer">
+                        🌟 Thank you for your understanding!
+                    </p>
+                </div>
+            `;
+            
+            document.body.appendChild(overlay);
+            updateAdProtectionTimer();
+        }
+        
+        /**
+         * Hide ad protection overlay
+         */
+        function hideAdProtectionOverlay() {
+            const overlay = document.getElementById('ad-protection-overlay');
+            if (overlay) overlay.remove();
+        }
+        
+        /**
+         * Update ad protection timer
+         */
+        let timerInterval = null;
+        function updateAdProtectionTimer() {
+            const status = checkCooldownStatus();
+            
+            if (!status.active) {
+                // Clear interval to prevent unnecessary updates
+                if (timerInterval) {
+                    clearInterval(timerInterval);
+                    timerInterval = null;
+                }
+                hideAdProtectionOverlay();
+                return;
+            }
+            
+            // Update timer display
+            const hours = String(status.remainingHours).padStart(2, '0');
+            const minutes = String(status.remainingMinutes).padStart(2, '0');
+            const seconds = String(status.remainingSeconds).padStart(2, '0');
+            
+            const timerElement = document.getElementById('ad-protection-timer-display');
+            if (timerElement) {
+                timerElement.textContent = `${hours}:${minutes}:${seconds}`;
+            }
+            
+            // Update remaining text
+            const totalHours = Math.ceil(status.remainingMs / (60 * 60 * 1000));
+            const remainingText = document.getElementById('ad-protection-time-remaining-text');
+            if (remainingText) {
+                remainingText.textContent = `${totalHours} ${totalHours > 1 ? 'hours' : 'hour'}`;
+            }
+            
+            // Update progress bar
+            const totalDuration = CONFIG.COOLDOWN_HOURS * 60 * 60 * 1000;
+            const progress = ((totalDuration - status.remainingMs) / totalDuration) * 100;
+            const progressBar = document.getElementById('ad-protection-progress-bar');
+            if (progressBar) {
+                progressBar.style.width = `${progress}%`;
+            }
+        }
+        
+        // ===== Main Initialization =====
+        
+        /**
+         * Initialize ad protection system
+         */
+        function initAdProtection() {
+            // Step 1: Check daily reset
+            checkDailyReset();
+            
+            // Step 2: Check cooldown status
+            const cooldown = checkCooldownStatus();
+            if (cooldown.active) {
+                showAdProtectionOverlay();
+                // Update timer every second
+                timerInterval = setInterval(updateAdProtectionTimer, 1000);
+                return true; // Indicate system is in cooldown
+            }
+            
+            return false; // System is not in cooldown
+        }
+        
+        /**
+         * Check and update failed ad count
+         */
+        function checkFailedAdLimit() {
+            // Get current failed ad count from adGuideFailedAds
+            const failedAds = parseInt(localStorage.getItem('adGuideFailedAds') || '0');
+            const lastChecked = parseInt(localStorage.getItem('adProtectionLastChecked') || '0');
+            
+            // Only check if failed ad count increased
+            if (failedAds > lastChecked) {
+                localStorage.setItem('adProtectionLastChecked', failedAds.toString());
+                
+                // Check if should enter cooldown
+                if (shouldEnterCooldown(failedAds)) {
+                    startCooldown();
+                    showAdProtectionOverlay();
+                    timerInterval = setInterval(updateAdProtectionTimer, 1000);
+                }
+            }
+        }
+        
+        // ===== Console Commands =====
+        
+        window.AdProtectionControl = {
+            status: function() {
+                const data = {
+                    date: localStorage.getItem('adProtectionDate'),
+                    failedAds: parseInt(localStorage.getItem('adGuideFailedAds') || '0'),
+                    limit: getFailedAdLimit(),
+                    cooldownCount: parseInt(localStorage.getItem('adProtectionCooldownCount') || '0'),
+                    isInCooldown: localStorage.getItem('adProtectionIsInCooldown') === 'true',
+                    cooldownStart: localStorage.getItem('adProtectionCooldownStart'),
+                    cooldownDuration: localStorage.getItem('adProtectionCooldownDuration')
+                };
+                console.table(data);
+                return data;
+            },
+            
+            reset: function() {
+                if (confirm('⚠️ Reset ad protection system? This will clear all data.')) {
+                    localStorage.removeItem('adProtectionDate');
+                    localStorage.removeItem('adProtectionCooldownStart');
+                    localStorage.removeItem('adProtectionCooldownDuration');
+                    localStorage.removeItem('adProtectionIsInCooldown');
+                    localStorage.removeItem('adProtectionCooldownCount');
+                    localStorage.removeItem('adProtectionLastChecked');
+                    console.log('✅ Ad protection system has been reset!');
+                    location.reload();
+                }
+            },
+            
+            addFailedAds: function(count = 1) {
+                const current = parseInt(localStorage.getItem('adGuideFailedAds') || '0');
+                const newCount = current + count;
+                localStorage.setItem('adGuideFailedAds', newCount.toString());
+                console.log(`✅ Added ${count} failed ads. Total: ${newCount}`);
+                location.reload();
+            },
+            
+            setFailedAds: function(count) {
+                localStorage.setItem('adGuideFailedAds', count.toString());
+                console.log(`✅ Set failed ad count to: ${count}`);
+                location.reload();
+            },
+            
+            endCooldown: function() {
+                localStorage.setItem('adProtectionIsInCooldown', 'false');
+                console.log('✅ Ad protection cooldown ended immediately!');
+                location.reload();
+            },
+            
+            startCooldown: function() {
+                const now = Date.now();
+                localStorage.setItem('adProtectionCooldownStart', now.toString());
+                localStorage.setItem('adProtectionCooldownDuration', (CONFIG.COOLDOWN_HOURS * 60 * 60 * 1000).toString());
+                localStorage.setItem('adProtectionIsInCooldown', 'true');
+                console.log(`✅ Ad protection cooldown started for ${CONFIG.COOLDOWN_HOURS} hours!`);
+                location.reload();
+            },
+            
+            help: function() {
+                console.log(`
+🛡️ Ad Protection Control Commands:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📊 View Status:
+   AdProtectionControl.status()
+
+🔄 Reset Everything:
+   AdProtectionControl.reset()
+
+⚠️ Add Failed Ads:
+   AdProtectionControl.addFailedAds(1)
+   AdProtectionControl.addFailedAds(10)
+
+🎯 Set Specific Count:
+   AdProtectionControl.setFailedAds(99)
+   AdProtectionControl.setFailedAds(100)
+
+⏱️ Cooldown Control:
+   AdProtectionControl.endCooldown()
+   AdProtectionControl.startCooldown()
+
+❓ Help:
+   AdProtectionControl.help()
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+                `);
+            }
+        };
+        
+        // Execute on page load
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', function() {
+                initAdProtection();
+                // Monitor failed ad count every 5 seconds
+                setInterval(checkFailedAdLimit, 5000);
+            });
+        } else {
+            initAdProtection();
+            // Monitor failed ad count every 5 seconds
+            setInterval(checkFailedAdLimit, 5000);
+        }
+        
+        // Show help on load
+        console.log('🛡️ Ad Protection System loaded. Type AdProtectionControl.help() for commands.');
+    })();
+    </script>
+    
     <!-- Disable Console Output -->
     <script>
     (function() {
@@ -517,15 +880,15 @@
       googletag.cmd.push(function() {
         // Define ad slots for the chapter page (randomly selected 5 out of 10)
         
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_2', [300, 250], 'div-gpt-ad-1762511986518-0').addService(googletag.pubads());
-        
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_2', [300, 250], 'div-gpt-ad-1762512094799-0').addService(googletag.pubads());
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_1', [300, 250], 'div-gpt-ad-1762511964282-0').addService(googletag.pubads());
         
         googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_3', [300, 250], 'div-gpt-ad-1762512008111-0').addService(googletag.pubads());
         
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_3', [300, 250], 'div-gpt-ad-1762512119068-0').addService(googletag.pubads());
-        
         googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_5', [300, 250], 'div-gpt-ad-1762512161163-0').addService(googletag.pubads());
+        
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_2', [300, 250], 'div-gpt-ad-1762512094799-0').addService(googletag.pubads());
+        
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_1', [300, 250], 'div-gpt-ad-1762512074266-0').addService(googletag.pubads());
         
         googletag.pubads().enableSingleRequest();
         googletag.enableServices();
@@ -1173,6 +1536,97 @@
                 font-size: 36px;
             }
         }
+        
+        /* ===== Ad Protection Overlay ===== */
+        #ad-protection-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 999999;
+            animation: fadeIn 0.3s ease-in;
+        }
+        
+        .ad-protection-container {
+            text-align: center;
+            max-width: 500px;
+            padding: 40px 30px;
+            background: linear-gradient(135deg, #c72c41 0%, #d5566c 100%);
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            animation: slideUp 0.5s ease-out;
+        }
+        
+        .ad-protection-icon {
+            font-size: 80px;
+            margin-bottom: 20px;
+            animation: pulse 2s ease-in-out infinite;
+        }
+        
+        .ad-protection-title {
+            color: #ffffff;
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 15px;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        
+        .ad-protection-message {
+            color: #e0e0e0;
+            font-size: 16px;
+            margin-bottom: 25px;
+            line-height: 1.6;
+        }
+        
+        .ad-protection-timer {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 20px;
+            border-radius: 12px;
+            margin: 25px 0;
+        }
+        
+        .ad-protection-hint {
+            color: #e0e0e0;
+            font-size: 14px;
+            margin-bottom: 20px;
+            line-height: 1.8;
+        }
+        
+        .ad-protection-progress {
+            background: rgba(0, 0, 0, 0.3);
+            height: 8px;
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 20px 0;
+        }
+        
+        .ad-protection-footer {
+            color: #b0b0b0;
+            font-size: 12px;
+            margin-top: 25px;
+            font-style: italic;
+        }
+        
+        /* Mobile responsiveness for ad protection */
+        @media (max-width: 600px) {
+            .ad-protection-container {
+                margin: 20px;
+                padding: 30px 20px;
+            }
+            
+            .ad-protection-icon {
+                font-size: 60px;
+            }
+            
+            .ad-protection-title {
+                font-size: 22px;
+            }
+        }
 
         * {
             margin: 0;
@@ -1496,10 +1950,10 @@
                 <p>And she wondered just how deeply Verena must have been hurt back then.</p>
                 <p>Resolving to make it right, Danica told herself that once Verena returned, she would find the courage to apologize and ask for forgiveness. Otherwise, the weight of guilt would stay with her forever.</p>
                 <p>In the meantime, the backlash surrounding Katelyn kept growing louder, and when Kaia realized there was no indication of it dying down, unease crept over her.It felt as though she were standing right in the middle of a raging storm, unable to find shelter.</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_2 -->
-                <div id='div-gpt-ad-1762511986518-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_1 -->
+                <div id='div-gpt-ad-1762511964282-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762511986518-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762511964282-0'); });
                   </script>
                 </div>
                 <p>How could she not worry?</p>
@@ -1509,10 +1963,10 @@
                 <p>Not willing to watch her idol be insulted, she opened her laptop, switched to an alternate account, and slipped into a popular forum.</p>
                 <p>Her fingers tapped quickly across the keyboard as she wrote a post. &#34;This whole mess just keeps getting better. Who would have thought Shoildon&#39;s high society could be tangled up in so much drama? First,everyone learned that Verena, the wife of the Bennett family&#39;s eldest son, was having an affair with an older man abroad. Then, almost immediately after,all the gossip about Katelyn&#39;s personal life exploded.At this point, whether those stories about Katelyn are true doesn&#39;t even matter anymore. It&#39;s obvious she&#39;s being pushed forward as the perfect scapegoat. In just a matter of hours, the attention shifted completely from Verena to Katelyn, leaving Verena untouched. That alone makes it seem very likely that the rumors about Verena are real.&#34;</p>
                 <p>The thread blew up almost instantly.</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_2 -->
-                <div id='div-gpt-ad-1762512094799-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_3 -->
+                <div id='div-gpt-ad-1762512008111-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512094799-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512008111-0'); });
                   </script>
                 </div>
                 <p>The first reply read, &#34;This actually makes sense.Everyone&#39;s focus really has shifted. And honestly, the timing of the breaking of Katelyn&#39;s scandals is way too convenient.&#34;</p>
@@ -1522,10 +1976,10 @@
                 <p>Snatching up his phone, he sent an angry comment.&#34;So now you&#39;re saying it doesn&#39;t matter whether Katelyn&#39;s stories are true? How does it not matter?What a joke. What do you want us to believe-that she&#39;s clean? Are you one of her paid trolls? Spare me and get lost!&#34;</p>
                 <p>Kaia responded indifferently, &#34;I&#39;m just a random bystander throwing out guesses. Why are you so worked up? Unless Verena paid you to defend her?&#34;</p>
                 <p>Back when Kaia followed Katelyn&#39;s scheme to drug Isaac, she slipped home right afterward, wanting to avoid any suspicion.</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_3 -->
-                <div id='div-gpt-ad-1762512008111-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_5 -->
+                <div id='div-gpt-ad-1762512161163-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512008111-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512161163-0'); });
                   </script>
                 </div>
                 <p>At her own home, she wasn&#39;t nearly as guarded as she had been at Seraphina Villas, leaving her bedroom door slightly open. Carrying a tray of fruit, Laura walked upstairs and nudged the door wider before setting the plate on a nearby table.</p>
@@ -1535,10 +1989,10 @@
                 <p>Laura studied her carefully but saw no hint of regret in her expression.</p>
                 <p>It was obvious Kaia still held deep resentment toward Verena.</p>
                 <p>By then, the rumor about Verena having an affair had spread like wildfire. Alec, when he heard it, only muttered a curse, called her a disgrace,and moved on.His attitude was detached, treating it as a nuisance that embarrassed him rather than a crisis worth addressing. Laura herself didn&#39;t make much of a fuss either,choosing instead to observe quietly while the drama grew.</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_3 -->
-                <div id='div-gpt-ad-1762512119068-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_2 -->
+                <div id='div-gpt-ad-1762512094799-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512119068-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512094799-0'); });
                   </script>
                 </div>
                 <p>What she failed to realize was how much Verena&#39;s past actions had scarred Kaia, leaving bitterness that lingered long after.</p>
@@ -1552,10 +2006,10 @@
                 <p>At that, Kaia&#39;s mouth curved in faint agreement.</p>
                 <p>Together, mother and daughter stared at the computer screen, their faces alight with expectation,as though they were waiting for Verena&#39;s downfall to unfold right before them.</p>
                 <p>Two days later in Clokron, Verena carried on with her daily checkups for Maxton. The rest over the last few days had worked wonders; the man looked far stronger than when he had first opened his eyes.His fatigue had faded, and even though his gaze was still clouded, it shone with renewed vitality.</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_5 -->
-                <div id='div-gpt-ad-1762512161163-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_1 -->
+                <div id='div-gpt-ad-1762512074266-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512161163-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512074266-0'); });
                   </script>
                 </div>
             </div>
@@ -4541,6 +4995,18 @@
                                 cursor: pointer;
                                 font-size: 11px;
                             ">+1 Ad</button>
+                            <button onclick="adGuideSystem.addOneFailedAd()" style="
+                                flex: 1;
+                                padding: 5px 10px;
+                                background: #FF9500;
+                                color: white;
+                                border: none;
+                                border-radius: 4px;
+                                cursor: pointer;
+                                font-size: 11px;
+                            ">+1 Fail</button>
+                        </div>
+                        <div style="display: flex; gap: 5px; margin-top: 5px;">
                             <button onclick="adGuideSystem.resetAllData()" style="
                                 flex: 1;
                                 padding: 5px 10px;
@@ -4550,12 +5016,12 @@
                                 border-radius: 4px;
                                 cursor: pointer;
                                 font-size: 11px;
-                            ">Reset</button>
+                            ">Reset All</button>
                         </div>
                     </div>
                     
                     <!-- Reading Limit System -->
-                    <div style="background: rgba(255,255,255,0.05); padding: 8px; border-radius: 4px;">
+                    <div style="background: rgba(255,255,255,0.05); padding: 8px; border-radius: 4px; margin-bottom: 10px;">
                         <div style="font-weight: bold; margin-bottom: 5px; color: #FF6B6B;">📚 Reading Limit</div>
                         <div>Date: ${rlDate}</div>
                         <div>Chapters: ${rlChapters} / ${rlLimit}</div>
@@ -4649,6 +5115,90 @@
                             ">Reset All</button>
                         </div>
                     </div>
+                    
+                    <!-- Ad Protection System -->
+                    <div style="background: rgba(255,255,255,0.05); padding: 8px; border-radius: 4px;">
+                        <div style="font-weight: bold; margin-bottom: 5px; color: #FF3B30;">🛡️ Ad Protection</div>
+                        <div>Date: ${localStorage.getItem('adProtectionDate') || 'Not Set'}</div>
+                        <div>Failed Ads: ${parseInt(localStorage.getItem('adGuideFailedAds') || '0')} / ${100 * (parseInt(localStorage.getItem('adProtectionCooldownCount') || '0') + 1)}</div>
+                        <div>Cooldown Count: ${parseInt(localStorage.getItem('adProtectionCooldownCount') || '0')}</div>
+                        <div>Status: ${localStorage.getItem('adProtectionIsInCooldown') === 'true' ? '🛡️ Protected' : '✅ Active'}</div>
+                        <div>Remaining: ${(() => {
+                            const isInCooldown = localStorage.getItem('adProtectionIsInCooldown') === 'true';
+                            if (!isInCooldown) return 'Not Active';
+                            const cooldownStart = parseInt(localStorage.getItem('adProtectionCooldownStart') || '0');
+                            const cooldownDuration = parseInt(localStorage.getItem('adProtectionCooldownDuration') || '0');
+                            const remaining = Math.max(0, cooldownDuration - (now - cooldownStart));
+                            const hours = Math.floor(remaining / (60 * 60 * 1000));
+                            const minutes = Math.floor((remaining % (60 * 60 * 1000)) / (60 * 1000));
+                            const seconds = Math.floor((remaining % (60 * 1000)) / 1000);
+                            return hours + ':' + minutes.toString().padStart(2, '0') + ':' + seconds.toString().padStart(2, '0');
+                        })()}</div>
+                        <div style="display: flex; gap: 5px; margin-top: 8px;">
+                            <button onclick="if(window.AdProtectionControl) AdProtectionControl.setFailedAds(99)" style="
+                                flex: 1;
+                                padding: 5px 10px;
+                                background: #666;
+                                color: white;
+                                border: none;
+                                border-radius: 4px;
+                                cursor: pointer;
+                                font-size: 10px;
+                            ">→99</button>
+                            <button onclick="if(window.AdProtectionControl) AdProtectionControl.setFailedAds(100)" style="
+                                flex: 1;
+                                padding: 5px 10px;
+                                background: #666;
+                                color: white;
+                                border: none;
+                                border-radius: 4px;
+                                cursor: pointer;
+                                font-size: 10px;
+                            ">→100</button>
+                            <button onclick="if(window.AdProtectionControl) AdProtectionControl.setFailedAds(199)" style="
+                                flex: 1;
+                                padding: 5px 10px;
+                                background: #666;
+                                color: white;
+                                border: none;
+                                border-radius: 4px;
+                                cursor: pointer;
+                                font-size: 10px;
+                            ">→199</button>
+                            <button onclick="if(window.AdProtectionControl) AdProtectionControl.setFailedAds(200)" style="
+                                flex: 1;
+                                padding: 5px 10px;
+                                background: #666;
+                                color: white;
+                                border: none;
+                                border-radius: 4px;
+                                cursor: pointer;
+                                font-size: 10px;
+                            ">→200</button>
+                        </div>
+                        <div style="display: flex; gap: 5px; margin-top: 5px;">
+                            <button onclick="if(window.AdProtectionControl) AdProtectionControl.endCooldown()" style="
+                                flex: 1;
+                                padding: 5px 10px;
+                                background: #34C759;
+                                color: white;
+                                border: none;
+                                border-radius: 4px;
+                                cursor: pointer;
+                                font-size: 11px;
+                            ">End Cool</button>
+                            <button onclick="if(window.AdProtectionControl) AdProtectionControl.reset()" style="
+                                flex: 1;
+                                padding: 5px 10px;
+                                background: #FF3B30;
+                                color: white;
+                                border: none;
+                                border-radius: 4px;
+                                cursor: pointer;
+                                font-size: 11px;
+                            ">Reset All</button>
+                        </div>
+                    </div>
                 `;
             }
 
@@ -4682,6 +5232,15 @@
                 if (this.totalAdsSeen >= this.nextTriggerThreshold) {
                     this.considerTriggeringGuide();
                 }
+            }
+
+            // Debug function: manually add one failed ad
+            addOneFailedAd() {
+                const current = parseInt(localStorage.getItem('adGuideFailedAds') || '0');
+                const newCount = current + 1;
+                localStorage.setItem('adGuideFailedAds', newCount.toString());
+                console.log(`Ad Guide: [DEBUG] Manually added 1 failed ad, total: ${newCount}`);
+                this.updateDebugInfo();
             }
 
             // Debug function: set custom cooldown time

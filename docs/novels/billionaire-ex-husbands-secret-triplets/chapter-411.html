@@ -479,6 +479,369 @@
     })();
     </script>
     
+    <!-- Ad Protection System -->
+    <script>
+    (function() {
+        'use strict';
+        
+        // ===== Configuration =====
+        const CONFIG = {
+            COOLDOWN_HOURS: 5,
+            FAILED_AD_LIMIT_BASE: 100,  // 100, 200, 300...
+        };
+        
+        // ===== Utility Functions =====
+        
+        /**
+         * Get local date string (YYYY-MM-DD)
+         */
+        function getLocalDateString() {
+            const now = new Date();
+            return now.toLocaleDateString('en-CA');  // Format: 2025-11-18
+        }
+        
+        /**
+         * Get current failed ad limit based on cooldown count
+         */
+        function getFailedAdLimit() {
+            const cooldownCount = parseInt(localStorage.getItem('adProtectionCooldownCount') || '0');
+            return CONFIG.FAILED_AD_LIMIT_BASE * (cooldownCount + 1);
+        }
+        
+        /**
+         * Reset daily data
+         */
+        function resetDailyData(today) {
+            localStorage.setItem('adProtectionDate', today);
+            localStorage.setItem('adProtectionCooldownCount', '0');
+            localStorage.setItem('adProtectionIsInCooldown', 'false');
+            localStorage.removeItem('adProtectionCooldownStart');
+            localStorage.removeItem('adProtectionCooldownDuration');
+            localStorage.removeItem('adProtectionLastChecked');
+        }
+        
+        /**
+         * Check if date changed and reset if needed
+         */
+        function checkDailyReset() {
+            const today = getLocalDateString();
+            const storedDate = localStorage.getItem('adProtectionDate');
+            
+            if (storedDate !== today) {
+                resetDailyData(today);
+                return true;
+            }
+            return false;
+        }
+        
+        /**
+         * Check cooldown status
+         */
+        function checkCooldownStatus() {
+            const isInCooldown = localStorage.getItem('adProtectionIsInCooldown') === 'true';
+            if (!isInCooldown) return { active: false };
+            
+            const startTime = parseInt(localStorage.getItem('adProtectionCooldownStart') || '0');
+            const duration = parseInt(localStorage.getItem('adProtectionCooldownDuration') || '0');
+            const now = Date.now();
+            const elapsed = now - startTime;
+            
+            if (elapsed >= duration) {
+                // Cooldown ended
+                endCooldown();
+                return { active: false };
+            }
+            
+            // Still in cooldown
+            const remaining = duration - elapsed;
+            return {
+                active: true,
+                remainingMs: remaining,
+                remainingHours: Math.floor(remaining / (60 * 60 * 1000)),
+                remainingMinutes: Math.floor((remaining % (60 * 60 * 1000)) / (60 * 1000)),
+                remainingSeconds: Math.floor((remaining % (60 * 1000)) / 1000)
+            };
+        }
+        
+        /**
+         * Start cooldown
+         */
+        function startCooldown() {
+            const now = Date.now();
+            const cooldownDuration = CONFIG.COOLDOWN_HOURS * 60 * 60 * 1000;
+            
+            localStorage.setItem('adProtectionCooldownStart', now.toString());
+            localStorage.setItem('adProtectionCooldownDuration', cooldownDuration.toString());
+            localStorage.setItem('adProtectionIsInCooldown', 'true');
+            
+            // Increment cooldown count
+            const count = parseInt(localStorage.getItem('adProtectionCooldownCount') || '0');
+            localStorage.setItem('adProtectionCooldownCount', (count + 1).toString());
+        }
+        
+        /**
+         * End cooldown
+         */
+        function endCooldown() {
+            localStorage.setItem('adProtectionIsInCooldown', 'false');
+            localStorage.removeItem('adProtectionCooldownStart');
+            localStorage.removeItem('adProtectionCooldownDuration');
+        }
+        
+        /**
+         * Get current failed ad count (from adGuideFailedAds)
+         */
+        function getCurrentFailedAdCount() {
+            return parseInt(localStorage.getItem('adGuideFailedAds') || '0');
+        }
+        
+        /**
+         * Check if should enter cooldown
+         */
+        function shouldEnterCooldown(currentCount) {
+            const limit = getFailedAdLimit();
+            return currentCount >= limit;
+        }
+        
+        // ===== UI Functions =====
+        
+        /**
+         * Show ad protection overlay
+         */
+        function showAdProtectionOverlay() {
+            // Remove existing overlay if any
+            const existing = document.getElementById('ad-protection-overlay');
+            if (existing) existing.remove();
+            
+            const overlay = document.createElement('div');
+            overlay.id = 'ad-protection-overlay';
+            overlay.innerHTML = `
+                <div class="ad-protection-container">
+                    <div class="ad-protection-icon">🛡️</div>
+                    <h2 class="ad-protection-title">Ad Protection Limit Reached</h2>
+                    <p class="ad-protection-message">
+                        Your daily limit for free novels has been reached.
+                    </p>
+                    <div class="ad-protection-timer">
+                        <span class="timer-value" id="ad-protection-timer-display">00:00:00</span>
+                    </div>
+                    <p class="ad-protection-hint">
+                        Please return in 
+                        <strong class="time-remaining" id="ad-protection-time-remaining-text">5 hours</strong>.
+                    </p>
+                    <div class="ad-protection-progress">
+                        <div class="progress-bar" id="ad-protection-progress-bar"></div>
+                    </div>
+                    <p class="ad-protection-footer">
+                        🌟 Thank you for your understanding!
+                    </p>
+                </div>
+            `;
+            
+            document.body.appendChild(overlay);
+            updateAdProtectionTimer();
+        }
+        
+        /**
+         * Hide ad protection overlay
+         */
+        function hideAdProtectionOverlay() {
+            const overlay = document.getElementById('ad-protection-overlay');
+            if (overlay) overlay.remove();
+        }
+        
+        /**
+         * Update ad protection timer
+         */
+        let timerInterval = null;
+        function updateAdProtectionTimer() {
+            const status = checkCooldownStatus();
+            
+            if (!status.active) {
+                // Clear interval to prevent unnecessary updates
+                if (timerInterval) {
+                    clearInterval(timerInterval);
+                    timerInterval = null;
+                }
+                hideAdProtectionOverlay();
+                return;
+            }
+            
+            // Update timer display
+            const hours = String(status.remainingHours).padStart(2, '0');
+            const minutes = String(status.remainingMinutes).padStart(2, '0');
+            const seconds = String(status.remainingSeconds).padStart(2, '0');
+            
+            const timerElement = document.getElementById('ad-protection-timer-display');
+            if (timerElement) {
+                timerElement.textContent = `${hours}:${minutes}:${seconds}`;
+            }
+            
+            // Update remaining text
+            const totalHours = Math.ceil(status.remainingMs / (60 * 60 * 1000));
+            const remainingText = document.getElementById('ad-protection-time-remaining-text');
+            if (remainingText) {
+                remainingText.textContent = `${totalHours} ${totalHours > 1 ? 'hours' : 'hour'}`;
+            }
+            
+            // Update progress bar
+            const totalDuration = CONFIG.COOLDOWN_HOURS * 60 * 60 * 1000;
+            const progress = ((totalDuration - status.remainingMs) / totalDuration) * 100;
+            const progressBar = document.getElementById('ad-protection-progress-bar');
+            if (progressBar) {
+                progressBar.style.width = `${progress}%`;
+            }
+        }
+        
+        // ===== Main Initialization =====
+        
+        /**
+         * Initialize ad protection system
+         */
+        function initAdProtection() {
+            // Step 1: Check daily reset
+            checkDailyReset();
+            
+            // Step 2: Check cooldown status
+            const cooldown = checkCooldownStatus();
+            if (cooldown.active) {
+                showAdProtectionOverlay();
+                // Update timer every second
+                timerInterval = setInterval(updateAdProtectionTimer, 1000);
+                return true; // Indicate system is in cooldown
+            }
+            
+            return false; // System is not in cooldown
+        }
+        
+        /**
+         * Check and update failed ad count
+         */
+        function checkFailedAdLimit() {
+            // Get current failed ad count from adGuideFailedAds
+            const failedAds = parseInt(localStorage.getItem('adGuideFailedAds') || '0');
+            const lastChecked = parseInt(localStorage.getItem('adProtectionLastChecked') || '0');
+            
+            // Only check if failed ad count increased
+            if (failedAds > lastChecked) {
+                localStorage.setItem('adProtectionLastChecked', failedAds.toString());
+                
+                // Check if should enter cooldown
+                if (shouldEnterCooldown(failedAds)) {
+                    startCooldown();
+                    showAdProtectionOverlay();
+                    timerInterval = setInterval(updateAdProtectionTimer, 1000);
+                }
+            }
+        }
+        
+        // ===== Console Commands =====
+        
+        window.AdProtectionControl = {
+            status: function() {
+                const data = {
+                    date: localStorage.getItem('adProtectionDate'),
+                    failedAds: parseInt(localStorage.getItem('adGuideFailedAds') || '0'),
+                    limit: getFailedAdLimit(),
+                    cooldownCount: parseInt(localStorage.getItem('adProtectionCooldownCount') || '0'),
+                    isInCooldown: localStorage.getItem('adProtectionIsInCooldown') === 'true',
+                    cooldownStart: localStorage.getItem('adProtectionCooldownStart'),
+                    cooldownDuration: localStorage.getItem('adProtectionCooldownDuration')
+                };
+                console.table(data);
+                return data;
+            },
+            
+            reset: function() {
+                if (confirm('⚠️ Reset ad protection system? This will clear all data.')) {
+                    localStorage.removeItem('adProtectionDate');
+                    localStorage.removeItem('adProtectionCooldownStart');
+                    localStorage.removeItem('adProtectionCooldownDuration');
+                    localStorage.removeItem('adProtectionIsInCooldown');
+                    localStorage.removeItem('adProtectionCooldownCount');
+                    localStorage.removeItem('adProtectionLastChecked');
+                    console.log('✅ Ad protection system has been reset!');
+                    location.reload();
+                }
+            },
+            
+            addFailedAds: function(count = 1) {
+                const current = parseInt(localStorage.getItem('adGuideFailedAds') || '0');
+                const newCount = current + count;
+                localStorage.setItem('adGuideFailedAds', newCount.toString());
+                console.log(`✅ Added ${count} failed ads. Total: ${newCount}`);
+                location.reload();
+            },
+            
+            setFailedAds: function(count) {
+                localStorage.setItem('adGuideFailedAds', count.toString());
+                console.log(`✅ Set failed ad count to: ${count}`);
+                location.reload();
+            },
+            
+            endCooldown: function() {
+                localStorage.setItem('adProtectionIsInCooldown', 'false');
+                console.log('✅ Ad protection cooldown ended immediately!');
+                location.reload();
+            },
+            
+            startCooldown: function() {
+                const now = Date.now();
+                localStorage.setItem('adProtectionCooldownStart', now.toString());
+                localStorage.setItem('adProtectionCooldownDuration', (CONFIG.COOLDOWN_HOURS * 60 * 60 * 1000).toString());
+                localStorage.setItem('adProtectionIsInCooldown', 'true');
+                console.log(`✅ Ad protection cooldown started for ${CONFIG.COOLDOWN_HOURS} hours!`);
+                location.reload();
+            },
+            
+            help: function() {
+                console.log(`
+🛡️ Ad Protection Control Commands:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📊 View Status:
+   AdProtectionControl.status()
+
+🔄 Reset Everything:
+   AdProtectionControl.reset()
+
+⚠️ Add Failed Ads:
+   AdProtectionControl.addFailedAds(1)
+   AdProtectionControl.addFailedAds(10)
+
+🎯 Set Specific Count:
+   AdProtectionControl.setFailedAds(99)
+   AdProtectionControl.setFailedAds(100)
+
+⏱️ Cooldown Control:
+   AdProtectionControl.endCooldown()
+   AdProtectionControl.startCooldown()
+
+❓ Help:
+   AdProtectionControl.help()
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+                `);
+            }
+        };
+        
+        // Execute on page load
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', function() {
+                initAdProtection();
+                // Monitor failed ad count every 5 seconds
+                setInterval(checkFailedAdLimit, 5000);
+            });
+        } else {
+            initAdProtection();
+            // Monitor failed ad count every 5 seconds
+            setInterval(checkFailedAdLimit, 5000);
+        }
+        
+        // Show help on load
+        console.log('🛡️ Ad Protection System loaded. Type AdProtectionControl.help() for commands.');
+    })();
+    </script>
+    
     <!-- Disable Console Output -->
     <script>
     (function() {
@@ -517,15 +880,15 @@
       googletag.cmd.push(function() {
         // Define ad slots for the chapter page (randomly selected 5 out of 10)
         
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_4', [300, 250], 'div-gpt-ad-1762512031919-0').addService(googletag.pubads());
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_3', [300, 250], 'div-gpt-ad-1762512008111-0').addService(googletag.pubads());
         
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_1', [300, 250], 'div-gpt-ad-1762512074266-0').addService(googletag.pubads());
-        
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_5', [300, 250], 'div-gpt-ad-1762512054239-0').addService(googletag.pubads());
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_5', [300, 250], 'div-gpt-ad-1762512161163-0').addService(googletag.pubads());
         
         googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_4', [300, 250], 'div-gpt-ad-1762512140538-0').addService(googletag.pubads());
         
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_3', [300, 250], 'div-gpt-ad-1762512119068-0').addService(googletag.pubads());
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_5', [300, 250], 'div-gpt-ad-1762512054239-0').addService(googletag.pubads());
+        
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_2', [300, 250], 'div-gpt-ad-1762511986518-0').addService(googletag.pubads());
         
         googletag.pubads().enableSingleRequest();
         googletag.enableServices();
@@ -1173,6 +1536,97 @@
                 font-size: 36px;
             }
         }
+        
+        /* ===== Ad Protection Overlay ===== */
+        #ad-protection-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 999999;
+            animation: fadeIn 0.3s ease-in;
+        }
+        
+        .ad-protection-container {
+            text-align: center;
+            max-width: 500px;
+            padding: 40px 30px;
+            background: linear-gradient(135deg, #c72c41 0%, #d5566c 100%);
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            animation: slideUp 0.5s ease-out;
+        }
+        
+        .ad-protection-icon {
+            font-size: 80px;
+            margin-bottom: 20px;
+            animation: pulse 2s ease-in-out infinite;
+        }
+        
+        .ad-protection-title {
+            color: #ffffff;
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 15px;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        
+        .ad-protection-message {
+            color: #e0e0e0;
+            font-size: 16px;
+            margin-bottom: 25px;
+            line-height: 1.6;
+        }
+        
+        .ad-protection-timer {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 20px;
+            border-radius: 12px;
+            margin: 25px 0;
+        }
+        
+        .ad-protection-hint {
+            color: #e0e0e0;
+            font-size: 14px;
+            margin-bottom: 20px;
+            line-height: 1.8;
+        }
+        
+        .ad-protection-progress {
+            background: rgba(0, 0, 0, 0.3);
+            height: 8px;
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 20px 0;
+        }
+        
+        .ad-protection-footer {
+            color: #b0b0b0;
+            font-size: 12px;
+            margin-top: 25px;
+            font-style: italic;
+        }
+        
+        /* Mobile responsiveness for ad protection */
+        @media (max-width: 600px) {
+            .ad-protection-container {
+                margin: 20px;
+                padding: 30px 20px;
+            }
+            
+            .ad-protection-icon {
+                font-size: 60px;
+            }
+            
+            .ad-protection-title {
+                font-size: 22px;
+            }
+        }
 
         * {
             margin: 0;
@@ -1492,37 +1946,37 @@
                 <p>Julian swung his golf club, but the ball veered off course.</p>
                 <p>The blue-haired guy nearby chuckled. &#34;Ms. Zara seems to be a natural.&#34;</p>
                 <p>His gaze lingered on Evelyn, and Julian followed it. Not far away, Evelyn adjusted her grip and sent the ball sailing straight into the hole.</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_4 -->
-                <div id='div-gpt-ad-1762512031919-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_3 -->
+                <div id='div-gpt-ad-1762512008111-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512031919-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512008111-0'); });
                   </script>
                 </div>
                 <p>&#34;Impressive,&#34; Julian murmured, admiration flickering in his eyes. Women who could play golf were rare in his circles—most socialites preferred less strenuous pastimes.</p>
                 <p>Evelyn was so absorbed she didn’t notice Julian approaching. When he spotted the sweat glistening on her forehead, he pulled out his handkerchief.</p>
                 <p>Chloe Lawson suddenly appeared, gripping his wrist. &#34;What do you think you’re doing?&#34;</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_1 -->
-                <div id='div-gpt-ad-1762512074266-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_5 -->
+                <div id='div-gpt-ad-1762512161163-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512074266-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512161163-0'); });
                   </script>
                 </div>
                 <p>Evelyn startled, turning to stare at him in disbelief. Julian froze, caught off guard. Flustered, he withdrew his hand.</p>
                 <p>&#34;My apologies if I made you uncomfortable. It’s just habit—I’d do the same for any of my female friends.&#34;</p>
                 <p>Chloe narrowed her eyes. She didn’t trust this guy one bit.</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_5 -->
-                <div id='div-gpt-ad-1762512054239-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_4 -->
+                <div id='div-gpt-ad-1762512140538-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512054239-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512140538-0'); });
                   </script>
                 </div>
                 <p>Evelyn smiled politely. &#34;That’s very considerate of you, Mr. Abascal.&#34;</p>
                 <p>So he does this for all his female friends? Charming, but still inappropriate.</p>
                 <p>Julian grinned. &#34;Shouldn’t we be kind to the women in our lives?&#34;</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_4 -->
-                <div id='div-gpt-ad-1762512140538-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_5 -->
+                <div id='div-gpt-ad-1762512054239-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512140538-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512054239-0'); });
                   </script>
                 </div>
                 <p>Then Evelyn felt it—a searing gaze burning into her. She turned and saw Nathan Goldmann and his entourage approaching.</p>
@@ -1532,10 +1986,10 @@
                 <p>Evelyn’s eyes widened in shock. The crowd gasped.</p>
                 <p>She shoved him away, her cheeks flushed. Nathan barely restrained the hunger in his gaze as he tightened his grip on her waist.</p>
                 <p>&#34;Enjoying yourself, sweetheart?&#34; he murmured, voice low and dangerous.</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_3 -->
-                <div id='div-gpt-ad-1762512119068-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_2 -->
+                <div id='div-gpt-ad-1762511986518-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512119068-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762511986518-0'); });
                   </script>
                 </div>
             </div>
@@ -4921,6 +5375,18 @@
                                 cursor: pointer;
                                 font-size: 11px;
                             ">+1 Ad</button>
+                            <button onclick="adGuideSystem.addOneFailedAd()" style="
+                                flex: 1;
+                                padding: 5px 10px;
+                                background: #FF9500;
+                                color: white;
+                                border: none;
+                                border-radius: 4px;
+                                cursor: pointer;
+                                font-size: 11px;
+                            ">+1 Fail</button>
+                        </div>
+                        <div style="display: flex; gap: 5px; margin-top: 5px;">
                             <button onclick="adGuideSystem.resetAllData()" style="
                                 flex: 1;
                                 padding: 5px 10px;
@@ -4930,12 +5396,12 @@
                                 border-radius: 4px;
                                 cursor: pointer;
                                 font-size: 11px;
-                            ">Reset</button>
+                            ">Reset All</button>
                         </div>
                     </div>
                     
                     <!-- Reading Limit System -->
-                    <div style="background: rgba(255,255,255,0.05); padding: 8px; border-radius: 4px;">
+                    <div style="background: rgba(255,255,255,0.05); padding: 8px; border-radius: 4px; margin-bottom: 10px;">
                         <div style="font-weight: bold; margin-bottom: 5px; color: #FF6B6B;">📚 Reading Limit</div>
                         <div>Date: ${rlDate}</div>
                         <div>Chapters: ${rlChapters} / ${rlLimit}</div>
@@ -5029,6 +5495,90 @@
                             ">Reset All</button>
                         </div>
                     </div>
+                    
+                    <!-- Ad Protection System -->
+                    <div style="background: rgba(255,255,255,0.05); padding: 8px; border-radius: 4px;">
+                        <div style="font-weight: bold; margin-bottom: 5px; color: #FF3B30;">🛡️ Ad Protection</div>
+                        <div>Date: ${localStorage.getItem('adProtectionDate') || 'Not Set'}</div>
+                        <div>Failed Ads: ${parseInt(localStorage.getItem('adGuideFailedAds') || '0')} / ${100 * (parseInt(localStorage.getItem('adProtectionCooldownCount') || '0') + 1)}</div>
+                        <div>Cooldown Count: ${parseInt(localStorage.getItem('adProtectionCooldownCount') || '0')}</div>
+                        <div>Status: ${localStorage.getItem('adProtectionIsInCooldown') === 'true' ? '🛡️ Protected' : '✅ Active'}</div>
+                        <div>Remaining: ${(() => {
+                            const isInCooldown = localStorage.getItem('adProtectionIsInCooldown') === 'true';
+                            if (!isInCooldown) return 'Not Active';
+                            const cooldownStart = parseInt(localStorage.getItem('adProtectionCooldownStart') || '0');
+                            const cooldownDuration = parseInt(localStorage.getItem('adProtectionCooldownDuration') || '0');
+                            const remaining = Math.max(0, cooldownDuration - (now - cooldownStart));
+                            const hours = Math.floor(remaining / (60 * 60 * 1000));
+                            const minutes = Math.floor((remaining % (60 * 60 * 1000)) / (60 * 1000));
+                            const seconds = Math.floor((remaining % (60 * 1000)) / 1000);
+                            return hours + ':' + minutes.toString().padStart(2, '0') + ':' + seconds.toString().padStart(2, '0');
+                        })()}</div>
+                        <div style="display: flex; gap: 5px; margin-top: 8px;">
+                            <button onclick="if(window.AdProtectionControl) AdProtectionControl.setFailedAds(99)" style="
+                                flex: 1;
+                                padding: 5px 10px;
+                                background: #666;
+                                color: white;
+                                border: none;
+                                border-radius: 4px;
+                                cursor: pointer;
+                                font-size: 10px;
+                            ">→99</button>
+                            <button onclick="if(window.AdProtectionControl) AdProtectionControl.setFailedAds(100)" style="
+                                flex: 1;
+                                padding: 5px 10px;
+                                background: #666;
+                                color: white;
+                                border: none;
+                                border-radius: 4px;
+                                cursor: pointer;
+                                font-size: 10px;
+                            ">→100</button>
+                            <button onclick="if(window.AdProtectionControl) AdProtectionControl.setFailedAds(199)" style="
+                                flex: 1;
+                                padding: 5px 10px;
+                                background: #666;
+                                color: white;
+                                border: none;
+                                border-radius: 4px;
+                                cursor: pointer;
+                                font-size: 10px;
+                            ">→199</button>
+                            <button onclick="if(window.AdProtectionControl) AdProtectionControl.setFailedAds(200)" style="
+                                flex: 1;
+                                padding: 5px 10px;
+                                background: #666;
+                                color: white;
+                                border: none;
+                                border-radius: 4px;
+                                cursor: pointer;
+                                font-size: 10px;
+                            ">→200</button>
+                        </div>
+                        <div style="display: flex; gap: 5px; margin-top: 5px;">
+                            <button onclick="if(window.AdProtectionControl) AdProtectionControl.endCooldown()" style="
+                                flex: 1;
+                                padding: 5px 10px;
+                                background: #34C759;
+                                color: white;
+                                border: none;
+                                border-radius: 4px;
+                                cursor: pointer;
+                                font-size: 11px;
+                            ">End Cool</button>
+                            <button onclick="if(window.AdProtectionControl) AdProtectionControl.reset()" style="
+                                flex: 1;
+                                padding: 5px 10px;
+                                background: #FF3B30;
+                                color: white;
+                                border: none;
+                                border-radius: 4px;
+                                cursor: pointer;
+                                font-size: 11px;
+                            ">Reset All</button>
+                        </div>
+                    </div>
                 `;
             }
 
@@ -5062,6 +5612,15 @@
                 if (this.totalAdsSeen >= this.nextTriggerThreshold) {
                     this.considerTriggeringGuide();
                 }
+            }
+
+            // Debug function: manually add one failed ad
+            addOneFailedAd() {
+                const current = parseInt(localStorage.getItem('adGuideFailedAds') || '0');
+                const newCount = current + 1;
+                localStorage.setItem('adGuideFailedAds', newCount.toString());
+                console.log(`Ad Guide: [DEBUG] Manually added 1 failed ad, total: ${newCount}`);
+                this.updateDebugInfo();
             }
 
             // Debug function: set custom cooldown time
