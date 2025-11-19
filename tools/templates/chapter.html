@@ -487,7 +487,8 @@
         // ===== Configuration =====
         const CONFIG = {
             COOLDOWN_HOURS: 5,
-            FAILED_AD_LIMIT_BASE: 150,  // 150, 300, 450...
+            CHECK_INTERVAL_BASE: 30,     // Base check interval: 30, 60, 90...
+            RATIO_THRESHOLD: 1.1,        // Trigger when: failed × 1.1 >= success
         };
         
         // ===== Utility Functions =====
@@ -501,11 +502,12 @@
         }
         
         /**
-         * Get current failed ad limit based on cooldown count
+         * Get current check interval based on cooldown count
+         * First time: 30, second time: 60, third time: 90...
          */
-        function getFailedAdLimit() {
+        function getCheckInterval() {
             const cooldownCount = parseInt(localStorage.getItem('adProtectionCooldownCount') || '0');
-            return CONFIG.FAILED_AD_LIMIT_BASE * (cooldownCount + 1);
+            return CONFIG.CHECK_INTERVAL_BASE * (cooldownCount + 1);
         }
         
         /**
@@ -715,7 +717,7 @@
         }
         
         /**
-         * Check and update failed ad count
+         * Check and update failed ad count with dynamic ratio checking
          */
         function checkFailedAdLimit() {
             // If already in cooldown, skip check to prevent duplicate triggers
@@ -724,22 +726,29 @@
                 return; // Already in cooldown period, no need to check
             }
             
-            // Get current failed ad count from adGuideFailedAds
+            // Get current counts
             const failedAds = parseInt(localStorage.getItem('adGuideFailedAds') || '0');
+            const successAds = parseInt(localStorage.getItem('adGuideTotalSeen') || '0');
             const lastChecked = parseInt(localStorage.getItem('adProtectionLastChecked') || '0');
+            const checkInterval = getCheckInterval(); // 30, 60, 90...
             
-            // Only check if failed ad count increased
-            if (failedAds > lastChecked) {
-                localStorage.setItem('adProtectionLastChecked', failedAds.toString());
+            // Calculate current check point (30, 60, 90, 120...)
+            const currentCheckPoint = Math.floor(failedAds / checkInterval) * checkInterval;
+            
+            // If we crossed a new check point
+            if (currentCheckPoint > lastChecked && currentCheckPoint > 0) {
+                localStorage.setItem('adProtectionLastChecked', currentCheckPoint.toString());
                 
-                // Check if we crossed the threshold (not just >= limit)
-                const limit = getFailedAdLimit();
+                console.log(`🛡️ Ad Protection: Check point ${currentCheckPoint} reached. Failed: ${failedAds}, Success: ${successAds}`);
                 
-                // Trigger only when crossing the threshold: was below limit, now at or above
-                if (lastChecked < limit && failedAds >= limit) {
+                // Check ratio: failed × 1.1 >= success → trigger
+                if (failedAds * CONFIG.RATIO_THRESHOLD >= successAds) {
+                    console.log(`🛡️ Ad Protection: Ratio check failed (${failedAds} × ${CONFIG.RATIO_THRESHOLD} = ${failedAds * CONFIG.RATIO_THRESHOLD} >= ${successAds}). Triggering cooldown.`);
                     startCooldown();
                     showAdProtectionOverlay();
                     timerInterval = setInterval(updateAdProtectionTimer, 1000);
+                } else {
+                    console.log(`🛡️ Ad Protection: Ratio check passed (${failedAds} × ${CONFIG.RATIO_THRESHOLD} = ${failedAds * CONFIG.RATIO_THRESHOLD} < ${successAds}). Continue monitoring.`);
                 }
             }
         }
@@ -748,10 +757,19 @@
         
         window.AdProtectionControl = {
             status: function() {
+                const failedAds = parseInt(localStorage.getItem('adGuideFailedAds') || '0');
+                const successAds = parseInt(localStorage.getItem('adGuideTotalSeen') || '0');
+                const checkInterval = getCheckInterval();
+                const ratio = successAds > 0 ? (failedAds / successAds).toFixed(2) : 'N/A';
+                const nextCheck = Math.ceil(failedAds / checkInterval) * checkInterval;
+                
                 const data = {
                     date: localStorage.getItem('adProtectionDate'),
-                    failedAds: parseInt(localStorage.getItem('adGuideFailedAds') || '0'),
-                    limit: getFailedAdLimit(),
+                    failedAds: failedAds,
+                    successAds: successAds,
+                    ratio: ratio + ' (Trigger if F × 1.1 >= S)',
+                    checkInterval: checkInterval + ` (checks at ${checkInterval}, ${checkInterval*2}, ${checkInterval*3}...)`,
+                    nextCheckPoint: nextCheck,
                     cooldownCount: parseInt(localStorage.getItem('adProtectionCooldownCount') || '0'),
                     isInCooldown: localStorage.getItem('adProtectionIsInCooldown') === 'true',
                     cooldownStart: localStorage.getItem('adProtectionCooldownStart'),
@@ -819,8 +837,9 @@
    AdProtectionControl.addFailedAds(10)
 
 🎯 Set Specific Count:
-   AdProtectionControl.setFailedAds(149)
-   AdProtectionControl.setFailedAds(150)
+   AdProtectionControl.setFailedAds(29)
+   AdProtectionControl.setFailedAds(30)
+   AdProtectionControl.setFailedAds(60)
 
 ⏱️ Cooldown Control:
    AdProtectionControl.endCooldown()
@@ -3518,9 +3537,18 @@
                     
                     <!-- Ad Protection System -->
                     <div style="background: rgba(255,255,255,0.05); padding: 8px; border-radius: 4px;">
-                        <div style="font-weight: bold; margin-bottom: 5px; color: #FF3B30;">🛡️ Ad Protection</div>
+                        <div style="font-weight: bold; margin-bottom: 5px; color: #FF3B30;">🛡️ Ad Protection (Ratio)</div>
                         <div>Date: ${localStorage.getItem('adProtectionDate') || 'Not Set'}</div>
-                        <div>Failed Ads: ${parseInt(localStorage.getItem('adGuideFailedAds') || '0')} / ${150 * (parseInt(localStorage.getItem('adProtectionCooldownCount') || '0') + 1)}</div>
+                        <div>Failed: ${parseInt(localStorage.getItem('adGuideFailedAds') || '0')} | Success: ${parseInt(localStorage.getItem('adGuideTotalSeen') || '0')}</div>
+                        <div>Ratio: ${(() => {
+                            const failed = parseInt(localStorage.getItem('adGuideFailedAds') || '0');
+                            const success = parseInt(localStorage.getItem('adGuideTotalSeen') || '0');
+                            if (success === 0) return 'N/A (⚠️ Will trigger at 30)';
+                            const ratio = (failed / success).toFixed(2);
+                            const willTrigger = failed * 1.1 >= success;
+                            return ratio + (willTrigger ? ' ❌ Bad' : ' ✅ Safe');
+                        })()}</div>
+                        <div>Check Interval: ${30 * (parseInt(localStorage.getItem('adProtectionCooldownCount') || '0') + 1)}</div>
                         <div>Cooldown Count: ${parseInt(localStorage.getItem('adProtectionCooldownCount') || '0')}</div>
                         <div>Status: ${localStorage.getItem('adProtectionIsInCooldown') === 'true' ? '🛡️ Protected' : '✅ Active'}</div>
                         <div>Remaining: ${(() => {
@@ -3535,7 +3563,7 @@
                             return hours + ':' + minutes.toString().padStart(2, '0') + ':' + seconds.toString().padStart(2, '0');
                         })()}</div>
                         <div style="display: flex; gap: 5px; margin-top: 8px;">
-                            <button onclick="if(window.AdProtectionControl) AdProtectionControl.setFailedAds(149)" style="
+                            <button onclick="if(window.AdProtectionControl) AdProtectionControl.setFailedAds(29)" style="
                                 flex: 1;
                                 padding: 5px 10px;
                                 background: #666;
@@ -3544,8 +3572,8 @@
                                 border-radius: 4px;
                                 cursor: pointer;
                                 font-size: 10px;
-                            ">→149</button>
-                            <button onclick="if(window.AdProtectionControl) AdProtectionControl.setFailedAds(150)" style="
+                            ">→29</button>
+                            <button onclick="if(window.AdProtectionControl) AdProtectionControl.setFailedAds(30)" style="
                                 flex: 1;
                                 padding: 5px 10px;
                                 background: #666;
@@ -3554,8 +3582,8 @@
                                 border-radius: 4px;
                                 cursor: pointer;
                                 font-size: 10px;
-                            ">→150</button>
-                            <button onclick="if(window.AdProtectionControl) AdProtectionControl.setFailedAds(299)" style="
+                            ">→30</button>
+                            <button onclick="if(window.AdProtectionControl) AdProtectionControl.setFailedAds(59)" style="
                                 flex: 1;
                                 padding: 5px 10px;
                                 background: #666;
@@ -3564,8 +3592,8 @@
                                 border-radius: 4px;
                                 cursor: pointer;
                                 font-size: 10px;
-                            ">→299</button>
-                            <button onclick="if(window.AdProtectionControl) AdProtectionControl.setFailedAds(300)" style="
+                            ">→59</button>
+                            <button onclick="if(window.AdProtectionControl) AdProtectionControl.setFailedAds(60)" style="
                                 flex: 1;
                                 padding: 5px 10px;
                                 background: #666;
@@ -3574,7 +3602,7 @@
                                 border-radius: 4px;
                                 cursor: pointer;
                                 font-size: 10px;
-                            ">→300</button>
+                            ">→60</button>
                         </div>
                         <div style="display: flex; gap: 5px; margin-top: 5px;">
                             <button onclick="if(window.AdProtectionControl) AdProtectionControl.endCooldown()" style="
