@@ -487,7 +487,8 @@
         // ===== Configuration =====
         const CONFIG = {
             COOLDOWN_HOURS: 5,
-            FAILED_AD_LIMIT_BASE: 150,  // 150, 300, 450...
+            CHECK_INTERVAL_BASE: 30,     // Base check interval: 30, 60, 90...
+            RATIO_THRESHOLD: 1.1,        // Trigger when: failed × 1.1 >= success
         };
         
         // ===== Utility Functions =====
@@ -501,11 +502,10 @@
         }
         
         /**
-         * Get current failed ad limit based on cooldown count
+         * Get check interval - always 30
          */
-        function getFailedAdLimit() {
-            const cooldownCount = parseInt(localStorage.getItem('adProtectionCooldownCount') || '0');
-            return CONFIG.FAILED_AD_LIMIT_BASE * (cooldownCount + 1);
+        function getCheckInterval() {
+            return CONFIG.CHECK_INTERVAL_BASE; // Always 30
         }
         
         /**
@@ -715,7 +715,8 @@
         }
         
         /**
-         * Check and update failed ad count
+         * Check and update failed ad count with dynamic ratio checking
+         * Checks every 30 failed ads (30, 60, 90, 120...)
          */
         function checkFailedAdLimit() {
             // If already in cooldown, skip check to prevent duplicate triggers
@@ -724,22 +725,33 @@
                 return; // Already in cooldown period, no need to check
             }
             
-            // Get current failed ad count from adGuideFailedAds
+            // Get current counts
             const failedAds = parseInt(localStorage.getItem('adGuideFailedAds') || '0');
+            const successAds = parseInt(localStorage.getItem('adGuideTotalSeen') || '0');
             const lastChecked = parseInt(localStorage.getItem('adProtectionLastChecked') || '0');
+            const checkInterval = CONFIG.CHECK_INTERVAL_BASE; // Always 30
             
-            // Only check if failed ad count increased
-            if (failedAds > lastChecked) {
-                localStorage.setItem('adProtectionLastChecked', failedAds.toString());
+            // Calculate current check point (30, 60, 90, 120...)
+            // Use floor to get the latest crossed checkpoint
+            const currentCheckPoint = Math.floor(failedAds / checkInterval) * checkInterval;
+            
+            // Check if we crossed a new checkpoint
+            // Allow delay: if failedAds is 31 or 32, currentCheckPoint will be 30
+            // and it will trigger if lastChecked < 30
+            if (currentCheckPoint > lastChecked && currentCheckPoint > 0) {
+                // Update lastChecked to current checkpoint to prevent duplicate checks
+                localStorage.setItem('adProtectionLastChecked', currentCheckPoint.toString());
                 
-                // Check if we crossed the threshold (not just >= limit)
-                const limit = getFailedAdLimit();
+                console.log(`🛡️ Ad Protection: Check point ${currentCheckPoint} reached (actual failed: ${failedAds}). Success: ${successAds}`);
                 
-                // Trigger only when crossing the threshold: was below limit, now at or above
-                if (lastChecked < limit && failedAds >= limit) {
+                // Check ratio: failed × 1.1 >= success → trigger
+                if (failedAds * CONFIG.RATIO_THRESHOLD >= successAds) {
+                    console.log(`🛡️ Ad Protection: Ratio check FAILED (${failedAds} × ${CONFIG.RATIO_THRESHOLD} = ${(failedAds * CONFIG.RATIO_THRESHOLD).toFixed(1)} >= ${successAds}). Triggering cooldown.`);
                     startCooldown();
                     showAdProtectionOverlay();
                     timerInterval = setInterval(updateAdProtectionTimer, 1000);
+                } else {
+                    console.log(`🛡️ Ad Protection: Ratio check PASSED (${failedAds} × ${CONFIG.RATIO_THRESHOLD} = ${(failedAds * CONFIG.RATIO_THRESHOLD).toFixed(1)} < ${successAds}). Continue monitoring.`);
                 }
             }
         }
@@ -748,11 +760,24 @@
         
         window.AdProtectionControl = {
             status: function() {
+                const failedAds = parseInt(localStorage.getItem('adGuideFailedAds') || '0');
+                const successAds = parseInt(localStorage.getItem('adGuideTotalSeen') || '0');
+                const checkInterval = getCheckInterval();
+                const ratio = successAds > 0 ? (failedAds / successAds).toFixed(2) : 'N/A';
+                const nextCheck = Math.ceil(failedAds / checkInterval) * checkInterval;
+                
+                const lastChecked = parseInt(localStorage.getItem('adProtectionLastChecked') || '0');
+                const willTrigger = failedAds * 1.1 >= successAds ? '❌ Will Trigger' : '✅ Safe';
+                
                 const data = {
                     date: localStorage.getItem('adProtectionDate'),
-                    failedAds: parseInt(localStorage.getItem('adGuideFailedAds') || '0'),
-                    limit: getFailedAdLimit(),
-                    cooldownCount: parseInt(localStorage.getItem('adProtectionCooldownCount') || '0'),
+                    failedAds: failedAds,
+                    successAds: successAds,
+                    ratio: ratio + ' ' + willTrigger,
+                    checkInterval: '30 (checks at 30, 60, 90, 120...)',
+                    lastChecked: lastChecked,
+                    nextCheckPoint: nextCheck,
+                    cooldownCount: parseInt(localStorage.getItem('adProtectionCooldownCount') || '0') + ' times triggered',
                     isInCooldown: localStorage.getItem('adProtectionIsInCooldown') === 'true',
                     cooldownStart: localStorage.getItem('adProtectionCooldownStart'),
                     cooldownDuration: localStorage.getItem('adProtectionCooldownDuration')
@@ -819,8 +844,9 @@
    AdProtectionControl.addFailedAds(10)
 
 🎯 Set Specific Count:
-   AdProtectionControl.setFailedAds(149)
-   AdProtectionControl.setFailedAds(150)
+   AdProtectionControl.setFailedAds(29)
+   AdProtectionControl.setFailedAds(30)
+   AdProtectionControl.setFailedAds(60)
 
 ⏱️ Cooldown Control:
    AdProtectionControl.endCooldown()
@@ -889,15 +915,15 @@
       googletag.cmd.push(function() {
         // Define ad slots for the chapter page (randomly selected 5 out of 10)
         
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_2', [300, 250], 'div-gpt-ad-1762511986518-0').addService(googletag.pubads());
-        
         googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_1', [300, 250], 'div-gpt-ad-1762511964282-0').addService(googletag.pubads());
-        
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_5', [300, 250], 'div-gpt-ad-1762512054239-0').addService(googletag.pubads());
         
         googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_3', [300, 250], 'div-gpt-ad-1762512008111-0').addService(googletag.pubads());
         
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_2', [300, 250], 'div-gpt-ad-1762511986518-0').addService(googletag.pubads());
+        
         googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_5', [300, 250], 'div-gpt-ad-1762512161163-0').addService(googletag.pubads());
+        
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_5', [300, 250], 'div-gpt-ad-1762512054239-0').addService(googletag.pubads());
         
         googletag.pubads().enableSingleRequest();
         googletag.enableServices();
@@ -1956,40 +1982,40 @@
                 <p>Even someone slow on the uptake would recognize the gravity in those words.</p>
                 <p>&#34;The child is yours and Vincent&#39;s?&#34;</p>
                 <p>Seraphina hesitated before nodding sharply. &#34;When I was starting out in Hollywood, he bankrolled my career. After he discarded me, I hid the pregnancy. He has a history with orphanages - not for charity, but for... other purposes.&#34;</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_2 -->
-                <div id='div-gpt-ad-1762511986518-0' style='min-width: 300px; min-height: 250px;'>
-                  <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762511986518-0'); });
-                  </script>
-                </div>
-                <p>She showed Evelyn several disturbing photos - Vincent grinning while holding bruised children.</p>
-                <p>Evelyn&#39;s stomach turned violently.</p>
-                <p>&#34;I have no leverage against him,&#34; Seraphina whispered desperately. &#34;If I go to the police, he&#39;ll kill us both. You&#39;re my only hope—&#34;</p>
-                <p>Bennett arrived with contracts in hand, freezing when he saw Seraphina. &#34;Ms. Sinclair, the Pacific Crest documents—&#34;</p>
                 <!-- /22796784223/Netlink/goodluckark.com/banner_1 -->
                 <div id='div-gpt-ad-1762511964282-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
                     googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762511964282-0'); });
                   </script>
                 </div>
+                <p>She showed Evelyn several disturbing photos - Vincent grinning while holding bruised children.</p>
+                <p>Evelyn&#39;s stomach turned violently.</p>
+                <p>&#34;I have no leverage against him,&#34; Seraphina whispered desperately. &#34;If I go to the police, he&#39;ll kill us both. You&#39;re my only hope—&#34;</p>
+                <p>Bennett arrived with contracts in hand, freezing when he saw Seraphina. &#34;Ms. Sinclair, the Pacific Crest documents—&#34;</p>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_3 -->
+                <div id='div-gpt-ad-1762512008111-0' style='min-width: 300px; min-height: 250px;'>
+                  <script>
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512008111-0'); });
+                  </script>
+                </div>
                 <p>Evelyn made a snap decision. &#34;Bennett, keep Vincent occupied.&#34; Before he could respond, she was already striding toward the elevators with Seraphina. &#34;You know the room number?&#34;</p>
                 <p>&#34;Suite 2407.&#34;</p>
                 <p>The elevator ride was tense. When they reached the door, Seraphina began hyperventilating. Evelyn silenced her with a look and knocked sharply.</p>
                 <p>A hulking bodyguard cracked the door open. &#34;State your business.&#34;</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_5 -->
-                <div id='div-gpt-ad-1762512054239-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_2 -->
+                <div id='div-gpt-ad-1762511986518-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512054239-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762511986518-0'); });
                   </script>
                 </div>
                 <p>Behind him, muffled whimpers.</p>
                 <p>Evelyn flashed a dazzling smile. &#34;Sterling Enterprises. Mr. Caldwell requested my presence.&#34;</p>
                 <p>As the guard reached for his phone, Evelyn exploded into motion. Her sneaker-clad foot smashed the door open.</p>
                 <p>The guard lunged. She twisted away, seizing his wrist and wrenching it backward with a sickening pop.</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_3 -->
-                <div id='div-gpt-ad-1762512008111-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_5 -->
+                <div id='div-gpt-ad-1762512161163-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512008111-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512161163-0'); });
                   </script>
                 </div>
                 <p>Seraphina darted past them.</p>
@@ -1999,10 +2025,10 @@
                 <p>Evelyn jerked her chin toward the exit. Once they were clear, she turned to leave—</p>
                 <p>&#34;Rot in hell!&#34;</p>
                 <p>The cold press of metal against her spine told Evelyn everything.</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_5 -->
-                <div id='div-gpt-ad-1762512161163-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_5 -->
+                <div id='div-gpt-ad-1762512054239-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512161163-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512054239-0'); });
                   </script>
                 </div>
             </div>
@@ -7511,9 +7537,18 @@
                     
                     <!-- Ad Protection System -->
                     <div style="background: rgba(255,255,255,0.05); padding: 8px; border-radius: 4px;">
-                        <div style="font-weight: bold; margin-bottom: 5px; color: #FF3B30;">🛡️ Ad Protection</div>
+                        <div style="font-weight: bold; margin-bottom: 5px; color: #FF3B30;">🛡️ Ad Protection (Ratio)</div>
                         <div>Date: ${localStorage.getItem('adProtectionDate') || 'Not Set'}</div>
-                        <div>Failed Ads: ${parseInt(localStorage.getItem('adGuideFailedAds') || '0')} / ${150 * (parseInt(localStorage.getItem('adProtectionCooldownCount') || '0') + 1)}</div>
+                        <div>Failed: ${parseInt(localStorage.getItem('adGuideFailedAds') || '0')} | Success: ${parseInt(localStorage.getItem('adGuideTotalSeen') || '0')}</div>
+                        <div>Ratio: ${(() => {
+                            const failed = parseInt(localStorage.getItem('adGuideFailedAds') || '0');
+                            const success = parseInt(localStorage.getItem('adGuideTotalSeen') || '0');
+                            if (success === 0) return 'N/A (⚠️ Will trigger at 30)';
+                            const ratio = (failed / success).toFixed(2);
+                            const willTrigger = failed * 1.1 >= success;
+                            return ratio + (willTrigger ? ' ❌ Bad' : ' ✅ Safe');
+                        })()}</div>
+                        <div>Check Interval: 30 (checks at 30, 60, 90...)</div>
                         <div>Cooldown Count: ${parseInt(localStorage.getItem('adProtectionCooldownCount') || '0')}</div>
                         <div>Status: ${localStorage.getItem('adProtectionIsInCooldown') === 'true' ? '🛡️ Protected' : '✅ Active'}</div>
                         <div>Remaining: ${(() => {
@@ -7528,7 +7563,7 @@
                             return hours + ':' + minutes.toString().padStart(2, '0') + ':' + seconds.toString().padStart(2, '0');
                         })()}</div>
                         <div style="display: flex; gap: 5px; margin-top: 8px;">
-                            <button onclick="if(window.AdProtectionControl) AdProtectionControl.setFailedAds(149)" style="
+                            <button onclick="if(window.AdProtectionControl) AdProtectionControl.setFailedAds(29)" style="
                                 flex: 1;
                                 padding: 5px 10px;
                                 background: #666;
@@ -7537,8 +7572,8 @@
                                 border-radius: 4px;
                                 cursor: pointer;
                                 font-size: 10px;
-                            ">→149</button>
-                            <button onclick="if(window.AdProtectionControl) AdProtectionControl.setFailedAds(150)" style="
+                            ">→29</button>
+                            <button onclick="if(window.AdProtectionControl) AdProtectionControl.setFailedAds(30)" style="
                                 flex: 1;
                                 padding: 5px 10px;
                                 background: #666;
@@ -7547,8 +7582,8 @@
                                 border-radius: 4px;
                                 cursor: pointer;
                                 font-size: 10px;
-                            ">→150</button>
-                            <button onclick="if(window.AdProtectionControl) AdProtectionControl.setFailedAds(299)" style="
+                            ">→30</button>
+                            <button onclick="if(window.AdProtectionControl) AdProtectionControl.setFailedAds(59)" style="
                                 flex: 1;
                                 padding: 5px 10px;
                                 background: #666;
@@ -7557,8 +7592,8 @@
                                 border-radius: 4px;
                                 cursor: pointer;
                                 font-size: 10px;
-                            ">→299</button>
-                            <button onclick="if(window.AdProtectionControl) AdProtectionControl.setFailedAds(300)" style="
+                            ">→59</button>
+                            <button onclick="if(window.AdProtectionControl) AdProtectionControl.setFailedAds(60)" style="
                                 flex: 1;
                                 padding: 5px 10px;
                                 background: #666;
@@ -7567,7 +7602,7 @@
                                 border-radius: 4px;
                                 cursor: pointer;
                                 font-size: 10px;
-                            ">→300</button>
+                            ">→60</button>
                         </div>
                         <div style="display: flex; gap: 5px; margin-top: 5px;">
                             <button onclick="if(window.AdProtectionControl) AdProtectionControl.endCooldown()" style="

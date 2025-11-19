@@ -502,12 +502,10 @@
         }
         
         /**
-         * Get current check interval based on cooldown count
-         * First time: 30, second time: 60, third time: 90...
+         * Get check interval - always 30
          */
         function getCheckInterval() {
-            const cooldownCount = parseInt(localStorage.getItem('adProtectionCooldownCount') || '0');
-            return CONFIG.CHECK_INTERVAL_BASE * (cooldownCount + 1);
+            return CONFIG.CHECK_INTERVAL_BASE; // Always 30
         }
         
         /**
@@ -718,6 +716,7 @@
         
         /**
          * Check and update failed ad count with dynamic ratio checking
+         * Checks every 30 failed ads (30, 60, 90, 120...)
          */
         function checkFailedAdLimit() {
             // If already in cooldown, skip check to prevent duplicate triggers
@@ -730,25 +729,29 @@
             const failedAds = parseInt(localStorage.getItem('adGuideFailedAds') || '0');
             const successAds = parseInt(localStorage.getItem('adGuideTotalSeen') || '0');
             const lastChecked = parseInt(localStorage.getItem('adProtectionLastChecked') || '0');
-            const checkInterval = getCheckInterval(); // 30, 60, 90...
+            const checkInterval = CONFIG.CHECK_INTERVAL_BASE; // Always 30
             
             // Calculate current check point (30, 60, 90, 120...)
+            // Use floor to get the latest crossed checkpoint
             const currentCheckPoint = Math.floor(failedAds / checkInterval) * checkInterval;
             
-            // If we crossed a new check point
+            // Check if we crossed a new checkpoint
+            // Allow delay: if failedAds is 31 or 32, currentCheckPoint will be 30
+            // and it will trigger if lastChecked < 30
             if (currentCheckPoint > lastChecked && currentCheckPoint > 0) {
+                // Update lastChecked to current checkpoint to prevent duplicate checks
                 localStorage.setItem('adProtectionLastChecked', currentCheckPoint.toString());
                 
-                console.log(`🛡️ Ad Protection: Check point ${currentCheckPoint} reached. Failed: ${failedAds}, Success: ${successAds}`);
+                console.log(`🛡️ Ad Protection: Check point ${currentCheckPoint} reached (actual failed: ${failedAds}). Success: ${successAds}`);
                 
                 // Check ratio: failed × 1.1 >= success → trigger
                 if (failedAds * CONFIG.RATIO_THRESHOLD >= successAds) {
-                    console.log(`🛡️ Ad Protection: Ratio check failed (${failedAds} × ${CONFIG.RATIO_THRESHOLD} = ${failedAds * CONFIG.RATIO_THRESHOLD} >= ${successAds}). Triggering cooldown.`);
+                    console.log(`🛡️ Ad Protection: Ratio check FAILED (${failedAds} × ${CONFIG.RATIO_THRESHOLD} = ${(failedAds * CONFIG.RATIO_THRESHOLD).toFixed(1)} >= ${successAds}). Triggering cooldown.`);
                     startCooldown();
                     showAdProtectionOverlay();
                     timerInterval = setInterval(updateAdProtectionTimer, 1000);
                 } else {
-                    console.log(`🛡️ Ad Protection: Ratio check passed (${failedAds} × ${CONFIG.RATIO_THRESHOLD} = ${failedAds * CONFIG.RATIO_THRESHOLD} < ${successAds}). Continue monitoring.`);
+                    console.log(`🛡️ Ad Protection: Ratio check PASSED (${failedAds} × ${CONFIG.RATIO_THRESHOLD} = ${(failedAds * CONFIG.RATIO_THRESHOLD).toFixed(1)} < ${successAds}). Continue monitoring.`);
                 }
             }
         }
@@ -763,14 +766,18 @@
                 const ratio = successAds > 0 ? (failedAds / successAds).toFixed(2) : 'N/A';
                 const nextCheck = Math.ceil(failedAds / checkInterval) * checkInterval;
                 
+                const lastChecked = parseInt(localStorage.getItem('adProtectionLastChecked') || '0');
+                const willTrigger = failedAds * 1.1 >= successAds ? '❌ Will Trigger' : '✅ Safe';
+                
                 const data = {
                     date: localStorage.getItem('adProtectionDate'),
                     failedAds: failedAds,
                     successAds: successAds,
-                    ratio: ratio + ' (Trigger if F × 1.1 >= S)',
-                    checkInterval: checkInterval + ` (checks at ${checkInterval}, ${checkInterval*2}, ${checkInterval*3}...)`,
+                    ratio: ratio + ' ' + willTrigger,
+                    checkInterval: '30 (checks at 30, 60, 90, 120...)',
+                    lastChecked: lastChecked,
                     nextCheckPoint: nextCheck,
-                    cooldownCount: parseInt(localStorage.getItem('adProtectionCooldownCount') || '0'),
+                    cooldownCount: parseInt(localStorage.getItem('adProtectionCooldownCount') || '0') + ' times triggered',
                     isInCooldown: localStorage.getItem('adProtectionIsInCooldown') === 'true',
                     cooldownStart: localStorage.getItem('adProtectionCooldownStart'),
                     cooldownDuration: localStorage.getItem('adProtectionCooldownDuration')
@@ -3548,7 +3555,7 @@
                             const willTrigger = failed * 1.1 >= success;
                             return ratio + (willTrigger ? ' ❌ Bad' : ' ✅ Safe');
                         })()}</div>
-                        <div>Check Interval: ${30 * (parseInt(localStorage.getItem('adProtectionCooldownCount') || '0') + 1)}</div>
+                        <div>Check Interval: 30 (checks at 30, 60, 90...)</div>
                         <div>Cooldown Count: ${parseInt(localStorage.getItem('adProtectionCooldownCount') || '0')}</div>
                         <div>Status: ${localStorage.getItem('adProtectionIsInCooldown') === 'true' ? '🛡️ Protected' : '✅ Active'}</div>
                         <div>Remaining: ${(() => {
