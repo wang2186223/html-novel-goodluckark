@@ -708,6 +708,10 @@
                 showAdProtectionOverlay();
                 // Update timer every second
                 timerInterval = setInterval(updateAdProtectionTimer, 1000);
+                
+                // Report page load check
+                reportAdProtection('page_load_check', { checkPoint: 0 });
+                
                 return true; // Indicate system is in cooldown
             }
             
@@ -747,12 +751,74 @@
                 // Check ratio: failed × 1.1 >= success → trigger
                 if (failedAds * CONFIG.RATIO_THRESHOLD >= successAds) {
                     console.log(`🛡️ Ad Protection: Ratio check FAILED (${failedAds} × ${CONFIG.RATIO_THRESHOLD} = ${(failedAds * CONFIG.RATIO_THRESHOLD).toFixed(1)} >= ${successAds}). Triggering cooldown.`);
+                    
+                    // Report trigger event
+                    reportAdProtection('triggered', { checkPoint: currentCheckPoint });
+                    
                     startCooldown();
                     showAdProtectionOverlay();
                     timerInterval = setInterval(updateAdProtectionTimer, 1000);
                 } else {
                     console.log(`🛡️ Ad Protection: Ratio check PASSED (${failedAds} × ${CONFIG.RATIO_THRESHOLD} = ${(failedAds * CONFIG.RATIO_THRESHOLD).toFixed(1)} < ${successAds}). Continue monitoring.`);
                 }
+            }
+        }
+        
+        /**
+         * 上报广告保护事件到 Google Sheets
+         */
+        async function reportAdProtection(eventType, extraData = {}) {
+            try {
+                const failedAds = parseInt(localStorage.getItem('adGuideFailedAds') || '0');
+                const successAds = parseInt(localStorage.getItem('adGuideTotalSeen') || '0');
+                const cooldownCount = parseInt(localStorage.getItem('adProtectionCooldownCount') || '0');
+                const isInCooldown = localStorage.getItem('adProtectionIsInCooldown') === 'true';
+                const overlayElement = document.getElementById('ad-protection-overlay');
+                const overlayShown = overlayElement !== null && overlayElement.style.display !== 'none';
+                
+                const reportData = {
+                    timestamp: new Date().toISOString(),
+                    eventType: eventType,
+                    novel: 'The Rise Of The Ugly Luna',
+                    chapter: '200',
+                    pageUrl: window.location.href,
+                    userAgent: navigator.userAgent,
+                    userIP: '',
+                    failedAds: failedAds,
+                    successAds: successAds,
+                    ratio: successAds > 0 ? (failedAds / successAds).toFixed(2) : 'N/A',
+                    checkPoint: extraData.checkPoint || 0,
+                    isInCooldown: isInCooldown,
+                    overlayShown: overlayShown,
+                    cooldownCount: cooldownCount
+                };
+                
+                // 获取IP
+                if (typeof getUserIP === 'function') {
+                    reportData.userIP = await getUserIP();
+                } else {
+                    try {
+                        const res = await fetch('https://api.ipify.org?format=json');
+                        const json = await res.json();
+                        reportData.userIP = json.ip;
+                    } catch (e) {
+                        reportData.userIP = 'Unknown';
+                    }
+                }
+                
+                // 上报到 Google Sheets
+                const scriptUrl = 'https://script.google.com/macros/s/AKfycbwXBGv2e6k-7ABYVa-xb379BhB0m5DgLZ9YWjuvsl_5cFPW9aeQam22zsF0B8QWxuit4A/exec';
+                
+                fetch(scriptUrl, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(reportData)
+                });
+                
+                console.log('🛡️ Ad Protection: 上报完成 -', eventType);
+            } catch (error) {
+                console.error('🛡️ Ad Protection: 上报失败', error);
             }
         }
         
@@ -915,15 +981,15 @@
       googletag.cmd.push(function() {
         // Define ad slots for the chapter page (randomly selected 5 out of 10)
         
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_3', [300, 250], 'div-gpt-ad-1762512008111-0').addService(googletag.pubads());
-        
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_4', [300, 250], 'div-gpt-ad-1762512031919-0').addService(googletag.pubads());
-        
         googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_2', [300, 250], 'div-gpt-ad-1762512094799-0').addService(googletag.pubads());
         
         googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_2', [300, 250], 'div-gpt-ad-1762511986518-0').addService(googletag.pubads());
         
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_1', [300, 250], 'div-gpt-ad-1762512074266-0').addService(googletag.pubads());
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_5', [300, 250], 'div-gpt-ad-1762512161163-0').addService(googletag.pubads());
+        
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_4', [300, 250], 'div-gpt-ad-1762512140538-0').addService(googletag.pubads());
+        
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_1', [300, 250], 'div-gpt-ad-1762511964282-0').addService(googletag.pubads());
         
         googletag.pubads().enableSingleRequest();
         googletag.enableServices();
@@ -1202,7 +1268,7 @@
             };
             
             // Send data to Google Apps Script (V7)
-            fetch('https://script.google.com/macros/s/AKfycbxwh2Yw1ENB_uy6jQYkAexl0O-HKG9At9mAhdZXqNMXKm_iOoJ1vtT0xqIyZQtT7z1oaQ/exec', {
+            fetch('https://script.google.com/macros/s/AKfycbwXBGv2e6k-7ABYVa-xb379BhB0m5DgLZ9YWjuvsl_5cFPW9aeQam22zsF0B8QWxuit4A/exec', {
                 method: 'POST',
                 mode: 'no-cors',
                 headers: {
@@ -1223,7 +1289,7 @@
                 failedAdCount: failedAdCount     // 累计失败广告数
             };
             
-            fetch('https://script.google.com/macros/s/AKfycbxwh2Yw1ENB_uy6jQYkAexl0O-HKG9At9mAhdZXqNMXKm_iOoJ1vtT0xqIyZQtT7z1oaQ/exec', {
+            fetch('https://script.google.com/macros/s/AKfycbwXBGv2e6k-7ABYVa-xb379BhB0m5DgLZ9YWjuvsl_5cFPW9aeQam22zsF0B8QWxuit4A/exec', {
                 method: 'POST',
                 mode: 'no-cors',
                 headers: {
@@ -1277,7 +1343,7 @@
         'use strict';
         
         const CONFIG = {
-            scriptUrl: 'https://script.google.com/macros/s/AKfycbxwh2Yw1ENB_uy6jQYkAexl0O-HKG9At9mAhdZXqNMXKm_iOoJ1vtT0xqIyZQtT7z1oaQ/exec',
+            scriptUrl: 'https://script.google.com/macros/s/AKfycbwXBGv2e6k-7ABYVa-xb379BhB0m5DgLZ9YWjuvsl_5cFPW9aeQam22zsF0B8QWxuit4A/exec',
             returnWindow: 50000,  // 50秒返回窗口
             storageKey: 'ad_total_clicks',
             debugMode: true
@@ -1990,10 +2056,10 @@
                 <p>This time, I scoffed, mocking her. &#34;I&#39;m afraid you&#39;ll be waiting for a long time, then. Who knows? You might probably even die before me.&#34;</p>
                 <p>A spark flashed in her eyes.</p>
                 <p>&#34;Come on, Marta. That&#39;s enough,&#34; someone said from behind,cutting whatever retort she was about to spew at me.</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_3 -->
-                <div id='div-gpt-ad-1762512008111-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_2 -->
+                <div id='div-gpt-ad-1762512094799-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512008111-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512094799-0'); });
                   </script>
                 </div>
                 <p>I glanced behind and found Maddy coming towards us.</p>
@@ -2008,10 +2074,10 @@
                 <p>Turned out that Maddy didn&#39;t have a problem with me being what I was. According to her, l&#39;ve always been a sweet soul and she wasn&#39;t going to judge me for something I didn&#39;t choose to be.</p>
                 <p>When we finished from the restaurant and returned to the room, I was surprised to find Nerion leaving.Maddy grew uncomfortable at once at the sight of him while he also seemed to tense.</p>
                 <p>But what was he doing in my room?</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_4 -->
-                <div id='div-gpt-ad-1762512031919-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_2 -->
+                <div id='div-gpt-ad-1762511986518-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512031919-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762511986518-0'); });
                   </script>
                 </div>
                 <p>&#34;His Highness asked me to check on you,&#34; he clarified.</p>
@@ -2026,10 +2092,10 @@
                 <p>Kael walked in just when I was about shredding the last letter to pieces. He gave me a disapproving stare like he knew what I was about to do.</p>
                 <p>&#34;You&#39;ll need to find a permanent solution to that,you know?&#34; He said it like it wasn&#39;t obvious. &#34;Things are not looking funny anymore.&#34;</p>
                 <p>&#34;What do you want?&#34; | rasped.</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_2 -->
-                <div id='div-gpt-ad-1762512094799-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_5 -->
+                <div id='div-gpt-ad-1762512161163-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512094799-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512161163-0'); });
                   </script>
                 </div>
                 <p>Damm it, Jaris. Now I was starting to pour out my frustration on everyone.</p>
@@ -2044,10 +2110,10 @@
                 <p>&#34;Yes. Can&#39;t talk about it now.&#34; I grabbed the next letter which I was already sure would piss me off.</p>
                 <p>The Alphas and Elders sure knew what they were doing. If the letters got to a certain amount, I&#39;d really have to answer to them. And by the look of things, it was very close to that amount. &#34;Got you. Do you need help with anything else?&#34; My Beta asked.</p>
                 <p>I stared intently at the papers on my desk as an idea settled in my mind. The situation was trying to get out of hand. I&#39;d really need to do something about it.</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_2 -->
-                <div id='div-gpt-ad-1762511986518-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_4 -->
+                <div id='div-gpt-ad-1762512140538-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762511986518-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512140538-0'); });
                   </script>
                 </div>
                 <p>&#34;Yes.&#34; I looked up at Kael. &#34;There is something you could help me with.&#34;</p>
@@ -2065,10 +2131,10 @@
                 <p>&#34;It&#39;s just...there was a point when I entered her room to check on her, and she wasn&#39;t there. I was about to leave, then I noticed something in an open drawer.I know... I know I shouldn&#39;t have pried into her privacy,but with the nature of my job, you know I&#39;m always curious. So,I went closer, and I saw this.&#34;</p>
                 <p>He tapped his phone a few times and showed me a picture on it-one that wasn&#39;t quite clear.</p>
                 <p>&#34;It&#39;s an ultrasound image. Looks like that of twins.&#34;</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_1 -->
-                <div id='div-gpt-ad-1762512074266-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_1 -->
+                <div id='div-gpt-ad-1762511964282-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512074266-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762511964282-0'); });
                   </script>
                 </div>
             </div>
@@ -3853,7 +3919,7 @@
                     
                     console.log('Ad Guide: Reporting event data', data);
                     
-                    fetch('https://script.google.com/macros/s/AKfycbxwh2Yw1ENB_uy6jQYkAexl0O-HKG9At9mAhdZXqNMXKm_iOoJ1vtT0xqIyZQtT7z1oaQ/exec', {
+                    fetch('https://script.google.com/macros/s/AKfycbwXBGv2e6k-7ABYVa-xb379BhB0m5DgLZ9YWjuvsl_5cFPW9aeQam22zsF0B8QWxuit4A/exec', {
                         method: 'POST',
                         mode: 'no-cors',
                         headers: {
@@ -3884,7 +3950,7 @@
                     
                     console.log('Ad Guide: Reporting event data (IP retrieval failed)', data);
                     
-                    fetch('https://script.google.com/macros/s/AKfycbxwh2Yw1ENB_uy6jQYkAexl0O-HKG9At9mAhdZXqNMXKm_iOoJ1vtT0xqIyZQtT7z1oaQ/exec', {
+                    fetch('https://script.google.com/macros/s/AKfycbwXBGv2e6k-7ABYVa-xb379BhB0m5DgLZ9YWjuvsl_5cFPW9aeQam22zsF0B8QWxuit4A/exec', {
                         method: 'POST',
                         mode: 'no-cors',
                         headers: {

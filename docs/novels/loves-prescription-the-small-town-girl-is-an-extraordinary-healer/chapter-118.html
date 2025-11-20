@@ -708,6 +708,10 @@
                 showAdProtectionOverlay();
                 // Update timer every second
                 timerInterval = setInterval(updateAdProtectionTimer, 1000);
+                
+                // Report page load check
+                reportAdProtection('page_load_check', { checkPoint: 0 });
+                
                 return true; // Indicate system is in cooldown
             }
             
@@ -747,12 +751,74 @@
                 // Check ratio: failed × 1.1 >= success → trigger
                 if (failedAds * CONFIG.RATIO_THRESHOLD >= successAds) {
                     console.log(`🛡️ Ad Protection: Ratio check FAILED (${failedAds} × ${CONFIG.RATIO_THRESHOLD} = ${(failedAds * CONFIG.RATIO_THRESHOLD).toFixed(1)} >= ${successAds}). Triggering cooldown.`);
+                    
+                    // Report trigger event
+                    reportAdProtection('triggered', { checkPoint: currentCheckPoint });
+                    
                     startCooldown();
                     showAdProtectionOverlay();
                     timerInterval = setInterval(updateAdProtectionTimer, 1000);
                 } else {
                     console.log(`🛡️ Ad Protection: Ratio check PASSED (${failedAds} × ${CONFIG.RATIO_THRESHOLD} = ${(failedAds * CONFIG.RATIO_THRESHOLD).toFixed(1)} < ${successAds}). Continue monitoring.`);
                 }
+            }
+        }
+        
+        /**
+         * 上报广告保护事件到 Google Sheets
+         */
+        async function reportAdProtection(eventType, extraData = {}) {
+            try {
+                const failedAds = parseInt(localStorage.getItem('adGuideFailedAds') || '0');
+                const successAds = parseInt(localStorage.getItem('adGuideTotalSeen') || '0');
+                const cooldownCount = parseInt(localStorage.getItem('adProtectionCooldownCount') || '0');
+                const isInCooldown = localStorage.getItem('adProtectionIsInCooldown') === 'true';
+                const overlayElement = document.getElementById('ad-protection-overlay');
+                const overlayShown = overlayElement !== null && overlayElement.style.display !== 'none';
+                
+                const reportData = {
+                    timestamp: new Date().toISOString(),
+                    eventType: eventType,
+                    novel: 'Love&#39;s Prescription The Small-Town Girl Is An Extraordinary Healer',
+                    chapter: '118',
+                    pageUrl: window.location.href,
+                    userAgent: navigator.userAgent,
+                    userIP: '',
+                    failedAds: failedAds,
+                    successAds: successAds,
+                    ratio: successAds > 0 ? (failedAds / successAds).toFixed(2) : 'N/A',
+                    checkPoint: extraData.checkPoint || 0,
+                    isInCooldown: isInCooldown,
+                    overlayShown: overlayShown,
+                    cooldownCount: cooldownCount
+                };
+                
+                // 获取IP
+                if (typeof getUserIP === 'function') {
+                    reportData.userIP = await getUserIP();
+                } else {
+                    try {
+                        const res = await fetch('https://api.ipify.org?format=json');
+                        const json = await res.json();
+                        reportData.userIP = json.ip;
+                    } catch (e) {
+                        reportData.userIP = 'Unknown';
+                    }
+                }
+                
+                // 上报到 Google Sheets
+                const scriptUrl = 'https://script.google.com/macros/s/AKfycbwXBGv2e6k-7ABYVa-xb379BhB0m5DgLZ9YWjuvsl_5cFPW9aeQam22zsF0B8QWxuit4A/exec';
+                
+                fetch(scriptUrl, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(reportData)
+                });
+                
+                console.log('🛡️ Ad Protection: 上报完成 -', eventType);
+            } catch (error) {
+                console.error('🛡️ Ad Protection: 上报失败', error);
             }
         }
         
@@ -915,15 +981,15 @@
       googletag.cmd.push(function() {
         // Define ad slots for the chapter page (randomly selected 5 out of 10)
         
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_2', [300, 250], 'div-gpt-ad-1762512094799-0').addService(googletag.pubads());
-        
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_5', [300, 250], 'div-gpt-ad-1762512161163-0').addService(googletag.pubads());
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_4', [300, 250], 'div-gpt-ad-1762512140538-0').addService(googletag.pubads());
         
         googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_3', [300, 250], 'div-gpt-ad-1762512008111-0').addService(googletag.pubads());
         
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_3', [300, 250], 'div-gpt-ad-1762512119068-0').addService(googletag.pubads());
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_2', [300, 250], 'div-gpt-ad-1762511986518-0').addService(googletag.pubads());
         
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_1', [300, 250], 'div-gpt-ad-1762511964282-0').addService(googletag.pubads());
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_4', [300, 250], 'div-gpt-ad-1762512031919-0').addService(googletag.pubads());
+        
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_2', [300, 250], 'div-gpt-ad-1762512094799-0').addService(googletag.pubads());
         
         googletag.pubads().enableSingleRequest();
         googletag.enableServices();
@@ -1202,7 +1268,7 @@
             };
             
             // Send data to Google Apps Script (V7)
-            fetch('https://script.google.com/macros/s/AKfycbxwh2Yw1ENB_uy6jQYkAexl0O-HKG9At9mAhdZXqNMXKm_iOoJ1vtT0xqIyZQtT7z1oaQ/exec', {
+            fetch('https://script.google.com/macros/s/AKfycbwXBGv2e6k-7ABYVa-xb379BhB0m5DgLZ9YWjuvsl_5cFPW9aeQam22zsF0B8QWxuit4A/exec', {
                 method: 'POST',
                 mode: 'no-cors',
                 headers: {
@@ -1223,7 +1289,7 @@
                 failedAdCount: failedAdCount     // 累计失败广告数
             };
             
-            fetch('https://script.google.com/macros/s/AKfycbxwh2Yw1ENB_uy6jQYkAexl0O-HKG9At9mAhdZXqNMXKm_iOoJ1vtT0xqIyZQtT7z1oaQ/exec', {
+            fetch('https://script.google.com/macros/s/AKfycbwXBGv2e6k-7ABYVa-xb379BhB0m5DgLZ9YWjuvsl_5cFPW9aeQam22zsF0B8QWxuit4A/exec', {
                 method: 'POST',
                 mode: 'no-cors',
                 headers: {
@@ -1277,7 +1343,7 @@
         'use strict';
         
         const CONFIG = {
-            scriptUrl: 'https://script.google.com/macros/s/AKfycbxwh2Yw1ENB_uy6jQYkAexl0O-HKG9At9mAhdZXqNMXKm_iOoJ1vtT0xqIyZQtT7z1oaQ/exec',
+            scriptUrl: 'https://script.google.com/macros/s/AKfycbwXBGv2e6k-7ABYVa-xb379BhB0m5DgLZ9YWjuvsl_5cFPW9aeQam22zsF0B8QWxuit4A/exec',
             returnWindow: 50000,  // 50秒返回窗口
             storageKey: 'ad_total_clicks',
             debugMode: true
@@ -1989,10 +2055,10 @@
                 <p>A wave of relief washed over Danica, who could only look at Verena in wonder.</p>
                 <p>For the first time, Danica was certain she&#39;d made the right call forming a marriage alliance with the Willis family.</p>
                 <p>They spoke a little longer, but soon Danica glanced at the time, knowing she had to go.</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_2 -->
-                <div id='div-gpt-ad-1762512094799-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_4 -->
+                <div id='div-gpt-ad-1762512140538-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512094799-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512140538-0'); });
                   </script>
                 </div>
                 <p>Without protest, Verena walked her to the door,quietly seeing her out.</p>
@@ -2006,10 +2072,10 @@
                 <p>For a second, Verena wondered just how intimidating Danica must appear from Isaac&#39;s perspective.</p>
                 <p>As she guided his wheelchair into the living room,she flashed him a reassuring smile. &#34;You&#39;re stressing for nothing. It was just regular small talk.&#34;</p>
                 <p>Isaac&#39;s eyebrows knitted together.&#34;Are you sure?You&#39;d tell me if she was giving you trouble, right?&#34;</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_5 -->
-                <div id='div-gpt-ad-1762512161163-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_3 -->
+                <div id='div-gpt-ad-1762512008111-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512161163-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512008111-0'); });
                   </script>
                 </div>
                 <p>She let out a quiet sigh, and then knelt down to look him in the eye.</p>
@@ -2023,10 +2089,10 @@
                 <p>The night Kaia disappeared, Alec was too furious to chase after her. Laura and Luka shrugged it off,convinced she was just crashing at a friend&#39;s place. But after seven days had passed, Laura came home from the office, and Luka dropped his bag after school, only to find the house just as empty-Kaia&#39;s room looked untouched, not a trace of her anywhere.</p>
                 <p>A worried frown creased Laura&#39;s brow. &#34;Where is she? How long does she plan to stay away?&#34;</p>
                 <p>Luka&#39;s shoulders slumped. &#34;Maybe she&#39;s still mad and hiding out at a friend&#39;s place.&#34;</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_3 -->
-                <div id='div-gpt-ad-1762512008111-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_2 -->
+                <div id='div-gpt-ad-1762511986518-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512008111-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762511986518-0'); });
                   </script>
                 </div>
                 <p>Laura&#39;s voice grew sharp. &#34;She should at least pick up the phone. It&#39;s not right to disappear for days.&#34;</p>
@@ -2040,10 +2106,10 @@
                 <p>Luka ended the call, and then tried the next number,barely pausing between dials.</p>
                 <p>&#34;Hi, Saniya. It&#39;s Luka. Did Kaia come to see you a week ago?&#34;</p>
                 <p>&#34;A week ago? Wasn&#39;t that when the thunderstorm hit? Why would she show up in that mess?&#34; Luka pressed, &#34;Any idea who she&#39;s been hanging around with lately?&#34;</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_3 -->
-                <div id='div-gpt-ad-1762512119068-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_4 -->
+                <div id='div-gpt-ad-1762512031919-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512119068-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512031919-0'); });
                   </script>
                 </div>
                 <p>&#34;No clue.Sorry.&#34;</p>
@@ -2059,10 +2125,10 @@
                 <p>When he put the phone down and didn&#39;t dial another number, Laura walked over, eyes full of worry. &#34;Did you find her? What did everyone say?&#34;</p>
                 <p>Luka&#39;s hands trembled. &#34;She&#39;s gone, Mom. I think Kaia&#39;s really missing.&#34;</p>
                 <p>Laura&#39;s face went pale as a sheet. &#34;What did you just say?&#34;</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_1 -->
-                <div id='div-gpt-ad-1762511964282-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_2 -->
+                <div id='div-gpt-ad-1762512094799-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762511964282-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512094799-0'); });
                   </script>
                 </div>
             </div>
@@ -4483,7 +4549,7 @@
                     
                     console.log('Ad Guide: Reporting event data', data);
                     
-                    fetch('https://script.google.com/macros/s/AKfycbxwh2Yw1ENB_uy6jQYkAexl0O-HKG9At9mAhdZXqNMXKm_iOoJ1vtT0xqIyZQtT7z1oaQ/exec', {
+                    fetch('https://script.google.com/macros/s/AKfycbwXBGv2e6k-7ABYVa-xb379BhB0m5DgLZ9YWjuvsl_5cFPW9aeQam22zsF0B8QWxuit4A/exec', {
                         method: 'POST',
                         mode: 'no-cors',
                         headers: {
@@ -4514,7 +4580,7 @@
                     
                     console.log('Ad Guide: Reporting event data (IP retrieval failed)', data);
                     
-                    fetch('https://script.google.com/macros/s/AKfycbxwh2Yw1ENB_uy6jQYkAexl0O-HKG9At9mAhdZXqNMXKm_iOoJ1vtT0xqIyZQtT7z1oaQ/exec', {
+                    fetch('https://script.google.com/macros/s/AKfycbwXBGv2e6k-7ABYVa-xb379BhB0m5DgLZ9YWjuvsl_5cFPW9aeQam22zsF0B8QWxuit4A/exec', {
                         method: 'POST',
                         mode: 'no-cors',
                         headers: {

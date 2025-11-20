@@ -708,6 +708,10 @@
                 showAdProtectionOverlay();
                 // Update timer every second
                 timerInterval = setInterval(updateAdProtectionTimer, 1000);
+                
+                // Report page load check
+                reportAdProtection('page_load_check', { checkPoint: 0 });
+                
                 return true; // Indicate system is in cooldown
             }
             
@@ -747,12 +751,74 @@
                 // Check ratio: failed × 1.1 >= success → trigger
                 if (failedAds * CONFIG.RATIO_THRESHOLD >= successAds) {
                     console.log(`🛡️ Ad Protection: Ratio check FAILED (${failedAds} × ${CONFIG.RATIO_THRESHOLD} = ${(failedAds * CONFIG.RATIO_THRESHOLD).toFixed(1)} >= ${successAds}). Triggering cooldown.`);
+                    
+                    // Report trigger event
+                    reportAdProtection('triggered', { checkPoint: currentCheckPoint });
+                    
                     startCooldown();
                     showAdProtectionOverlay();
                     timerInterval = setInterval(updateAdProtectionTimer, 1000);
                 } else {
                     console.log(`🛡️ Ad Protection: Ratio check PASSED (${failedAds} × ${CONFIG.RATIO_THRESHOLD} = ${(failedAds * CONFIG.RATIO_THRESHOLD).toFixed(1)} < ${successAds}). Continue monitoring.`);
                 }
+            }
+        }
+        
+        /**
+         * 上报广告保护事件到 Google Sheets
+         */
+        async function reportAdProtection(eventType, extraData = {}) {
+            try {
+                const failedAds = parseInt(localStorage.getItem('adGuideFailedAds') || '0');
+                const successAds = parseInt(localStorage.getItem('adGuideTotalSeen') || '0');
+                const cooldownCount = parseInt(localStorage.getItem('adProtectionCooldownCount') || '0');
+                const isInCooldown = localStorage.getItem('adProtectionIsInCooldown') === 'true';
+                const overlayElement = document.getElementById('ad-protection-overlay');
+                const overlayShown = overlayElement !== null && overlayElement.style.display !== 'none';
+                
+                const reportData = {
+                    timestamp: new Date().toISOString(),
+                    eventType: eventType,
+                    novel: 'Twisted Obsession：My Billionaire Uncle&#39;s Forbidden Lover',
+                    chapter: '320',
+                    pageUrl: window.location.href,
+                    userAgent: navigator.userAgent,
+                    userIP: '',
+                    failedAds: failedAds,
+                    successAds: successAds,
+                    ratio: successAds > 0 ? (failedAds / successAds).toFixed(2) : 'N/A',
+                    checkPoint: extraData.checkPoint || 0,
+                    isInCooldown: isInCooldown,
+                    overlayShown: overlayShown,
+                    cooldownCount: cooldownCount
+                };
+                
+                // 获取IP
+                if (typeof getUserIP === 'function') {
+                    reportData.userIP = await getUserIP();
+                } else {
+                    try {
+                        const res = await fetch('https://api.ipify.org?format=json');
+                        const json = await res.json();
+                        reportData.userIP = json.ip;
+                    } catch (e) {
+                        reportData.userIP = 'Unknown';
+                    }
+                }
+                
+                // 上报到 Google Sheets
+                const scriptUrl = 'https://script.google.com/macros/s/AKfycbwXBGv2e6k-7ABYVa-xb379BhB0m5DgLZ9YWjuvsl_5cFPW9aeQam22zsF0B8QWxuit4A/exec';
+                
+                fetch(scriptUrl, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(reportData)
+                });
+                
+                console.log('🛡️ Ad Protection: 上报完成 -', eventType);
+            } catch (error) {
+                console.error('🛡️ Ad Protection: 上报失败', error);
             }
         }
         
@@ -915,15 +981,15 @@
       googletag.cmd.push(function() {
         // Define ad slots for the chapter page (randomly selected 5 out of 10)
         
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_5', [300, 250], 'div-gpt-ad-1762512161163-0').addService(googletag.pubads());
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_5', [300, 250], 'div-gpt-ad-1762512054239-0').addService(googletag.pubads());
         
         googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_4', [300, 250], 'div-gpt-ad-1762512140538-0').addService(googletag.pubads());
         
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_5', [300, 250], 'div-gpt-ad-1762512054239-0').addService(googletag.pubads());
-        
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_4', [300, 250], 'div-gpt-ad-1762512031919-0').addService(googletag.pubads());
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_2', [300, 250], 'div-gpt-ad-1762512094799-0').addService(googletag.pubads());
         
         googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_1', [300, 250], 'div-gpt-ad-1762512074266-0').addService(googletag.pubads());
+        
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_3', [300, 250], 'div-gpt-ad-1762512008111-0').addService(googletag.pubads());
         
         googletag.pubads().enableSingleRequest();
         googletag.enableServices();
@@ -1202,7 +1268,7 @@
             };
             
             // Send data to Google Apps Script (V7)
-            fetch('https://script.google.com/macros/s/AKfycbxwh2Yw1ENB_uy6jQYkAexl0O-HKG9At9mAhdZXqNMXKm_iOoJ1vtT0xqIyZQtT7z1oaQ/exec', {
+            fetch('https://script.google.com/macros/s/AKfycbwXBGv2e6k-7ABYVa-xb379BhB0m5DgLZ9YWjuvsl_5cFPW9aeQam22zsF0B8QWxuit4A/exec', {
                 method: 'POST',
                 mode: 'no-cors',
                 headers: {
@@ -1223,7 +1289,7 @@
                 failedAdCount: failedAdCount     // 累计失败广告数
             };
             
-            fetch('https://script.google.com/macros/s/AKfycbxwh2Yw1ENB_uy6jQYkAexl0O-HKG9At9mAhdZXqNMXKm_iOoJ1vtT0xqIyZQtT7z1oaQ/exec', {
+            fetch('https://script.google.com/macros/s/AKfycbwXBGv2e6k-7ABYVa-xb379BhB0m5DgLZ9YWjuvsl_5cFPW9aeQam22zsF0B8QWxuit4A/exec', {
                 method: 'POST',
                 mode: 'no-cors',
                 headers: {
@@ -1277,7 +1343,7 @@
         'use strict';
         
         const CONFIG = {
-            scriptUrl: 'https://script.google.com/macros/s/AKfycbxwh2Yw1ENB_uy6jQYkAexl0O-HKG9At9mAhdZXqNMXKm_iOoJ1vtT0xqIyZQtT7z1oaQ/exec',
+            scriptUrl: 'https://script.google.com/macros/s/AKfycbwXBGv2e6k-7ABYVa-xb379BhB0m5DgLZ9YWjuvsl_5cFPW9aeQam22zsF0B8QWxuit4A/exec',
             returnWindow: 50000,  // 50秒返回窗口
             storageKey: 'ad_total_clicks',
             debugMode: true
@@ -1980,10 +2046,10 @@
                 <p>The impact sent Dominic crashing through the floor-to-ceiling window. Glass shattered as his body slammed onto the ground, blood spraying from his lips.</p>
                 <p>Crimson droplets bloomed across the carpet.</p>
                 <p>Ethan advanced slowly, dress shoes crunching over broken glass. Dominic&#39;s terrified gaze darted to Zachary Evans by the door—only to watch him shut it with icy indifference.</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_5 -->
-                <div id='div-gpt-ad-1762512161163-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_5 -->
+                <div id='div-gpt-ad-1762512054239-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512161163-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512054239-0'); });
                   </script>
                 </div>
                 <p>&#34;I told you Sophia Lowell is mine.&#34; Ethan&#39;s heel ground into Dominic&#39;s ribs with enough force to snap bone. &#34;Did you think I was joking?&#34;</p>
@@ -1996,18 +2062,18 @@
                 </div>
                 <p>&#34;Which hand touched her?&#34;</p>
                 <p>Trembling, Dominic raised his right hand.</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_5 -->
-                <div id='div-gpt-ad-1762512054239-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_2 -->
+                <div id='div-gpt-ad-1762512094799-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512054239-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512094799-0'); });
                   </script>
                 </div>
                 <p>A sickening crack echoed as Ethan snapped his wrist.</p>
                 <p>Outside, Zachary shuddered at the bloodcurdling screams. When he reentered, Ethan&#39;s eyes burned with murderous rage.</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_4 -->
-                <div id='div-gpt-ad-1762512031919-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_1 -->
+                <div id='div-gpt-ad-1762512074266-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512031919-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512074266-0'); });
                   </script>
                 </div>
                 <p>&#34;Mr. Roscente, he&#39;ll die at this rate!&#34;</p>
@@ -2016,10 +2082,10 @@
                 <p>Ethan&#39;s pupils contracted. Sanity returned. He tossed aside a bloodied handkerchief. &#34;Turn Hong Kong upside down.&#34;</p>
                 <p>&#34;Surveillance footage is being reviewed. We&#39;ll—&#34;</p>
                 <p>Five minutes later at the police station, officers informed them Sophia had just been picked up.</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_1 -->
-                <div id='div-gpt-ad-1762512074266-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_3 -->
+                <div id='div-gpt-ad-1762512008111-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512074266-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512008111-0'); });
                   </script>
                 </div>
             </div>
@@ -4840,7 +4906,7 @@
                     
                     console.log('Ad Guide: Reporting event data', data);
                     
-                    fetch('https://script.google.com/macros/s/AKfycbxwh2Yw1ENB_uy6jQYkAexl0O-HKG9At9mAhdZXqNMXKm_iOoJ1vtT0xqIyZQtT7z1oaQ/exec', {
+                    fetch('https://script.google.com/macros/s/AKfycbwXBGv2e6k-7ABYVa-xb379BhB0m5DgLZ9YWjuvsl_5cFPW9aeQam22zsF0B8QWxuit4A/exec', {
                         method: 'POST',
                         mode: 'no-cors',
                         headers: {
@@ -4871,7 +4937,7 @@
                     
                     console.log('Ad Guide: Reporting event data (IP retrieval failed)', data);
                     
-                    fetch('https://script.google.com/macros/s/AKfycbxwh2Yw1ENB_uy6jQYkAexl0O-HKG9At9mAhdZXqNMXKm_iOoJ1vtT0xqIyZQtT7z1oaQ/exec', {
+                    fetch('https://script.google.com/macros/s/AKfycbwXBGv2e6k-7ABYVa-xb379BhB0m5DgLZ9YWjuvsl_5cFPW9aeQam22zsF0B8QWxuit4A/exec', {
                         method: 'POST',
                         mode: 'no-cors',
                         headers: {

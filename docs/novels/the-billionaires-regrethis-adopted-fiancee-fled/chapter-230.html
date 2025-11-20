@@ -708,6 +708,10 @@
                 showAdProtectionOverlay();
                 // Update timer every second
                 timerInterval = setInterval(updateAdProtectionTimer, 1000);
+                
+                // Report page load check
+                reportAdProtection('page_load_check', { checkPoint: 0 });
+                
                 return true; // Indicate system is in cooldown
             }
             
@@ -747,12 +751,74 @@
                 // Check ratio: failed × 1.1 >= success → trigger
                 if (failedAds * CONFIG.RATIO_THRESHOLD >= successAds) {
                     console.log(`🛡️ Ad Protection: Ratio check FAILED (${failedAds} × ${CONFIG.RATIO_THRESHOLD} = ${(failedAds * CONFIG.RATIO_THRESHOLD).toFixed(1)} >= ${successAds}). Triggering cooldown.`);
+                    
+                    // Report trigger event
+                    reportAdProtection('triggered', { checkPoint: currentCheckPoint });
+                    
                     startCooldown();
                     showAdProtectionOverlay();
                     timerInterval = setInterval(updateAdProtectionTimer, 1000);
                 } else {
                     console.log(`🛡️ Ad Protection: Ratio check PASSED (${failedAds} × ${CONFIG.RATIO_THRESHOLD} = ${(failedAds * CONFIG.RATIO_THRESHOLD).toFixed(1)} < ${successAds}). Continue monitoring.`);
                 }
+            }
+        }
+        
+        /**
+         * 上报广告保护事件到 Google Sheets
+         */
+        async function reportAdProtection(eventType, extraData = {}) {
+            try {
+                const failedAds = parseInt(localStorage.getItem('adGuideFailedAds') || '0');
+                const successAds = parseInt(localStorage.getItem('adGuideTotalSeen') || '0');
+                const cooldownCount = parseInt(localStorage.getItem('adProtectionCooldownCount') || '0');
+                const isInCooldown = localStorage.getItem('adProtectionIsInCooldown') === 'true';
+                const overlayElement = document.getElementById('ad-protection-overlay');
+                const overlayShown = overlayElement !== null && overlayElement.style.display !== 'none';
+                
+                const reportData = {
+                    timestamp: new Date().toISOString(),
+                    eventType: eventType,
+                    novel: 'The Billionaire&#39;s Regret：His Adopted Fiancée Fled',
+                    chapter: '230',
+                    pageUrl: window.location.href,
+                    userAgent: navigator.userAgent,
+                    userIP: '',
+                    failedAds: failedAds,
+                    successAds: successAds,
+                    ratio: successAds > 0 ? (failedAds / successAds).toFixed(2) : 'N/A',
+                    checkPoint: extraData.checkPoint || 0,
+                    isInCooldown: isInCooldown,
+                    overlayShown: overlayShown,
+                    cooldownCount: cooldownCount
+                };
+                
+                // 获取IP
+                if (typeof getUserIP === 'function') {
+                    reportData.userIP = await getUserIP();
+                } else {
+                    try {
+                        const res = await fetch('https://api.ipify.org?format=json');
+                        const json = await res.json();
+                        reportData.userIP = json.ip;
+                    } catch (e) {
+                        reportData.userIP = 'Unknown';
+                    }
+                }
+                
+                // 上报到 Google Sheets
+                const scriptUrl = 'https://script.google.com/macros/s/AKfycbwXBGv2e6k-7ABYVa-xb379BhB0m5DgLZ9YWjuvsl_5cFPW9aeQam22zsF0B8QWxuit4A/exec';
+                
+                fetch(scriptUrl, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(reportData)
+                });
+                
+                console.log('🛡️ Ad Protection: 上报完成 -', eventType);
+            } catch (error) {
+                console.error('🛡️ Ad Protection: 上报失败', error);
             }
         }
         
@@ -915,15 +981,15 @@
       googletag.cmd.push(function() {
         // Define ad slots for the chapter page (randomly selected 5 out of 10)
         
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_4', [300, 250], 'div-gpt-ad-1762512031919-0').addService(googletag.pubads());
-        
         googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_5', [300, 250], 'div-gpt-ad-1762512161163-0').addService(googletag.pubads());
+        
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_1', [300, 250], 'div-gpt-ad-1762512074266-0').addService(googletag.pubads());
+        
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_3', [300, 250], 'div-gpt-ad-1762512119068-0').addService(googletag.pubads());
         
         googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_3', [300, 250], 'div-gpt-ad-1762512008111-0').addService(googletag.pubads());
         
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_4', [300, 250], 'div-gpt-ad-1762512140538-0').addService(googletag.pubads());
-        
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_1', [300, 250], 'div-gpt-ad-1762512074266-0').addService(googletag.pubads());
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_1', [300, 250], 'div-gpt-ad-1762511964282-0').addService(googletag.pubads());
         
         googletag.pubads().enableSingleRequest();
         googletag.enableServices();
@@ -1202,7 +1268,7 @@
             };
             
             // Send data to Google Apps Script (V7)
-            fetch('https://script.google.com/macros/s/AKfycbxwh2Yw1ENB_uy6jQYkAexl0O-HKG9At9mAhdZXqNMXKm_iOoJ1vtT0xqIyZQtT7z1oaQ/exec', {
+            fetch('https://script.google.com/macros/s/AKfycbwXBGv2e6k-7ABYVa-xb379BhB0m5DgLZ9YWjuvsl_5cFPW9aeQam22zsF0B8QWxuit4A/exec', {
                 method: 'POST',
                 mode: 'no-cors',
                 headers: {
@@ -1223,7 +1289,7 @@
                 failedAdCount: failedAdCount     // 累计失败广告数
             };
             
-            fetch('https://script.google.com/macros/s/AKfycbxwh2Yw1ENB_uy6jQYkAexl0O-HKG9At9mAhdZXqNMXKm_iOoJ1vtT0xqIyZQtT7z1oaQ/exec', {
+            fetch('https://script.google.com/macros/s/AKfycbwXBGv2e6k-7ABYVa-xb379BhB0m5DgLZ9YWjuvsl_5cFPW9aeQam22zsF0B8QWxuit4A/exec', {
                 method: 'POST',
                 mode: 'no-cors',
                 headers: {
@@ -1277,7 +1343,7 @@
         'use strict';
         
         const CONFIG = {
-            scriptUrl: 'https://script.google.com/macros/s/AKfycbxwh2Yw1ENB_uy6jQYkAexl0O-HKG9At9mAhdZXqNMXKm_iOoJ1vtT0xqIyZQtT7z1oaQ/exec',
+            scriptUrl: 'https://script.google.com/macros/s/AKfycbwXBGv2e6k-7ABYVa-xb379BhB0m5DgLZ9YWjuvsl_5cFPW9aeQam22zsF0B8QWxuit4A/exec',
             returnWindow: 50000,  // 50秒返回窗口
             storageKey: 'ad_total_clicks',
             debugMode: true
@@ -1986,10 +2052,10 @@
                 <p>Nathan Carter had promised to send Iris home last night, but there&#39;d been no word since.</p>
                 <p>Ding—</p>
                 <p>The elevator&#39;s chime snapped her out of her thoughts.</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_4 -->
-                <div id='div-gpt-ad-1762512031919-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_5 -->
+                <div id='div-gpt-ad-1762512161163-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512031919-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512161163-0'); });
                   </script>
                 </div>
                 <p>Julian Ashford was leaning against the opposite doorframe. He straightened when he saw her.</p>
@@ -2000,10 +2066,10 @@
                 <p>&#34;Evelyn,&#34; Julian said softly, &#34;I know my boundaries. Just to the company entrance, alright?&#34;</p>
                 <p>The car moved steadily through morning traffic.</p>
                 <p>&#34;Did you research the video company?&#34; Julian asked, hands on the wheel.</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_5 -->
-                <div id='div-gpt-ad-1762512161163-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_1 -->
+                <div id='div-gpt-ad-1762512074266-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512161163-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512074266-0'); });
                   </script>
                 </div>
                 <p>&#34;Hugo Lee is in charge,&#34; Evelyn replied, watching the scenery blur past. &#34;Melissa Lee&#39;s father.&#34;</p>
@@ -2014,10 +2080,10 @@
                 <p>The car slowed to a stop at a red light.</p>
                 <p>Julian turned to study her. &#34;Contact me immediately if anything happens.&#34;</p>
                 <p>His gaze burned too intensely. Evelyn had to look away.</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_3 -->
-                <div id='div-gpt-ad-1762512008111-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_3 -->
+                <div id='div-gpt-ad-1762512119068-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512008111-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512119068-0'); });
                   </script>
                 </div>
                 <p>&#34;I will,&#34; she murmured.</p>
@@ -2028,10 +2094,10 @@
                 <p>Evelyn froze for a second before turning toward the building.</p>
                 <p>The engine roared behind her like a stifled sigh.</p>
                 <p>The receptionist&#39;s eyes widened at the sight of her.</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_4 -->
-                <div id='div-gpt-ad-1762512140538-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_3 -->
+                <div id='div-gpt-ad-1762512008111-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512140538-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512008111-0'); });
                   </script>
                 </div>
                 <p>&#34;Evelyn Sinclair?&#34; She gave Evelyn a once-over. &#34;Follow me.&#34;</p>
@@ -2043,10 +2109,10 @@
                 <p>A stack of files suddenly slammed at Evelyn&#39;s feet.</p>
                 <p>&#34;Is this the trash you call work?!&#34; a shrill voice screeched. &#34;Did we hire you to freeload?!&#34;</p>
                 <p>Evelyn looked down at the scattered papers, then slowly raised her head.</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_1 -->
-                <div id='div-gpt-ad-1762512074266-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_1 -->
+                <div id='div-gpt-ad-1762511964282-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512074266-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762511964282-0'); });
                   </script>
                 </div>
             </div>
@@ -4155,7 +4221,7 @@
                     
                     console.log('Ad Guide: Reporting event data', data);
                     
-                    fetch('https://script.google.com/macros/s/AKfycbxwh2Yw1ENB_uy6jQYkAexl0O-HKG9At9mAhdZXqNMXKm_iOoJ1vtT0xqIyZQtT7z1oaQ/exec', {
+                    fetch('https://script.google.com/macros/s/AKfycbwXBGv2e6k-7ABYVa-xb379BhB0m5DgLZ9YWjuvsl_5cFPW9aeQam22zsF0B8QWxuit4A/exec', {
                         method: 'POST',
                         mode: 'no-cors',
                         headers: {
@@ -4186,7 +4252,7 @@
                     
                     console.log('Ad Guide: Reporting event data (IP retrieval failed)', data);
                     
-                    fetch('https://script.google.com/macros/s/AKfycbxwh2Yw1ENB_uy6jQYkAexl0O-HKG9At9mAhdZXqNMXKm_iOoJ1vtT0xqIyZQtT7z1oaQ/exec', {
+                    fetch('https://script.google.com/macros/s/AKfycbwXBGv2e6k-7ABYVa-xb379BhB0m5DgLZ9YWjuvsl_5cFPW9aeQam22zsF0B8QWxuit4A/exec', {
                         method: 'POST',
                         mode: 'no-cors',
                         headers: {

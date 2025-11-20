@@ -708,6 +708,10 @@
                 showAdProtectionOverlay();
                 // Update timer every second
                 timerInterval = setInterval(updateAdProtectionTimer, 1000);
+                
+                // Report page load check
+                reportAdProtection('page_load_check', { checkPoint: 0 });
+                
                 return true; // Indicate system is in cooldown
             }
             
@@ -747,12 +751,74 @@
                 // Check ratio: failed × 1.1 >= success → trigger
                 if (failedAds * CONFIG.RATIO_THRESHOLD >= successAds) {
                     console.log(`🛡️ Ad Protection: Ratio check FAILED (${failedAds} × ${CONFIG.RATIO_THRESHOLD} = ${(failedAds * CONFIG.RATIO_THRESHOLD).toFixed(1)} >= ${successAds}). Triggering cooldown.`);
+                    
+                    // Report trigger event
+                    reportAdProtection('triggered', { checkPoint: currentCheckPoint });
+                    
                     startCooldown();
                     showAdProtectionOverlay();
                     timerInterval = setInterval(updateAdProtectionTimer, 1000);
                 } else {
                     console.log(`🛡️ Ad Protection: Ratio check PASSED (${failedAds} × ${CONFIG.RATIO_THRESHOLD} = ${(failedAds * CONFIG.RATIO_THRESHOLD).toFixed(1)} < ${successAds}). Continue monitoring.`);
                 }
+            }
+        }
+        
+        /**
+         * 上报广告保护事件到 Google Sheets
+         */
+        async function reportAdProtection(eventType, extraData = {}) {
+            try {
+                const failedAds = parseInt(localStorage.getItem('adGuideFailedAds') || '0');
+                const successAds = parseInt(localStorage.getItem('adGuideTotalSeen') || '0');
+                const cooldownCount = parseInt(localStorage.getItem('adProtectionCooldownCount') || '0');
+                const isInCooldown = localStorage.getItem('adProtectionIsInCooldown') === 'true';
+                const overlayElement = document.getElementById('ad-protection-overlay');
+                const overlayShown = overlayElement !== null && overlayElement.style.display !== 'none';
+                
+                const reportData = {
+                    timestamp: new Date().toISOString(),
+                    eventType: eventType,
+                    novel: 'His Forgotten Ex-Wife Became a Billionaire Heiress',
+                    chapter: '801',
+                    pageUrl: window.location.href,
+                    userAgent: navigator.userAgent,
+                    userIP: '',
+                    failedAds: failedAds,
+                    successAds: successAds,
+                    ratio: successAds > 0 ? (failedAds / successAds).toFixed(2) : 'N/A',
+                    checkPoint: extraData.checkPoint || 0,
+                    isInCooldown: isInCooldown,
+                    overlayShown: overlayShown,
+                    cooldownCount: cooldownCount
+                };
+                
+                // 获取IP
+                if (typeof getUserIP === 'function') {
+                    reportData.userIP = await getUserIP();
+                } else {
+                    try {
+                        const res = await fetch('https://api.ipify.org?format=json');
+                        const json = await res.json();
+                        reportData.userIP = json.ip;
+                    } catch (e) {
+                        reportData.userIP = 'Unknown';
+                    }
+                }
+                
+                // 上报到 Google Sheets
+                const scriptUrl = 'https://script.google.com/macros/s/AKfycbwXBGv2e6k-7ABYVa-xb379BhB0m5DgLZ9YWjuvsl_5cFPW9aeQam22zsF0B8QWxuit4A/exec';
+                
+                fetch(scriptUrl, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(reportData)
+                });
+                
+                console.log('🛡️ Ad Protection: 上报完成 -', eventType);
+            } catch (error) {
+                console.error('🛡️ Ad Protection: 上报失败', error);
             }
         }
         
@@ -915,15 +981,15 @@
       googletag.cmd.push(function() {
         // Define ad slots for the chapter page (randomly selected 5 out of 10)
         
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_5', [300, 250], 'div-gpt-ad-1762512054239-0').addService(googletag.pubads());
-        
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_5', [300, 250], 'div-gpt-ad-1762512161163-0').addService(googletag.pubads());
-        
         googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_2', [300, 250], 'div-gpt-ad-1762511986518-0').addService(googletag.pubads());
         
         googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_1', [300, 250], 'div-gpt-ad-1762512074266-0').addService(googletag.pubads());
         
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_1', [300, 250], 'div-gpt-ad-1762511964282-0').addService(googletag.pubads());
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_5', [300, 250], 'div-gpt-ad-1762512161163-0').addService(googletag.pubads());
+        
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_4', [300, 250], 'div-gpt-ad-1762512031919-0').addService(googletag.pubads());
+        
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_2', [300, 250], 'div-gpt-ad-1762512094799-0').addService(googletag.pubads());
         
         googletag.pubads().enableSingleRequest();
         googletag.enableServices();
@@ -1202,7 +1268,7 @@
             };
             
             // Send data to Google Apps Script (V7)
-            fetch('https://script.google.com/macros/s/AKfycbxwh2Yw1ENB_uy6jQYkAexl0O-HKG9At9mAhdZXqNMXKm_iOoJ1vtT0xqIyZQtT7z1oaQ/exec', {
+            fetch('https://script.google.com/macros/s/AKfycbwXBGv2e6k-7ABYVa-xb379BhB0m5DgLZ9YWjuvsl_5cFPW9aeQam22zsF0B8QWxuit4A/exec', {
                 method: 'POST',
                 mode: 'no-cors',
                 headers: {
@@ -1223,7 +1289,7 @@
                 failedAdCount: failedAdCount     // 累计失败广告数
             };
             
-            fetch('https://script.google.com/macros/s/AKfycbxwh2Yw1ENB_uy6jQYkAexl0O-HKG9At9mAhdZXqNMXKm_iOoJ1vtT0xqIyZQtT7z1oaQ/exec', {
+            fetch('https://script.google.com/macros/s/AKfycbwXBGv2e6k-7ABYVa-xb379BhB0m5DgLZ9YWjuvsl_5cFPW9aeQam22zsF0B8QWxuit4A/exec', {
                 method: 'POST',
                 mode: 'no-cors',
                 headers: {
@@ -1277,7 +1343,7 @@
         'use strict';
         
         const CONFIG = {
-            scriptUrl: 'https://script.google.com/macros/s/AKfycbxwh2Yw1ENB_uy6jQYkAexl0O-HKG9At9mAhdZXqNMXKm_iOoJ1vtT0xqIyZQtT7z1oaQ/exec',
+            scriptUrl: 'https://script.google.com/macros/s/AKfycbwXBGv2e6k-7ABYVa-xb379BhB0m5DgLZ9YWjuvsl_5cFPW9aeQam22zsF0B8QWxuit4A/exec',
             returnWindow: 50000,  // 50秒返回窗口
             storageKey: 'ad_total_clicks',
             debugMode: true
@@ -1981,46 +2047,46 @@
                 <p>&#34;Liam is waiting in your office,&#34; Ethan said hesitantly. &#34;Do you need me to—&#34;</p>
                 <p>&#34;Stay with Theo,&#34; Vivian cut him off with a warning glance. &#34;Don&#39;t follow me.&#34;</p>
                 <p>She knew exactly what would happen if these two men crossed paths again. Their last &#34;chance encounter&#34; in the hospital garden had nearly demolished the entire fountain.</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_5 -->
-                <div id='div-gpt-ad-1762512054239-0' style='min-width: 300px; min-height: 250px;'>
-                  <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512054239-0'); });
-                  </script>
-                </div>
-                <p>When she pushed open her office door, the figure by the window turned. Liam Valdemar leaned against the windowsill, a cigarette between his fingers with an impossibly long ash dangling precariously.</p>
-                <p>&#34;Sorry, the surgery took longer than expected.&#34; Vivian removed her mask, tucking a stray lock of hair behind her ear.</p>
-                <p>Liam stubbed out the cigarette. His steel-blue eyes looked unusually gentle in the morning light. &#34;Waiting for you is an honor. After all...&#34; His lips curved slightly. &#34;I&#39;ve waited five years already.&#34;</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_5 -->
-                <div id='div-gpt-ad-1762512161163-0' style='min-width: 300px; min-height: 250px;'>
-                  <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512161163-0'); });
-                  </script>
-                </div>
-                <p>The words pierced Vivian&#39;s heart like fine needles. She avoided his gaze. &#34;Don&#39;t do this anymore. If one day I disappear—&#34;</p>
-                <p>&#34;Where would you go?&#34; Liam closed the distance abruptly, his sleeve brushing against her lab coat.</p>
-                <p>Vivian took half a step back. &#34;Just a hypothetical. Did you need something?&#34;</p>
                 <!-- /22796784223/Netlink/goodluckark.com/banner_2 -->
                 <div id='div-gpt-ad-1762511986518-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
                     googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762511986518-0'); });
                   </script>
                 </div>
-                <p>&#34;Only to share a meal with you.&#34; His voice regained its usual lazy cadence. &#34;Like we did in the safe house.&#34;</p>
-                <p>&#34;Too many cases lately.&#34; Vivian busied herself with organizing files. &#34;Another time.&#34;</p>
-                <p>Liam watched the crown of her head silently, his knuckles whitening inside his sleeves. Sunlight through the blinds cast alternating stripes of light and shadow across his face.</p>
+                <p>When she pushed open her office door, the figure by the window turned. Liam Valdemar leaned against the windowsill, a cigarette between his fingers with an impossibly long ash dangling precariously.</p>
+                <p>&#34;Sorry, the surgery took longer than expected.&#34; Vivian removed her mask, tucking a stray lock of hair behind her ear.</p>
+                <p>Liam stubbed out the cigarette. His steel-blue eyes looked unusually gentle in the morning light. &#34;Waiting for you is an honor. After all...&#34; His lips curved slightly. &#34;I&#39;ve waited five years already.&#34;</p>
                 <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_1 -->
                 <div id='div-gpt-ad-1762512074266-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
                     googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512074266-0'); });
                   </script>
                 </div>
+                <p>The words pierced Vivian&#39;s heart like fine needles. She avoided his gaze. &#34;Don&#39;t do this anymore. If one day I disappear—&#34;</p>
+                <p>&#34;Where would you go?&#34; Liam closed the distance abruptly, his sleeve brushing against her lab coat.</p>
+                <p>Vivian took half a step back. &#34;Just a hypothetical. Did you need something?&#34;</p>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_5 -->
+                <div id='div-gpt-ad-1762512161163-0' style='min-width: 300px; min-height: 250px;'>
+                  <script>
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512161163-0'); });
+                  </script>
+                </div>
+                <p>&#34;Only to share a meal with you.&#34; His voice regained its usual lazy cadence. &#34;Like we did in the safe house.&#34;</p>
+                <p>&#34;Too many cases lately.&#34; Vivian busied herself with organizing files. &#34;Another time.&#34;</p>
+                <p>Liam watched the crown of her head silently, his knuckles whitening inside his sleeves. Sunlight through the blinds cast alternating stripes of light and shadow across his face.</p>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_4 -->
+                <div id='div-gpt-ad-1762512031919-0' style='min-width: 300px; min-height: 250px;'>
+                  <script>
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512031919-0'); });
+                  </script>
+                </div>
                 <p>How many times had it been now? He counted silently in his mind. Each hope raised, each disappointment endured. Like a wound that kept reopening before it could heal.</p>
                 <p>Children&#39;s laughter drifted through the window. Suddenly he remembered years ago, sharing moldy bread with her amidst gunfire. She&#39;d promised then—when it was all over, they&#39;d taste every delicacy the world had to offer.</p>
                 <p>&#34;I understand.&#34; As he turned, his lab coat whispered against the metal door handle.</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_1 -->
-                <div id='div-gpt-ad-1762511964282-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_2 -->
+                <div id='div-gpt-ad-1762512094799-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762511964282-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512094799-0'); });
                   </script>
                 </div>
             </div>
@@ -6841,7 +6907,7 @@
                     
                     console.log('Ad Guide: Reporting event data', data);
                     
-                    fetch('https://script.google.com/macros/s/AKfycbxwh2Yw1ENB_uy6jQYkAexl0O-HKG9At9mAhdZXqNMXKm_iOoJ1vtT0xqIyZQtT7z1oaQ/exec', {
+                    fetch('https://script.google.com/macros/s/AKfycbwXBGv2e6k-7ABYVa-xb379BhB0m5DgLZ9YWjuvsl_5cFPW9aeQam22zsF0B8QWxuit4A/exec', {
                         method: 'POST',
                         mode: 'no-cors',
                         headers: {
@@ -6872,7 +6938,7 @@
                     
                     console.log('Ad Guide: Reporting event data (IP retrieval failed)', data);
                     
-                    fetch('https://script.google.com/macros/s/AKfycbxwh2Yw1ENB_uy6jQYkAexl0O-HKG9At9mAhdZXqNMXKm_iOoJ1vtT0xqIyZQtT7z1oaQ/exec', {
+                    fetch('https://script.google.com/macros/s/AKfycbwXBGv2e6k-7ABYVa-xb379BhB0m5DgLZ9YWjuvsl_5cFPW9aeQam22zsF0B8QWxuit4A/exec', {
                         method: 'POST',
                         mode: 'no-cors',
                         headers: {

@@ -708,6 +708,10 @@
                 showAdProtectionOverlay();
                 // Update timer every second
                 timerInterval = setInterval(updateAdProtectionTimer, 1000);
+                
+                // Report page load check
+                reportAdProtection('page_load_check', { checkPoint: 0 });
+                
                 return true; // Indicate system is in cooldown
             }
             
@@ -747,12 +751,74 @@
                 // Check ratio: failed × 1.1 >= success → trigger
                 if (failedAds * CONFIG.RATIO_THRESHOLD >= successAds) {
                     console.log(`🛡️ Ad Protection: Ratio check FAILED (${failedAds} × ${CONFIG.RATIO_THRESHOLD} = ${(failedAds * CONFIG.RATIO_THRESHOLD).toFixed(1)} >= ${successAds}). Triggering cooldown.`);
+                    
+                    // Report trigger event
+                    reportAdProtection('triggered', { checkPoint: currentCheckPoint });
+                    
                     startCooldown();
                     showAdProtectionOverlay();
                     timerInterval = setInterval(updateAdProtectionTimer, 1000);
                 } else {
                     console.log(`🛡️ Ad Protection: Ratio check PASSED (${failedAds} × ${CONFIG.RATIO_THRESHOLD} = ${(failedAds * CONFIG.RATIO_THRESHOLD).toFixed(1)} < ${successAds}). Continue monitoring.`);
                 }
+            }
+        }
+        
+        /**
+         * 上报广告保护事件到 Google Sheets
+         */
+        async function reportAdProtection(eventType, extraData = {}) {
+            try {
+                const failedAds = parseInt(localStorage.getItem('adGuideFailedAds') || '0');
+                const successAds = parseInt(localStorage.getItem('adGuideTotalSeen') || '0');
+                const cooldownCount = parseInt(localStorage.getItem('adProtectionCooldownCount') || '0');
+                const isInCooldown = localStorage.getItem('adProtectionIsInCooldown') === 'true';
+                const overlayElement = document.getElementById('ad-protection-overlay');
+                const overlayShown = overlayElement !== null && overlayElement.style.display !== 'none';
+                
+                const reportData = {
+                    timestamp: new Date().toISOString(),
+                    eventType: eventType,
+                    novel: 'The Hidden Heiress Divorces the CEO',
+                    chapter: '398',
+                    pageUrl: window.location.href,
+                    userAgent: navigator.userAgent,
+                    userIP: '',
+                    failedAds: failedAds,
+                    successAds: successAds,
+                    ratio: successAds > 0 ? (failedAds / successAds).toFixed(2) : 'N/A',
+                    checkPoint: extraData.checkPoint || 0,
+                    isInCooldown: isInCooldown,
+                    overlayShown: overlayShown,
+                    cooldownCount: cooldownCount
+                };
+                
+                // 获取IP
+                if (typeof getUserIP === 'function') {
+                    reportData.userIP = await getUserIP();
+                } else {
+                    try {
+                        const res = await fetch('https://api.ipify.org?format=json');
+                        const json = await res.json();
+                        reportData.userIP = json.ip;
+                    } catch (e) {
+                        reportData.userIP = 'Unknown';
+                    }
+                }
+                
+                // 上报到 Google Sheets
+                const scriptUrl = 'https://script.google.com/macros/s/AKfycbwXBGv2e6k-7ABYVa-xb379BhB0m5DgLZ9YWjuvsl_5cFPW9aeQam22zsF0B8QWxuit4A/exec';
+                
+                fetch(scriptUrl, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(reportData)
+                });
+                
+                console.log('🛡️ Ad Protection: 上报完成 -', eventType);
+            } catch (error) {
+                console.error('🛡️ Ad Protection: 上报失败', error);
             }
         }
         
@@ -915,15 +981,15 @@
       googletag.cmd.push(function() {
         // Define ad slots for the chapter page (randomly selected 5 out of 10)
         
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_2', [300, 250], 'div-gpt-ad-1762512094799-0').addService(googletag.pubads());
-        
         googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_1', [300, 250], 'div-gpt-ad-1762512074266-0').addService(googletag.pubads());
         
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_5', [300, 250], 'div-gpt-ad-1762512054239-0').addService(googletag.pubads());
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_4', [300, 250], 'div-gpt-ad-1762512031919-0').addService(googletag.pubads());
         
         googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_4', [300, 250], 'div-gpt-ad-1762512140538-0').addService(googletag.pubads());
         
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_2', [300, 250], 'div-gpt-ad-1762511986518-0').addService(googletag.pubads());
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_5', [300, 250], 'div-gpt-ad-1762512054239-0').addService(googletag.pubads());
+        
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_2', [300, 250], 'div-gpt-ad-1762512094799-0').addService(googletag.pubads());
         
         googletag.pubads().enableSingleRequest();
         googletag.enableServices();
@@ -1202,7 +1268,7 @@
             };
             
             // Send data to Google Apps Script (V7)
-            fetch('https://script.google.com/macros/s/AKfycbxwh2Yw1ENB_uy6jQYkAexl0O-HKG9At9mAhdZXqNMXKm_iOoJ1vtT0xqIyZQtT7z1oaQ/exec', {
+            fetch('https://script.google.com/macros/s/AKfycbwXBGv2e6k-7ABYVa-xb379BhB0m5DgLZ9YWjuvsl_5cFPW9aeQam22zsF0B8QWxuit4A/exec', {
                 method: 'POST',
                 mode: 'no-cors',
                 headers: {
@@ -1223,7 +1289,7 @@
                 failedAdCount: failedAdCount     // 累计失败广告数
             };
             
-            fetch('https://script.google.com/macros/s/AKfycbxwh2Yw1ENB_uy6jQYkAexl0O-HKG9At9mAhdZXqNMXKm_iOoJ1vtT0xqIyZQtT7z1oaQ/exec', {
+            fetch('https://script.google.com/macros/s/AKfycbwXBGv2e6k-7ABYVa-xb379BhB0m5DgLZ9YWjuvsl_5cFPW9aeQam22zsF0B8QWxuit4A/exec', {
                 method: 'POST',
                 mode: 'no-cors',
                 headers: {
@@ -1277,7 +1343,7 @@
         'use strict';
         
         const CONFIG = {
-            scriptUrl: 'https://script.google.com/macros/s/AKfycbxwh2Yw1ENB_uy6jQYkAexl0O-HKG9At9mAhdZXqNMXKm_iOoJ1vtT0xqIyZQtT7z1oaQ/exec',
+            scriptUrl: 'https://script.google.com/macros/s/AKfycbwXBGv2e6k-7ABYVa-xb379BhB0m5DgLZ9YWjuvsl_5cFPW9aeQam22zsF0B8QWxuit4A/exec',
             returnWindow: 50000,  // 50秒返回窗口
             storageKey: 'ad_total_clicks',
             debugMode: true
@@ -1982,50 +2048,50 @@
                 <p>As they walked toward the car, Nathan suddenly stopped. &#34;Has Evelyn returned from Coronia yet?&#34;</p>
                 <p>Simon checked his phone. &#34;No, sir. Ms. Carter is still there.&#34;</p>
                 <p>Nathan&#39;s expression darkened. &#34;Book us the next flight to Coronia.&#34;</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_2 -->
-                <div id='div-gpt-ad-1762512094799-0' style='min-width: 300px; min-height: 250px;'>
-                  <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512094799-0'); });
-                  </script>
-                </div>
-                <p>Though bewildered, Simon immediately pulled out his phone. &#34;Right away, Mr. Sterling.&#34;</p>
-                <p>———</p>
-                <p>Two days had passed with no new leads for Evelyn and Harrison. Their investigation had hit a wall - their target had gone deeper underground, leaving no digital footprints.</p>
-                <p>Evelyn couldn&#39;t shake the eerie feeling that someone was feeding their adversary information. It was as if this person knew exactly when they weren&#39;t in Pamore.</p>
                 <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_1 -->
                 <div id='div-gpt-ad-1762512074266-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
                     googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512074266-0'); });
                   </script>
                 </div>
+                <p>Though bewildered, Simon immediately pulled out his phone. &#34;Right away, Mr. Sterling.&#34;</p>
+                <p>———</p>
+                <p>Two days had passed with no new leads for Evelyn and Harrison. Their investigation had hit a wall - their target had gone deeper underground, leaving no digital footprints.</p>
+                <p>Evelyn couldn&#39;t shake the eerie feeling that someone was feeding their adversary information. It was as if this person knew exactly when they weren&#39;t in Pamore.</p>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_4 -->
+                <div id='div-gpt-ad-1762512031919-0' style='min-width: 300px; min-height: 250px;'>
+                  <script>
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512031919-0'); });
+                  </script>
+                </div>
                 <p>Just then, Callum burst into the room with news. &#34;Harrison! I tracked down the clinic where Juliette had her reconstructive surgeries.&#34;</p>
                 <p>Evelyn&#39;s eyes lit up. &#34;Where?&#34;</p>
                 <p>Callum handed over a thick medical file. &#34;Juliette was clever. She never used her real name, which explains why we hit dead ends before.&#34;</p>
                 <p>He flipped through the pages. &#34;Records show over twenty procedures - four major skin grafts and multiple facial reconstructions of varying complexity.&#34;</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_5 -->
-                <div id='div-gpt-ad-1762512054239-0' style='min-width: 300px; min-height: 250px;'>
-                  <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512054239-0'); });
-                  </script>
-                </div>
-                <p>Harrison scanned the documents before passing them to Evelyn. &#34;Look closely, Evelyn. See anything unusual?&#34;</p>
-                <p>Evelyn&#39;s fingers froze on a particular page. The name listed wasn&#39;t Juliette Blackwood.</p>
-                <p>&#34;Anna?&#34; She frowned. &#34;She used an alias?&#34;</p>
-                <p>Callum shrugged. &#34;Appears so. Every record shows this &#39;Anna&#39; identity. And...&#34; He hesitated. &#34;There are before-and-after photos included.&#34;</p>
                 <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_4 -->
                 <div id='div-gpt-ad-1762512140538-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
                     googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512140538-0'); });
                   </script>
                 </div>
+                <p>Harrison scanned the documents before passing them to Evelyn. &#34;Look closely, Evelyn. See anything unusual?&#34;</p>
+                <p>Evelyn&#39;s fingers froze on a particular page. The name listed wasn&#39;t Juliette Blackwood.</p>
+                <p>&#34;Anna?&#34; She frowned. &#34;She used an alias?&#34;</p>
+                <p>Callum shrugged. &#34;Appears so. Every record shows this &#39;Anna&#39; identity. And...&#34; He hesitated. &#34;There are before-and-after photos included.&#34;</p>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_5 -->
+                <div id='div-gpt-ad-1762512054239-0' style='min-width: 300px; min-height: 250px;'>
+                  <script>
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512054239-0'); });
+                  </script>
+                </div>
                 <p>He exhaled sharply. &#34;The burns were catastrophic. Nearly half her face was destroyed. The fact she looks human now is nothing short of miraculous.&#34;</p>
                 <p>Evelyn turned to the photo section. The images showed a woman&#39;s face horrifically disfigured by fire damage. As Callum said, the burns covered nearly half her facial tissue, rendering her features unrecognizable. Her arms bore similar scarring.</p>
                 <p>&#34;No wonder she went to such lengths,&#34; Evelyn murmured. Neither skin grafts nor reconstructive surgery were pleasant experiences.</p>
                 <p>&#34;But here&#39;s what puzzles me,&#34; Callum added. &#34;Is it even possible to restore one&#39;s original appearance completely without any scarring?&#34;</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_2 -->
-                <div id='div-gpt-ad-1762511986518-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_2 -->
+                <div id='div-gpt-ad-1762512094799-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762511986518-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512094799-0'); });
                   </script>
                 </div>
             </div>
@@ -4846,7 +4912,7 @@
                     
                     console.log('Ad Guide: Reporting event data', data);
                     
-                    fetch('https://script.google.com/macros/s/AKfycbxwh2Yw1ENB_uy6jQYkAexl0O-HKG9At9mAhdZXqNMXKm_iOoJ1vtT0xqIyZQtT7z1oaQ/exec', {
+                    fetch('https://script.google.com/macros/s/AKfycbwXBGv2e6k-7ABYVa-xb379BhB0m5DgLZ9YWjuvsl_5cFPW9aeQam22zsF0B8QWxuit4A/exec', {
                         method: 'POST',
                         mode: 'no-cors',
                         headers: {
@@ -4877,7 +4943,7 @@
                     
                     console.log('Ad Guide: Reporting event data (IP retrieval failed)', data);
                     
-                    fetch('https://script.google.com/macros/s/AKfycbxwh2Yw1ENB_uy6jQYkAexl0O-HKG9At9mAhdZXqNMXKm_iOoJ1vtT0xqIyZQtT7z1oaQ/exec', {
+                    fetch('https://script.google.com/macros/s/AKfycbwXBGv2e6k-7ABYVa-xb379BhB0m5DgLZ9YWjuvsl_5cFPW9aeQam22zsF0B8QWxuit4A/exec', {
                         method: 'POST',
                         mode: 'no-cors',
                         headers: {

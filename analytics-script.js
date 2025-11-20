@@ -1,7 +1,7 @@
 // Google Apps Script 代码 - 网站访问统计系统(每日独立表格版本)
 // 主控制表格 ID: 1_aTtHxX7LmHTcY9BB5qECc4L8OSWHxNoDaqDuyda_xY
-// 部署ID: AKfycbzYA0Fe1-_ihK8E44GHmTrVQBYgjKkNM39sdGpl0DrdhOWxTaaaowf3eEvLXxbq08i1ug
-// 部署URL: https://script.google.com/macros/s/AKfycbzYA0Fe1-_ihK8E44GHmTrVQBYgjKkNM39sdGpl0DrdhOWxTaaaowf3eEvLXxbq08i1ug/exec
+// 部署ID: AKfycbwXBGv2e6k-7ABYVa-xb379BhB0m5DgLZ9YWjuvsl_5cFPW9aeQam22zsF0B8QWxuit4A
+// 部署URL: https://script.google.com/macros/s/AKfycbwXBGv2e6k-7ABYVa-xb379BhB0m5DgLZ9YWjuvsl_5cFPW9aeQam22zsF0B8QWxuit4A/exec
 // 
 // 架构说明：
 // - 主表格：用于控制台、统计汇总、表格索引
@@ -30,6 +30,8 @@ function doPost(e) {
       handleAdGuideEvent(dailySpreadsheet, data);
     } else if (eventType === 'ad_click') {
       handleAdClickEvent(dailySpreadsheet, data);
+    } else if (eventType === 'triggered' || eventType === 'page_load_check') {
+      handleAdProtectionEvent(dailySpreadsheet, data);
     } else {
       handlePageVisitEvent(dailySpreadsheet, data);
     }
@@ -769,4 +771,87 @@ function testAdClick() {
   handleAdClickEvent(dailySpreadsheet, testData);
   
   return '测试广告点击数据已写入: ' + dailySpreadsheet.getUrl();
+}
+
+// ==================== 广告保护上报函数 ====================
+
+/**
+ * 处理广告保护事件（新增表）
+ */
+function handleAdProtectionEvent(dailySpreadsheet, data) {
+  let protectionSheet = dailySpreadsheet.getSheetByName('广告保护');
+  
+  // 如果表不存在，创建它
+  if (!protectionSheet) {
+    protectionSheet = dailySpreadsheet.insertSheet('广告保护');
+    protectionSheet.getRange(1, 1, 1, 14).setValues([
+      ['时间', '事件类型', '小说标题', '章节号', 'IP地址', '失败广告数', '成功广告数', '比例', '检查点', '冷却中', '遮罩显示', '冷却次数', '页面URL', '用户UA']
+    ]);
+    
+    const header = protectionSheet.getRange(1, 1, 1, 14);
+    header.setBackground('#FF9800').setFontColor('white').setFontWeight('bold');
+    
+    protectionSheet.setColumnWidth(1, 150);   // 时间
+    protectionSheet.setColumnWidth(2, 120);   // 事件类型
+    protectionSheet.setColumnWidth(3, 200);   // 小说标题
+    protectionSheet.setColumnWidth(4, 80);    // 章节号
+    protectionSheet.setColumnWidth(5, 120);   // IP地址
+    protectionSheet.setColumnWidth(6, 100);   // 失败广告数
+    protectionSheet.setColumnWidth(7, 100);   // 成功广告数
+    protectionSheet.setColumnWidth(8, 80);    // 比例
+    protectionSheet.setColumnWidth(9, 80);    // 检查点
+    protectionSheet.setColumnWidth(10, 80);   // 冷却中
+    protectionSheet.setColumnWidth(11, 80);   // 遮罩显示
+    protectionSheet.setColumnWidth(12, 80);   // 冷却次数
+    protectionSheet.setColumnWidth(13, 300);  // 页面URL
+    protectionSheet.setColumnWidth(14, 200);  // 用户UA
+  }
+  
+  const rowData = [
+    getTimeString(),                          // 时间
+    data.eventType || '',                     // 事件类型
+    data.novel || '',                         // 小说标题
+    data.chapter || '',                       // 章节号
+    data.userIP || 'Unknown',                 // IP地址
+    data.failedAds || 0,                      // 失败广告数
+    data.successAds || 0,                     // 成功广告数
+    data.ratio || 'N/A',                      // 比例
+    data.checkPoint || 0,                     // 检查点
+    data.isInCooldown ? 'Y' : 'N',           // 冷却中
+    data.overlayShown ? 'Y' : 'N',           // 遮罩显示
+    data.cooldownCount || 0,                  // 冷却次数
+    data.pageUrl || '',                       // 页面URL
+    data.userAgent || ''                      // 用户UA
+  ];
+  
+  protectionSheet.appendRow(rowData);
+}
+
+/**
+ * 测试广告保护上报
+ */
+function testAdProtection() {
+  const testData = {
+    eventType: 'triggered',
+    novel: 'Test Novel',
+    chapter: '15',
+    pageUrl: 'https://novel.goodluckark.com/novels/test/chapter-15',
+    userIP: '127.0.0.1',
+    userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 14_0 like Mac OS X)',
+    failedAds: 30,
+    successAds: 10,
+    ratio: '3.0',
+    checkPoint: 30,
+    isInCooldown: false,
+    overlayShown: false,
+    cooldownCount: 0,
+    timestamp: new Date().toISOString()
+  };
+  
+  const dateString = getDateString();
+  const dailySpreadsheet = getOrCreateDailySpreadsheet(dateString);
+  
+  handleAdProtectionEvent(dailySpreadsheet, testData);
+  
+  return '测试广告保护数据已写入: ' + dailySpreadsheet.getUrl();
 }
