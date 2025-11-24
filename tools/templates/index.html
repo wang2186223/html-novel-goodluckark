@@ -1264,10 +1264,12 @@
                 if (dataElement && dataElement.textContent.trim()) {
                     allNovels = JSON.parse(dataElement.textContent);
                     console.log('成功加载小说数据：', allNovels.length, '本');
-                    // 随机打乱小说顺序，但保持前8本不变（已经在模板中显示）
-                    const remainingNovels = allNovels.slice(8);
-                    shuffleArray(remainingNovels);
-                    allNovels = [...allNovels.slice(0, 8), ...remainingNovels];
+                    // 按时间倒序排列(最新的在前面)
+                    allNovels.sort((a, b) => {
+                        const dateA = new Date(a.last_updated);
+                        const dateB = new Date(b.last_updated);
+                        return dateB - dateA; // 降序排列
+                    });
                 } else {
                     console.error('未找到小说数据或数据为空');
                     allNovels = [];
@@ -1275,13 +1277,6 @@
             } catch (error) {
                 console.error('加载小说数据时出错:', error);
                 allNovels = [];
-            }
-        }
-
-        function shuffleArray(array) {
-            for (let i = array.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [array[i], array[j]] = [array[j], array[i]];
             }
         }
 
