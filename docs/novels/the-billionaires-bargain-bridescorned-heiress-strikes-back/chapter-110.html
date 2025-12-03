@@ -981,15 +981,15 @@
       googletag.cmd.push(function() {
         // Define ad slots for the chapter page (randomly selected 5 out of 10)
         
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_5', [300, 250], 'div-gpt-ad-1762512054239-0').addService(googletag.pubads());
-        
         googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_4', [300, 250], 'div-gpt-ad-1762512031919-0').addService(googletag.pubads());
         
         googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_2', [300, 250], 'div-gpt-ad-1762512094799-0').addService(googletag.pubads());
         
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_1', [300, 250], 'div-gpt-ad-1762511964282-0').addService(googletag.pubads());
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_5', [300, 250], 'div-gpt-ad-1762512161163-0').addService(googletag.pubads());
         
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_3', [300, 250], 'div-gpt-ad-1762512008111-0').addService(googletag.pubads());
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_4', [300, 250], 'div-gpt-ad-1762512140538-0').addService(googletag.pubads());
+        
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_3', [300, 250], 'div-gpt-ad-1762512119068-0').addService(googletag.pubads());
         
         googletag.pubads().enableSingleRequest();
         googletag.enableServices();
@@ -1033,44 +1033,145 @@
         console.log('Facebook event skipped: PageView (already sent within 72 hours)');
     }
     
-    // Reading time tracking for Facebook Pixel
-    let readingStartTime = Date.now();
+    // Reading time tracking for Facebook Pixel (跨页面累计 + 仅计算可见时间)
+    const READING_TIME_STORAGE_KEY = 'fb_accumulated_reading_time';
+    const READING_TIME_DATE_KEY = 'fb_reading_time_date';
+    
+    let visibleStartTime = null;
+    let accumulatedTime = 0; // 当前累计时间（秒）
     let oneMinuteSent = false;
+    let threeMinutesSent = false;
     let tenMinutesSent = false;
     
+    // 获取今天的日期字符串
+    function getTodayDateString() {
+        return new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD
+    }
+    
+    // 加载累计阅读时间（跨页面）
+    function loadAccumulatedTime() {
+        try {
+            const storedDate = localStorage.getItem(READING_TIME_DATE_KEY);
+            const today = getTodayDateString();
+            
+            // 如果是新的一天，重置累计时间
+            if (storedDate !== today) {
+                localStorage.setItem(READING_TIME_DATE_KEY, today);
+                localStorage.setItem(READING_TIME_STORAGE_KEY, '0');
+                return 0;
+            }
+            
+            const stored = localStorage.getItem(READING_TIME_STORAGE_KEY);
+            return stored ? parseFloat(stored) : 0;
+        } catch (e) {
+            console.error('Failed to load accumulated time:', e);
+            return 0;
+        }
+    }
+    
+    // 保存累计阅读时间
+    function saveAccumulatedTime(seconds) {
+        try {
+            localStorage.setItem(READING_TIME_STORAGE_KEY, seconds.toString());
+            localStorage.setItem(READING_TIME_DATE_KEY, getTodayDateString());
+        } catch (e) {
+            console.error('Failed to save accumulated time:', e);
+        }
+    }
+    
+    // 开始计时（页面可见时）
+    function startVisibleTimer() {
+        if (!visibleStartTime && !document.hidden) {
+            visibleStartTime = Date.now();
+            console.log('Reading timer started');
+        }
+    }
+    
+    // 停止计时并累加时间（页面不可见时）
+    function stopVisibleTimer() {
+        if (visibleStartTime) {
+            const visibleDuration = (Date.now() - visibleStartTime) / 1000; // 秒
+            accumulatedTime += visibleDuration;
+            saveAccumulatedTime(accumulatedTime);
+            console.log(`Reading time accumulated: ${visibleDuration.toFixed(1)}s, Total: ${accumulatedTime.toFixed(1)}s`);
+            visibleStartTime = null;
+        }
+    }
+    
+    // 检查阅读时间并触发事件
     function checkReadingTime() {
-        const currentTime = Date.now();
-        const readingTime = (currentTime - readingStartTime) / 1000 / 60; // in minutes
+        // 如果页面当前可见，计算当前会话的时间
+        let currentTotalTime = accumulatedTime;
+        if (visibleStartTime && !document.hidden) {
+            const currentSessionTime = (Date.now() - visibleStartTime) / 1000;
+            currentTotalTime += currentSessionTime;
+        }
         
-        if (!oneMinuteSent && readingTime >= 1) {
+        const readingMinutes = currentTotalTime / 60;
+        // 检查1分钟事件
+        if (!oneMinuteSent && readingMinutes >= 1) {
             if (shouldTrackEvent('1m_web')) {
                 fbq('track', '1m_web');
-                console.log('Facebook event sent: 1m_web (user read for 1 minute)');
+                console.log(`Facebook event sent: 1m_web (accumulated ${readingMinutes.toFixed(2)} minutes)`);
             } else {
                 console.log('Facebook event skipped: 1m_web (already sent within 72 hours)');
             }
             oneMinuteSent = true;
         }
         
-        if (!tenMinutesSent && readingTime >= 10) {
+        // 检查3分钟事件
+        if (!threeMinutesSent && readingMinutes >= 3) {
+            if (shouldTrackEvent('3m_web')) {
+                fbq('track', '3m_web');
+                console.log(`Facebook event sent: 3m_web (accumulated ${readingMinutes.toFixed(2)} minutes)`);
+            } else {
+                console.log('Facebook event skipped: 3m_web (already sent within 72 hours)');
+            }
+            threeMinutesSent = true;
+        }
+        
+        // 检查10分钟事件
+        if (!tenMinutesSent && readingMinutes >= 10) {
             if (shouldTrackEvent('10m_web')) {
                 fbq('track', '10m_web');
-                console.log('Facebook event sent: 10m_web (user read for 10 minutes)');
+                console.log(`Facebook event sent: 10m_web (accumulated ${readingMinutes.toFixed(2)} minutes)`);
             } else {
                 console.log('Facebook event skipped: 10m_web (already sent within 72 hours)');
             }
             tenMinutesSent = true;
+        }   tenMinutesSent = true;
         }
     }
     
-    // Check reading time every 30 seconds
+    // 初始化：加载之前的累计时间
+    accumulatedTime = loadAccumulatedTime();
+    console.log(`Accumulated reading time loaded: ${accumulatedTime.toFixed(1)}s (${(accumulatedTime/60).toFixed(2)} minutes)`);
+    
+    // 页面加载后立即开始计时（如果页面可见）
+    startVisibleTimer();
+    
+    // 立即检查一次（可能已经累计超过阈值）
+    checkReadingTime();
+    
+    // 定期检查阅读时间（每30秒）
     setInterval(checkReadingTime, 30000);
     
-    // Also check when page becomes visible again (in case user switches tabs)
+    // 监听页面可见性变化
     document.addEventListener('visibilitychange', function() {
-        if (!document.hidden) {
+        if (document.hidden) {
+            // 页面隐藏：停止计时并保存
+            stopVisibleTimer();
+        } else {
+            // 页面显示：开始计时
+            startVisibleTimer();
+            // 立即检查（可能已经达到阈值）
             checkReadingTime();
         }
+    });
+    
+    // 页面卸载前保存累计时间
+    window.addEventListener('beforeunload', function() {
+        stopVisibleTimer();
     });
     </script>
     <noscript><img height="1" width="1" style="display:none"
@@ -2046,34 +2147,34 @@
                 <p>&#34;Same here! I need her email!&#34;</p>
                 <p>For hours, the internet buzzed with desperate pleas to track down the enigmatic surgeon.</p>
                 <p>Meanwhile, in the CEO’s office of Blackstone Enterprises, Nathan Black was mid-conversation with Theodore Whitmore when the topic of Star came up.</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_5 -->
-                <div id='div-gpt-ad-1762512054239-0' style='min-width: 300px; min-height: 250px;'>
-                  <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512054239-0'); });
-                  </script>
-                </div>
-                <p>&#34;Star?&#34; Nathan’s brow instantly furrowed.</p>
-                <p>&#34;The very same—the surgical prodigy who turned you down. Twice,&#34; Theodore chuckled, amusement lacing his tone.</p>
                 <!-- /22796784223/Netlink/goodluckark.com/banner_4 -->
                 <div id='div-gpt-ad-1762512031919-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
                     googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512031919-0'); });
                   </script>
                 </div>
-                <p>Nathan’s expression remained neutral, but the subtle tension in his jaw gave him away. Few dared refuse him, yet Star had done so without hesitation. Years ago, when Serena Cole’s mother faced a life-threatening heart condition, Nathan had sought Star out personally, convinced her skill was unmatched. His team had practically begged. Both times, she’d shut them down cold. It had infuriated him beyond measure.</p>
-                <p>&#34;She operated at Grandins today?&#34; Nathan asked, voice deceptively calm.</p>
+                <p>&#34;Star?&#34; Nathan’s brow instantly furrowed.</p>
+                <p>&#34;The very same—the surgical prodigy who turned you down. Twice,&#34; Theodore chuckled, amusement lacing his tone.</p>
                 <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_2 -->
                 <div id='div-gpt-ad-1762512094799-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
                     googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512094799-0'); });
                   </script>
                 </div>
+                <p>Nathan’s expression remained neutral, but the subtle tension in his jaw gave him away. Few dared refuse him, yet Star had done so without hesitation. Years ago, when Serena Cole’s mother faced a life-threatening heart condition, Nathan had sought Star out personally, convinced her skill was unmatched. His team had practically begged. Both times, she’d shut them down cold. It had infuriated him beyond measure.</p>
+                <p>&#34;She operated at Grandins today?&#34; Nathan asked, voice deceptively calm.</p>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_5 -->
+                <div id='div-gpt-ad-1762512161163-0' style='min-width: 300px; min-height: 250px;'>
+                  <script>
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512161163-0'); });
+                  </script>
+                </div>
                 <p>Theodore confirmed, &#34;On an 85-year-old with a dissection. The head of cardiac there would’ve given the patient a 40% chance at best. Star? She reviewed the file, declared she could push it to 90%, and then delivered. Four and a half hours. Flawless.&#34; He paused, grinning. &#34;Bold as hell, right? But she backed it up.&#34;</p>
                 <p>Nathan scoffed. &#34;Bold doesn’t begin to cover it.&#34; Only someone with Star’s audacity would dare reject him—repeatedly.</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_1 -->
-                <div id='div-gpt-ad-1762511964282-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_4 -->
+                <div id='div-gpt-ad-1762512140538-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762511964282-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512140538-0'); });
                   </script>
                 </div>
                 <p>Theodore added, &#34;A photo leaked this time. Just her profile, masked and in glasses, but she looks young. Early thirties, max.&#34;</p>
@@ -2081,10 +2182,10 @@
                 <p>&#34;The hospital’s website crashed,&#34; Theodore continued. &#34;Everyone’s scrambling to book her now.&#34;</p>
                 <p>Nathan wasn’t surprised. Chaos followed Star like a shadow. They wrapped up the call, but something nagged at him. On impulse, he pulled up the leaked photo.</p>
                 <p>His frown deepened. Even obscured, something about her posture, the way she held herself—it tugged at his memory. But no. He shook his head. Impossible. He was imagining things.</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_3 -->
-                <div id='div-gpt-ad-1762512008111-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_3 -->
+                <div id='div-gpt-ad-1762512119068-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512008111-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512119068-0'); });
                   </script>
                 </div>
             </div>

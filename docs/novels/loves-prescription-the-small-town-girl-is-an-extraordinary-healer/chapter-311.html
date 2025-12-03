@@ -981,15 +981,15 @@
       googletag.cmd.push(function() {
         // Define ad slots for the chapter page (randomly selected 5 out of 10)
         
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_1', [300, 250], 'div-gpt-ad-1762511964282-0').addService(googletag.pubads());
+        
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_2', [300, 250], 'div-gpt-ad-1762511986518-0').addService(googletag.pubads());
+        
         googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_5', [300, 250], 'div-gpt-ad-1762512161163-0').addService(googletag.pubads());
         
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_3', [300, 250], 'div-gpt-ad-1762512008111-0').addService(googletag.pubads());
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_3', [300, 250], 'div-gpt-ad-1762512119068-0').addService(googletag.pubads());
         
         googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_2', [300, 250], 'div-gpt-ad-1762512094799-0').addService(googletag.pubads());
-        
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_4', [300, 250], 'div-gpt-ad-1762512140538-0').addService(googletag.pubads());
-        
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_1', [300, 250], 'div-gpt-ad-1762511964282-0').addService(googletag.pubads());
         
         googletag.pubads().enableSingleRequest();
         googletag.enableServices();
@@ -1033,44 +1033,145 @@
         console.log('Facebook event skipped: PageView (already sent within 72 hours)');
     }
     
-    // Reading time tracking for Facebook Pixel
-    let readingStartTime = Date.now();
+    // Reading time tracking for Facebook Pixel (跨页面累计 + 仅计算可见时间)
+    const READING_TIME_STORAGE_KEY = 'fb_accumulated_reading_time';
+    const READING_TIME_DATE_KEY = 'fb_reading_time_date';
+    
+    let visibleStartTime = null;
+    let accumulatedTime = 0; // 当前累计时间（秒）
     let oneMinuteSent = false;
+    let threeMinutesSent = false;
     let tenMinutesSent = false;
     
+    // 获取今天的日期字符串
+    function getTodayDateString() {
+        return new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD
+    }
+    
+    // 加载累计阅读时间（跨页面）
+    function loadAccumulatedTime() {
+        try {
+            const storedDate = localStorage.getItem(READING_TIME_DATE_KEY);
+            const today = getTodayDateString();
+            
+            // 如果是新的一天，重置累计时间
+            if (storedDate !== today) {
+                localStorage.setItem(READING_TIME_DATE_KEY, today);
+                localStorage.setItem(READING_TIME_STORAGE_KEY, '0');
+                return 0;
+            }
+            
+            const stored = localStorage.getItem(READING_TIME_STORAGE_KEY);
+            return stored ? parseFloat(stored) : 0;
+        } catch (e) {
+            console.error('Failed to load accumulated time:', e);
+            return 0;
+        }
+    }
+    
+    // 保存累计阅读时间
+    function saveAccumulatedTime(seconds) {
+        try {
+            localStorage.setItem(READING_TIME_STORAGE_KEY, seconds.toString());
+            localStorage.setItem(READING_TIME_DATE_KEY, getTodayDateString());
+        } catch (e) {
+            console.error('Failed to save accumulated time:', e);
+        }
+    }
+    
+    // 开始计时（页面可见时）
+    function startVisibleTimer() {
+        if (!visibleStartTime && !document.hidden) {
+            visibleStartTime = Date.now();
+            console.log('Reading timer started');
+        }
+    }
+    
+    // 停止计时并累加时间（页面不可见时）
+    function stopVisibleTimer() {
+        if (visibleStartTime) {
+            const visibleDuration = (Date.now() - visibleStartTime) / 1000; // 秒
+            accumulatedTime += visibleDuration;
+            saveAccumulatedTime(accumulatedTime);
+            console.log(`Reading time accumulated: ${visibleDuration.toFixed(1)}s, Total: ${accumulatedTime.toFixed(1)}s`);
+            visibleStartTime = null;
+        }
+    }
+    
+    // 检查阅读时间并触发事件
     function checkReadingTime() {
-        const currentTime = Date.now();
-        const readingTime = (currentTime - readingStartTime) / 1000 / 60; // in minutes
+        // 如果页面当前可见，计算当前会话的时间
+        let currentTotalTime = accumulatedTime;
+        if (visibleStartTime && !document.hidden) {
+            const currentSessionTime = (Date.now() - visibleStartTime) / 1000;
+            currentTotalTime += currentSessionTime;
+        }
         
-        if (!oneMinuteSent && readingTime >= 1) {
+        const readingMinutes = currentTotalTime / 60;
+        // 检查1分钟事件
+        if (!oneMinuteSent && readingMinutes >= 1) {
             if (shouldTrackEvent('1m_web')) {
                 fbq('track', '1m_web');
-                console.log('Facebook event sent: 1m_web (user read for 1 minute)');
+                console.log(`Facebook event sent: 1m_web (accumulated ${readingMinutes.toFixed(2)} minutes)`);
             } else {
                 console.log('Facebook event skipped: 1m_web (already sent within 72 hours)');
             }
             oneMinuteSent = true;
         }
         
-        if (!tenMinutesSent && readingTime >= 10) {
+        // 检查3分钟事件
+        if (!threeMinutesSent && readingMinutes >= 3) {
+            if (shouldTrackEvent('3m_web')) {
+                fbq('track', '3m_web');
+                console.log(`Facebook event sent: 3m_web (accumulated ${readingMinutes.toFixed(2)} minutes)`);
+            } else {
+                console.log('Facebook event skipped: 3m_web (already sent within 72 hours)');
+            }
+            threeMinutesSent = true;
+        }
+        
+        // 检查10分钟事件
+        if (!tenMinutesSent && readingMinutes >= 10) {
             if (shouldTrackEvent('10m_web')) {
                 fbq('track', '10m_web');
-                console.log('Facebook event sent: 10m_web (user read for 10 minutes)');
+                console.log(`Facebook event sent: 10m_web (accumulated ${readingMinutes.toFixed(2)} minutes)`);
             } else {
                 console.log('Facebook event skipped: 10m_web (already sent within 72 hours)');
             }
             tenMinutesSent = true;
+        }   tenMinutesSent = true;
         }
     }
     
-    // Check reading time every 30 seconds
+    // 初始化：加载之前的累计时间
+    accumulatedTime = loadAccumulatedTime();
+    console.log(`Accumulated reading time loaded: ${accumulatedTime.toFixed(1)}s (${(accumulatedTime/60).toFixed(2)} minutes)`);
+    
+    // 页面加载后立即开始计时（如果页面可见）
+    startVisibleTimer();
+    
+    // 立即检查一次（可能已经累计超过阈值）
+    checkReadingTime();
+    
+    // 定期检查阅读时间（每30秒）
     setInterval(checkReadingTime, 30000);
     
-    // Also check when page becomes visible again (in case user switches tabs)
+    // 监听页面可见性变化
     document.addEventListener('visibilitychange', function() {
-        if (!document.hidden) {
+        if (document.hidden) {
+            // 页面隐藏：停止计时并保存
+            stopVisibleTimer();
+        } else {
+            // 页面显示：开始计时
+            startVisibleTimer();
+            // 立即检查（可能已经达到阈值）
             checkReadingTime();
         }
+    });
+    
+    // 页面卸载前保存累计时间
+    window.addEventListener('beforeunload', function() {
+        stopVisibleTimer();
     });
     </script>
     <noscript><img height="1" width="1" style="display:none"
@@ -2053,10 +2154,10 @@
                 <p>Three minutes had slipped by.</p>
                 <p>He looked back again. The woman behind him still strolled at leisure, unhurried and unbothered, making no move to speak.</p>
                 <p>Luis stopped at last, turned, and fixed his gaze upon her.</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_5 -->
-                <div id='div-gpt-ad-1762512161163-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_1 -->
+                <div id='div-gpt-ad-1762511964282-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512161163-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762511964282-0'); });
                   </script>
                 </div>
                 <p>&#34;Miss Brown,&#34; he said, his voice breaking the standstill -low yet ringing clear. &#34;My sister told me you wished to speak with me about a business matter. Since neither of us has time for idle talk, say what you mean plainly.&#34; Miranda lifted her eyes to his, her expression unreadable. His gaze was dark and fathomless, reminding her of still waters, cold and detached.</p>
@@ -2068,10 +2169,10 @@
                 <p>Her slender fingers brushed across his chest, the gesture deliberately playful.</p>
                 <p>Luis neither flinched nor drew back. His gaze lowered to hers. &#34;Miss Brown, that night was nothing more than mutual consent,no strings attached.I had thought you weren&#39;t one to linger on what&#39;s past.&#34;  her breath sweet as spring blossoms. &#34;And yet, Mr.Sampson,can a man truly erase such a night of fire? I,for one, cannot forget your fervent kisses, and that-&#34;</p>
                 <p>Luis cut across her words, his brows taut. &#34;If tonight is nothing but a rehearsal of old tales, then I fear you will leave disappointed.&#34;</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_3 -->
-                <div id='div-gpt-ad-1762512008111-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_2 -->
+                <div id='div-gpt-ad-1762511986518-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512008111-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762511986518-0'); });
                   </script>
                 </div>
                 <p>Though his tone was steady, a fleeting shadow stirred in his eyes.</p>
@@ -2083,10 +2184,10 @@
                 <p>He made to step away, but Miranda blocked his path,her head tilted, her eyes alight with teasing. &#34;Mr.Sampson, why so eager to run? Afraid a passerby might overhear-or is it your own heart that falters?&#34;</p>
                 <p>His Adam&#39;s apple shifted, his lips twitching as though words pressed tó escape.</p>
                 <p>Miranda suddenly caught something, her interest piqued.</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_2 -->
-                <div id='div-gpt-ad-1762512094799-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_5 -->
+                <div id='div-gpt-ad-1762512161163-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512094799-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512161163-0'); });
                   </script>
                 </div>
                 <p>She lifted a hand, tracing beneath his eye with her fingertip, her voice soft as silk. &#34;I recall that night being rather reckless. I didn&#39;t expect I&#39;d leave a small scar here.&#34;</p>
@@ -2098,10 +2199,10 @@
                 <p>But she, unfazed, only smiled with sultry delght.Twining his necktie around her finger,she whispered,&#34;Why keep such distance, Mr. Sampson? We were once close enough to breathe the same air. Tonight,we&#39;re merely reminiscing. Loosen up.&#34;</p>
                 <p>Luis stood rooted, his eyes dark and unreadable.&#34;If you insist on dragging that night back into the light,Miss Brown, then we are finished talking.&#34;</p>
                 <p>Her lips tilted in sly amusement, her gaze brazenly sweeping him. &#34;Very well. If you dislike reminiscing,then grant me one request.&#34;</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_4 -->
-                <div id='div-gpt-ad-1762512140538-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_3 -->
+                <div id='div-gpt-ad-1762512119068-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512140538-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512119068-0'); });
                   </script>
                 </div>
                 <p>Luis&#39; brow creased, knowing instinctively her words carried noinnocence,yet he waited in silence.</p>
@@ -2114,10 +2215,10 @@
                 <p>And as for her-she was still intoxicated by the memory of his body.</p>
                 <p>She tilted her head to the moonlit sky, lost in silent thought.</p>
                 <p>Their story, she felt, was far from its final chapter.</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_1 -->
-                <div id='div-gpt-ad-1762511964282-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_2 -->
+                <div id='div-gpt-ad-1762512094799-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762511964282-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512094799-0'); });
                   </script>
                 </div>
             </div>

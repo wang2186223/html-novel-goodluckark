@@ -981,15 +981,15 @@
       googletag.cmd.push(function() {
         // Define ad slots for the chapter page (randomly selected 5 out of 10)
         
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_4', [300, 250], 'div-gpt-ad-1762512031919-0').addService(googletag.pubads());
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_2', [300, 250], 'div-gpt-ad-1762512094799-0').addService(googletag.pubads());
+        
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_5', [300, 250], 'div-gpt-ad-1762512161163-0').addService(googletag.pubads());
+        
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_4', [300, 250], 'div-gpt-ad-1762512140538-0').addService(googletag.pubads());
         
         googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_2', [300, 250], 'div-gpt-ad-1762511986518-0').addService(googletag.pubads());
         
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_5', [300, 250], 'div-gpt-ad-1762512054239-0').addService(googletag.pubads());
-        
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_3', [300, 250], 'div-gpt-ad-1762512008111-0').addService(googletag.pubads());
-        
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_5', [300, 250], 'div-gpt-ad-1762512161163-0').addService(googletag.pubads());
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_4', [300, 250], 'div-gpt-ad-1762512031919-0').addService(googletag.pubads());
         
         googletag.pubads().enableSingleRequest();
         googletag.enableServices();
@@ -1033,44 +1033,145 @@
         console.log('Facebook event skipped: PageView (already sent within 72 hours)');
     }
     
-    // Reading time tracking for Facebook Pixel
-    let readingStartTime = Date.now();
+    // Reading time tracking for Facebook Pixel (跨页面累计 + 仅计算可见时间)
+    const READING_TIME_STORAGE_KEY = 'fb_accumulated_reading_time';
+    const READING_TIME_DATE_KEY = 'fb_reading_time_date';
+    
+    let visibleStartTime = null;
+    let accumulatedTime = 0; // 当前累计时间（秒）
     let oneMinuteSent = false;
+    let threeMinutesSent = false;
     let tenMinutesSent = false;
     
+    // 获取今天的日期字符串
+    function getTodayDateString() {
+        return new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD
+    }
+    
+    // 加载累计阅读时间（跨页面）
+    function loadAccumulatedTime() {
+        try {
+            const storedDate = localStorage.getItem(READING_TIME_DATE_KEY);
+            const today = getTodayDateString();
+            
+            // 如果是新的一天，重置累计时间
+            if (storedDate !== today) {
+                localStorage.setItem(READING_TIME_DATE_KEY, today);
+                localStorage.setItem(READING_TIME_STORAGE_KEY, '0');
+                return 0;
+            }
+            
+            const stored = localStorage.getItem(READING_TIME_STORAGE_KEY);
+            return stored ? parseFloat(stored) : 0;
+        } catch (e) {
+            console.error('Failed to load accumulated time:', e);
+            return 0;
+        }
+    }
+    
+    // 保存累计阅读时间
+    function saveAccumulatedTime(seconds) {
+        try {
+            localStorage.setItem(READING_TIME_STORAGE_KEY, seconds.toString());
+            localStorage.setItem(READING_TIME_DATE_KEY, getTodayDateString());
+        } catch (e) {
+            console.error('Failed to save accumulated time:', e);
+        }
+    }
+    
+    // 开始计时（页面可见时）
+    function startVisibleTimer() {
+        if (!visibleStartTime && !document.hidden) {
+            visibleStartTime = Date.now();
+            console.log('Reading timer started');
+        }
+    }
+    
+    // 停止计时并累加时间（页面不可见时）
+    function stopVisibleTimer() {
+        if (visibleStartTime) {
+            const visibleDuration = (Date.now() - visibleStartTime) / 1000; // 秒
+            accumulatedTime += visibleDuration;
+            saveAccumulatedTime(accumulatedTime);
+            console.log(`Reading time accumulated: ${visibleDuration.toFixed(1)}s, Total: ${accumulatedTime.toFixed(1)}s`);
+            visibleStartTime = null;
+        }
+    }
+    
+    // 检查阅读时间并触发事件
     function checkReadingTime() {
-        const currentTime = Date.now();
-        const readingTime = (currentTime - readingStartTime) / 1000 / 60; // in minutes
+        // 如果页面当前可见，计算当前会话的时间
+        let currentTotalTime = accumulatedTime;
+        if (visibleStartTime && !document.hidden) {
+            const currentSessionTime = (Date.now() - visibleStartTime) / 1000;
+            currentTotalTime += currentSessionTime;
+        }
         
-        if (!oneMinuteSent && readingTime >= 1) {
+        const readingMinutes = currentTotalTime / 60;
+        // 检查1分钟事件
+        if (!oneMinuteSent && readingMinutes >= 1) {
             if (shouldTrackEvent('1m_web')) {
                 fbq('track', '1m_web');
-                console.log('Facebook event sent: 1m_web (user read for 1 minute)');
+                console.log(`Facebook event sent: 1m_web (accumulated ${readingMinutes.toFixed(2)} minutes)`);
             } else {
                 console.log('Facebook event skipped: 1m_web (already sent within 72 hours)');
             }
             oneMinuteSent = true;
         }
         
-        if (!tenMinutesSent && readingTime >= 10) {
+        // 检查3分钟事件
+        if (!threeMinutesSent && readingMinutes >= 3) {
+            if (shouldTrackEvent('3m_web')) {
+                fbq('track', '3m_web');
+                console.log(`Facebook event sent: 3m_web (accumulated ${readingMinutes.toFixed(2)} minutes)`);
+            } else {
+                console.log('Facebook event skipped: 3m_web (already sent within 72 hours)');
+            }
+            threeMinutesSent = true;
+        }
+        
+        // 检查10分钟事件
+        if (!tenMinutesSent && readingMinutes >= 10) {
             if (shouldTrackEvent('10m_web')) {
                 fbq('track', '10m_web');
-                console.log('Facebook event sent: 10m_web (user read for 10 minutes)');
+                console.log(`Facebook event sent: 10m_web (accumulated ${readingMinutes.toFixed(2)} minutes)`);
             } else {
                 console.log('Facebook event skipped: 10m_web (already sent within 72 hours)');
             }
             tenMinutesSent = true;
+        }   tenMinutesSent = true;
         }
     }
     
-    // Check reading time every 30 seconds
+    // 初始化：加载之前的累计时间
+    accumulatedTime = loadAccumulatedTime();
+    console.log(`Accumulated reading time loaded: ${accumulatedTime.toFixed(1)}s (${(accumulatedTime/60).toFixed(2)} minutes)`);
+    
+    // 页面加载后立即开始计时（如果页面可见）
+    startVisibleTimer();
+    
+    // 立即检查一次（可能已经累计超过阈值）
+    checkReadingTime();
+    
+    // 定期检查阅读时间（每30秒）
     setInterval(checkReadingTime, 30000);
     
-    // Also check when page becomes visible again (in case user switches tabs)
+    // 监听页面可见性变化
     document.addEventListener('visibilitychange', function() {
-        if (!document.hidden) {
+        if (document.hidden) {
+            // 页面隐藏：停止计时并保存
+            stopVisibleTimer();
+        } else {
+            // 页面显示：开始计时
+            startVisibleTimer();
+            // 立即检查（可能已经达到阈值）
             checkReadingTime();
         }
+    });
+    
+    // 页面卸载前保存累计时间
+    window.addEventListener('beforeunload', function() {
+        stopVisibleTimer();
     });
     </script>
     <noscript><img height="1" width="1" style="display:none"
@@ -2050,10 +2151,10 @@
                 <p>She rose from her seat, moving toward him with hesitant steps, her hand trembling as it reached for his arm.Colin,however, shoved her away with a cold flick of disdain, refusing even the brush of her touch.</p>
                 <p>His laugh came out low and cutting, his gaze narrowing like a blade at her trembling form.&#34;Don&#39;t act innocent now. Did you think about the consequences when you sabotaged Brinley&#39;s car? Do you even understand how dangerous that was? If she&#39;d really died out there, we wouldn&#39;t just be barred from the Palmer family-you and I would be finished.&#34;</p>
                 <p>The moment Brinley&#39;s name left his lips, Milly&#39;s expression faltered, a flicker of jealousy sparking before she quickly buried it beneath a mask of fragile sorrow. Tears slid down her cheeks as she whispered, voice heavy with trembling fear, &#34;I wasn&#39;t thinking straight. You looked at her with so much admiration when she reappeared... It honestly made me feel really insecure. I can&#39;t shake the terror that she&#39;ll take you from me and that our baby will be born a bastard...&#34;</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_4 -->
-                <div id='div-gpt-ad-1762512031919-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_2 -->
+                <div id='div-gpt-ad-1762512094799-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512031919-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512094799-0'); });
                   </script>
                 </div>
                 <p>Her hand smoothed protectively over her belly, her shoulders curling in on themselves as her voice cracked with desperation. &#34;This is your child, Colin. A son... the very blessing your family has been begging heaven for.How could you even think of abandoning both of us?&#34;</p>
@@ -2062,10 +2163,10 @@
                 <p>Sensing the shift in him, Milly pressed forward, wrapping her arms tightly around his waist and pressing her damp cheek against his chest. &#34;Colin, I know I crossed the line. Please... just this once, forgive me,&#34; she whispered, her words breaking apart with tears.&#34;|promise you, I&#39;ll never do that again. Please believe me.I only lost control because I love you too much-so much that I can&#39;t think straight.&#34;</p>
                 <p>Her trembling confession, carried on a breathless voice, scraped at Colin&#39;s defenses. The warmth of her body against his and the haze of alcohol dulled his anger, loosening the tight coil of tension he had been holding inside.</p>
                 <p>He lowered his gaze to Milly, who was trembling and clinging to him, and finally exhaled a weary sigh. After all, she was carrying his son. His hand lifted stiffly, landing in an awkward pat on her back. &#34;I forgive you,Milly. But promise me... never again.&#34;</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_2 -->
-                <div id='div-gpt-ad-1762511986518-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_5 -->
+                <div id='div-gpt-ad-1762512161163-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762511986518-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512161163-0'); });
                   </script>
                 </div>
                 <p>Milly&#39;s chest fluttered with relief, though she kept her expression carefully sorrowful. &#34;I knew you&#39;d understand. Don&#39;t worry, I&#39;ll take care of myself and the baby. Once he&#39;s here, your family wilI accept me.&#34;</p>
@@ -2074,10 +2175,10 @@
                 <p>Colin reminded himself that a son was vital to cement his place in the Palmer family, and Milly still had her &#34;Fine,&#34; he muttered, turning toward the bathroom as his resistance slipped away.</p>
                 <p>Milly&#39;s lips curved into the faintest trace of a cold smile once Colin&#39;s back disappeared from sight, but she quickly slipped her mask back on, softening her expression as she reached for a fresh towel.</p>
                 <p>For the moment, she had wriggled out of disaster.</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_5 -->
-                <div id='div-gpt-ad-1762512054239-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_4 -->
+                <div id='div-gpt-ad-1762512140538-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512054239-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512140538-0'); });
                   </script>
                 </div>
                 <p>Yet deep down, she knew Colin&#39;s affection had already begun to drift beyond her grasp.</p>
@@ -2086,10 +2187,10 @@
                 <p>&#34;Brinley,&#34; she whispered, narrowing her eyes with quiet venom. &#34;Our little game has only just begun.&#34;</p>
                 <p>By the time Colin reappeared, steam trailing him from the bath, Milly had slipped into a silk nightgown,her hair gathered loosely at her nape, leaving her slender neck enticingly bare.</p>
                 <p>She stepped forward with a glass of warm milk, holding it out carefully. &#34;Here, have some. It&#39;ll settle your nerves and help you sleep.&#34;</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_3 -->
-                <div id='div-gpt-ad-1762512008111-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_2 -->
+                <div id='div-gpt-ad-1762511986518-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512008111-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762511986518-0'); });
                   </script>
                 </div>
                 <p>Colin accepted it without a word, drained it in a single gulp, and set the empty glass down on the bedside table.</p>
@@ -2101,10 +2202,10 @@
                 <p>Austin posed an even greater danger-too sharp, too calculating. Crossing him could undo everything.</p>
                 <p>A hushed sigh escaped her as she pressed her cheek against Colin&#39;s back, drawing faint comfort from his warmth.</p>
                 <p>She vowed to grip tightly to all she possessed-for her own survival, and for the fragile life turning within her.</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_5 -->
-                <div id='div-gpt-ad-1762512161163-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_4 -->
+                <div id='div-gpt-ad-1762512031919-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512161163-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512031919-0'); });
                   </script>
                 </div>
             </div>

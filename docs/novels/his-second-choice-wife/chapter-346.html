@@ -981,15 +981,15 @@
       googletag.cmd.push(function() {
         // Define ad slots for the chapter page (randomly selected 5 out of 10)
         
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_5', [300, 250], 'div-gpt-ad-1762512161163-0').addService(googletag.pubads());
-        
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_4', [300, 250], 'div-gpt-ad-1762512031919-0').addService(googletag.pubads());
-        
         googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_1', [300, 250], 'div-gpt-ad-1762511964282-0').addService(googletag.pubads());
         
         googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_2', [300, 250], 'div-gpt-ad-1762511986518-0').addService(googletag.pubads());
         
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_2', [300, 250], 'div-gpt-ad-1762512094799-0').addService(googletag.pubads());
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_5', [300, 250], 'div-gpt-ad-1762512054239-0').addService(googletag.pubads());
+        
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_4', [300, 250], 'div-gpt-ad-1762512031919-0').addService(googletag.pubads());
+        
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_3', [300, 250], 'div-gpt-ad-1762512119068-0').addService(googletag.pubads());
         
         googletag.pubads().enableSingleRequest();
         googletag.enableServices();
@@ -1033,44 +1033,145 @@
         console.log('Facebook event skipped: PageView (already sent within 72 hours)');
     }
     
-    // Reading time tracking for Facebook Pixel
-    let readingStartTime = Date.now();
+    // Reading time tracking for Facebook Pixel (跨页面累计 + 仅计算可见时间)
+    const READING_TIME_STORAGE_KEY = 'fb_accumulated_reading_time';
+    const READING_TIME_DATE_KEY = 'fb_reading_time_date';
+    
+    let visibleStartTime = null;
+    let accumulatedTime = 0; // 当前累计时间（秒）
     let oneMinuteSent = false;
+    let threeMinutesSent = false;
     let tenMinutesSent = false;
     
+    // 获取今天的日期字符串
+    function getTodayDateString() {
+        return new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD
+    }
+    
+    // 加载累计阅读时间（跨页面）
+    function loadAccumulatedTime() {
+        try {
+            const storedDate = localStorage.getItem(READING_TIME_DATE_KEY);
+            const today = getTodayDateString();
+            
+            // 如果是新的一天，重置累计时间
+            if (storedDate !== today) {
+                localStorage.setItem(READING_TIME_DATE_KEY, today);
+                localStorage.setItem(READING_TIME_STORAGE_KEY, '0');
+                return 0;
+            }
+            
+            const stored = localStorage.getItem(READING_TIME_STORAGE_KEY);
+            return stored ? parseFloat(stored) : 0;
+        } catch (e) {
+            console.error('Failed to load accumulated time:', e);
+            return 0;
+        }
+    }
+    
+    // 保存累计阅读时间
+    function saveAccumulatedTime(seconds) {
+        try {
+            localStorage.setItem(READING_TIME_STORAGE_KEY, seconds.toString());
+            localStorage.setItem(READING_TIME_DATE_KEY, getTodayDateString());
+        } catch (e) {
+            console.error('Failed to save accumulated time:', e);
+        }
+    }
+    
+    // 开始计时（页面可见时）
+    function startVisibleTimer() {
+        if (!visibleStartTime && !document.hidden) {
+            visibleStartTime = Date.now();
+            console.log('Reading timer started');
+        }
+    }
+    
+    // 停止计时并累加时间（页面不可见时）
+    function stopVisibleTimer() {
+        if (visibleStartTime) {
+            const visibleDuration = (Date.now() - visibleStartTime) / 1000; // 秒
+            accumulatedTime += visibleDuration;
+            saveAccumulatedTime(accumulatedTime);
+            console.log(`Reading time accumulated: ${visibleDuration.toFixed(1)}s, Total: ${accumulatedTime.toFixed(1)}s`);
+            visibleStartTime = null;
+        }
+    }
+    
+    // 检查阅读时间并触发事件
     function checkReadingTime() {
-        const currentTime = Date.now();
-        const readingTime = (currentTime - readingStartTime) / 1000 / 60; // in minutes
+        // 如果页面当前可见，计算当前会话的时间
+        let currentTotalTime = accumulatedTime;
+        if (visibleStartTime && !document.hidden) {
+            const currentSessionTime = (Date.now() - visibleStartTime) / 1000;
+            currentTotalTime += currentSessionTime;
+        }
         
-        if (!oneMinuteSent && readingTime >= 1) {
+        const readingMinutes = currentTotalTime / 60;
+        // 检查1分钟事件
+        if (!oneMinuteSent && readingMinutes >= 1) {
             if (shouldTrackEvent('1m_web')) {
                 fbq('track', '1m_web');
-                console.log('Facebook event sent: 1m_web (user read for 1 minute)');
+                console.log(`Facebook event sent: 1m_web (accumulated ${readingMinutes.toFixed(2)} minutes)`);
             } else {
                 console.log('Facebook event skipped: 1m_web (already sent within 72 hours)');
             }
             oneMinuteSent = true;
         }
         
-        if (!tenMinutesSent && readingTime >= 10) {
+        // 检查3分钟事件
+        if (!threeMinutesSent && readingMinutes >= 3) {
+            if (shouldTrackEvent('3m_web')) {
+                fbq('track', '3m_web');
+                console.log(`Facebook event sent: 3m_web (accumulated ${readingMinutes.toFixed(2)} minutes)`);
+            } else {
+                console.log('Facebook event skipped: 3m_web (already sent within 72 hours)');
+            }
+            threeMinutesSent = true;
+        }
+        
+        // 检查10分钟事件
+        if (!tenMinutesSent && readingMinutes >= 10) {
             if (shouldTrackEvent('10m_web')) {
                 fbq('track', '10m_web');
-                console.log('Facebook event sent: 10m_web (user read for 10 minutes)');
+                console.log(`Facebook event sent: 10m_web (accumulated ${readingMinutes.toFixed(2)} minutes)`);
             } else {
                 console.log('Facebook event skipped: 10m_web (already sent within 72 hours)');
             }
             tenMinutesSent = true;
+        }   tenMinutesSent = true;
         }
     }
     
-    // Check reading time every 30 seconds
+    // 初始化：加载之前的累计时间
+    accumulatedTime = loadAccumulatedTime();
+    console.log(`Accumulated reading time loaded: ${accumulatedTime.toFixed(1)}s (${(accumulatedTime/60).toFixed(2)} minutes)`);
+    
+    // 页面加载后立即开始计时（如果页面可见）
+    startVisibleTimer();
+    
+    // 立即检查一次（可能已经累计超过阈值）
+    checkReadingTime();
+    
+    // 定期检查阅读时间（每30秒）
     setInterval(checkReadingTime, 30000);
     
-    // Also check when page becomes visible again (in case user switches tabs)
+    // 监听页面可见性变化
     document.addEventListener('visibilitychange', function() {
-        if (!document.hidden) {
+        if (document.hidden) {
+            // 页面隐藏：停止计时并保存
+            stopVisibleTimer();
+        } else {
+            // 页面显示：开始计时
+            startVisibleTimer();
+            // 立即检查（可能已经达到阈值）
             checkReadingTime();
         }
+    });
+    
+    // 页面卸载前保存累计时间
+    window.addEventListener('beforeunload', function() {
+        stopVisibleTimer();
     });
     </script>
     <noscript><img height="1" width="1" style="display:none"
@@ -2048,40 +2149,40 @@
                 <p>&#34;You&#39;re the liar here!&#34; Victoria shrieked. &#34;I have DNA proof. Videos of my parents and relatives testifying for me!&#34;</p>
                 <p>This seemed like irrefutable evidence of Victoria&#39;s identity, while Evelyn had nothing but her fractured memories.</p>
                 <p>Meanwhile, Reginald Winslow burned with humiliation as his son&#39;s engagement party descended into farce because of Evelyn.</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_5 -->
-                <div id='div-gpt-ad-1762512161163-0' style='min-width: 300px; min-height: 250px;'>
-                  <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512161163-0'); });
-                  </script>
-                </div>
-                <p>Desperate to regain control, he whispered to Police Chief Theodore Graves. &#34;Have your men escort her to the station to cool off. Investigate quietly after the party concludes.&#34;</p>
-                <p>&#34;Understood, Mr. Winslow,&#34; Graves nodded.</p>
-                <p>Two officers ascended the stage, flashing badges in Evelyn&#39;s face. &#34;You&#39;re coming with us to the station.&#34;</p>
-                <p>Evelyn froze. Rosalind Baskins released Dorothy, rushing to shield Evelyn. &#34;You should be arresting the impostor, not us!&#34;</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_4 -->
-                <div id='div-gpt-ad-1762512031919-0' style='min-width: 300px; min-height: 250px;'>
-                  <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512031919-0'); });
-                  </script>
-                </div>
-                <p>&#34;This is Mr. Winslow&#39;s engagement party, not an interrogation room,&#34; the officer snapped.</p>
-                <p>Rosalind glanced back at Evelyn for guidance. A subtle head shake conveyed their predicament - walking out with police would cement Victoria&#39;s legitimacy in the public eye.</p>
-                <p>For Reginald, only the political alliance with the wealthy family mattered. He didn&#39;t care if Victoria was truly a Hoffis. He knew Nathaniel&#39;s marriage would collapse if Evelyn proved to be the real heiress.</p>
-                <p>&#34;Now,&#34; the officer pressed gently.</p>
                 <!-- /22796784223/Netlink/goodluckark.com/banner_1 -->
                 <div id='div-gpt-ad-1762511964282-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
                     googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762511964282-0'); });
                   </script>
                 </div>
-                <p>Evelyn&#39;s eyes sought Liam Blackwood in the crowd. He watched intently, allowing her to handle the situation independently unless absolutely necessary.</p>
-                <p>But when he saw the helplessness flicker across her face, he leaned toward Ryan Sullivan with quiet instructions.</p>
-                <p>As the officers advanced, Rosalind and Evelyn retreated step by step.</p>
-                <p>&#34;We have another witness!&#34; Rosalind suddenly declared, pointing to Rosalind Fairchild in the audience. &#34;She&#39;s Evelyn&#39;s closest friend. She can testify!&#34;</p>
+                <p>Desperate to regain control, he whispered to Police Chief Theodore Graves. &#34;Have your men escort her to the station to cool off. Investigate quietly after the party concludes.&#34;</p>
+                <p>&#34;Understood, Mr. Winslow,&#34; Graves nodded.</p>
+                <p>Two officers ascended the stage, flashing badges in Evelyn&#39;s face. &#34;You&#39;re coming with us to the station.&#34;</p>
+                <p>Evelyn froze. Rosalind Baskins released Dorothy, rushing to shield Evelyn. &#34;You should be arresting the impostor, not us!&#34;</p>
                 <!-- /22796784223/Netlink/goodluckark.com/banner_2 -->
                 <div id='div-gpt-ad-1762511986518-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
                     googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762511986518-0'); });
+                  </script>
+                </div>
+                <p>&#34;This is Mr. Winslow&#39;s engagement party, not an interrogation room,&#34; the officer snapped.</p>
+                <p>Rosalind glanced back at Evelyn for guidance. A subtle head shake conveyed their predicament - walking out with police would cement Victoria&#39;s legitimacy in the public eye.</p>
+                <p>For Reginald, only the political alliance with the wealthy family mattered. He didn&#39;t care if Victoria was truly a Hoffis. He knew Nathaniel&#39;s marriage would collapse if Evelyn proved to be the real heiress.</p>
+                <p>&#34;Now,&#34; the officer pressed gently.</p>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_5 -->
+                <div id='div-gpt-ad-1762512054239-0' style='min-width: 300px; min-height: 250px;'>
+                  <script>
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512054239-0'); });
+                  </script>
+                </div>
+                <p>Evelyn&#39;s eyes sought Liam Blackwood in the crowd. He watched intently, allowing her to handle the situation independently unless absolutely necessary.</p>
+                <p>But when he saw the helplessness flicker across her face, he leaned toward Ryan Sullivan with quiet instructions.</p>
+                <p>As the officers advanced, Rosalind and Evelyn retreated step by step.</p>
+                <p>&#34;We have another witness!&#34; Rosalind suddenly declared, pointing to Rosalind Fairchild in the audience. &#34;She&#39;s Evelyn&#39;s closest friend. She can testify!&#34;</p>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_4 -->
+                <div id='div-gpt-ad-1762512031919-0' style='min-width: 300px; min-height: 250px;'>
+                  <script>
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512031919-0'); });
                   </script>
                 </div>
                 <p>All attention swung to Rosalind Fairchild, who trembled under the sudden scrutiny. Taking shaky steps forward, she pointed at Victoria. &#34;Sh-she&#39;s not Cassandra Wright. She&#39;s my childhood friend, Evelyn Carter.&#34;</p>
@@ -2090,10 +2191,10 @@
                 <p>&#34;Photos can be edited,&#34; Victoria countered.</p>
                 <p>The officer gestured at Rosalind Fairchild. &#34;You&#39;re coming to the station too. All three of you will be questioned together.&#34;</p>
                 <p>As two officers seized Evelyn and Rosalind Baskins, the situation spiraled out of control. The trap was closing around them.</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_2 -->
-                <div id='div-gpt-ad-1762512094799-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_3 -->
+                <div id='div-gpt-ad-1762512119068-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512094799-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512119068-0'); });
                   </script>
                 </div>
             </div>

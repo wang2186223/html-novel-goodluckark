@@ -981,15 +981,15 @@
       googletag.cmd.push(function() {
         // Define ad slots for the chapter page (randomly selected 5 out of 10)
         
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_5', [300, 250], 'div-gpt-ad-1762512161163-0').addService(googletag.pubads());
-        
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_4', [300, 250], 'div-gpt-ad-1762512031919-0').addService(googletag.pubads());
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_2', [300, 250], 'div-gpt-ad-1762512094799-0').addService(googletag.pubads());
         
         googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_3', [300, 250], 'div-gpt-ad-1762512008111-0').addService(googletag.pubads());
         
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_4', [300, 250], 'div-gpt-ad-1762512140538-0').addService(googletag.pubads());
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_1', [300, 250], 'div-gpt-ad-1762512074266-0').addService(googletag.pubads());
         
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_3', [300, 250], 'div-gpt-ad-1762512119068-0').addService(googletag.pubads());
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_5', [300, 250], 'div-gpt-ad-1762512054239-0').addService(googletag.pubads());
+        
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_1', [300, 250], 'div-gpt-ad-1762511964282-0').addService(googletag.pubads());
         
         googletag.pubads().enableSingleRequest();
         googletag.enableServices();
@@ -1033,44 +1033,145 @@
         console.log('Facebook event skipped: PageView (already sent within 72 hours)');
     }
     
-    // Reading time tracking for Facebook Pixel
-    let readingStartTime = Date.now();
+    // Reading time tracking for Facebook Pixel (跨页面累计 + 仅计算可见时间)
+    const READING_TIME_STORAGE_KEY = 'fb_accumulated_reading_time';
+    const READING_TIME_DATE_KEY = 'fb_reading_time_date';
+    
+    let visibleStartTime = null;
+    let accumulatedTime = 0; // 当前累计时间（秒）
     let oneMinuteSent = false;
+    let threeMinutesSent = false;
     let tenMinutesSent = false;
     
+    // 获取今天的日期字符串
+    function getTodayDateString() {
+        return new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD
+    }
+    
+    // 加载累计阅读时间（跨页面）
+    function loadAccumulatedTime() {
+        try {
+            const storedDate = localStorage.getItem(READING_TIME_DATE_KEY);
+            const today = getTodayDateString();
+            
+            // 如果是新的一天，重置累计时间
+            if (storedDate !== today) {
+                localStorage.setItem(READING_TIME_DATE_KEY, today);
+                localStorage.setItem(READING_TIME_STORAGE_KEY, '0');
+                return 0;
+            }
+            
+            const stored = localStorage.getItem(READING_TIME_STORAGE_KEY);
+            return stored ? parseFloat(stored) : 0;
+        } catch (e) {
+            console.error('Failed to load accumulated time:', e);
+            return 0;
+        }
+    }
+    
+    // 保存累计阅读时间
+    function saveAccumulatedTime(seconds) {
+        try {
+            localStorage.setItem(READING_TIME_STORAGE_KEY, seconds.toString());
+            localStorage.setItem(READING_TIME_DATE_KEY, getTodayDateString());
+        } catch (e) {
+            console.error('Failed to save accumulated time:', e);
+        }
+    }
+    
+    // 开始计时（页面可见时）
+    function startVisibleTimer() {
+        if (!visibleStartTime && !document.hidden) {
+            visibleStartTime = Date.now();
+            console.log('Reading timer started');
+        }
+    }
+    
+    // 停止计时并累加时间（页面不可见时）
+    function stopVisibleTimer() {
+        if (visibleStartTime) {
+            const visibleDuration = (Date.now() - visibleStartTime) / 1000; // 秒
+            accumulatedTime += visibleDuration;
+            saveAccumulatedTime(accumulatedTime);
+            console.log(`Reading time accumulated: ${visibleDuration.toFixed(1)}s, Total: ${accumulatedTime.toFixed(1)}s`);
+            visibleStartTime = null;
+        }
+    }
+    
+    // 检查阅读时间并触发事件
     function checkReadingTime() {
-        const currentTime = Date.now();
-        const readingTime = (currentTime - readingStartTime) / 1000 / 60; // in minutes
+        // 如果页面当前可见，计算当前会话的时间
+        let currentTotalTime = accumulatedTime;
+        if (visibleStartTime && !document.hidden) {
+            const currentSessionTime = (Date.now() - visibleStartTime) / 1000;
+            currentTotalTime += currentSessionTime;
+        }
         
-        if (!oneMinuteSent && readingTime >= 1) {
+        const readingMinutes = currentTotalTime / 60;
+        // 检查1分钟事件
+        if (!oneMinuteSent && readingMinutes >= 1) {
             if (shouldTrackEvent('1m_web')) {
                 fbq('track', '1m_web');
-                console.log('Facebook event sent: 1m_web (user read for 1 minute)');
+                console.log(`Facebook event sent: 1m_web (accumulated ${readingMinutes.toFixed(2)} minutes)`);
             } else {
                 console.log('Facebook event skipped: 1m_web (already sent within 72 hours)');
             }
             oneMinuteSent = true;
         }
         
-        if (!tenMinutesSent && readingTime >= 10) {
+        // 检查3分钟事件
+        if (!threeMinutesSent && readingMinutes >= 3) {
+            if (shouldTrackEvent('3m_web')) {
+                fbq('track', '3m_web');
+                console.log(`Facebook event sent: 3m_web (accumulated ${readingMinutes.toFixed(2)} minutes)`);
+            } else {
+                console.log('Facebook event skipped: 3m_web (already sent within 72 hours)');
+            }
+            threeMinutesSent = true;
+        }
+        
+        // 检查10分钟事件
+        if (!tenMinutesSent && readingMinutes >= 10) {
             if (shouldTrackEvent('10m_web')) {
                 fbq('track', '10m_web');
-                console.log('Facebook event sent: 10m_web (user read for 10 minutes)');
+                console.log(`Facebook event sent: 10m_web (accumulated ${readingMinutes.toFixed(2)} minutes)`);
             } else {
                 console.log('Facebook event skipped: 10m_web (already sent within 72 hours)');
             }
             tenMinutesSent = true;
+        }   tenMinutesSent = true;
         }
     }
     
-    // Check reading time every 30 seconds
+    // 初始化：加载之前的累计时间
+    accumulatedTime = loadAccumulatedTime();
+    console.log(`Accumulated reading time loaded: ${accumulatedTime.toFixed(1)}s (${(accumulatedTime/60).toFixed(2)} minutes)`);
+    
+    // 页面加载后立即开始计时（如果页面可见）
+    startVisibleTimer();
+    
+    // 立即检查一次（可能已经累计超过阈值）
+    checkReadingTime();
+    
+    // 定期检查阅读时间（每30秒）
     setInterval(checkReadingTime, 30000);
     
-    // Also check when page becomes visible again (in case user switches tabs)
+    // 监听页面可见性变化
     document.addEventListener('visibilitychange', function() {
-        if (!document.hidden) {
+        if (document.hidden) {
+            // 页面隐藏：停止计时并保存
+            stopVisibleTimer();
+        } else {
+            // 页面显示：开始计时
+            startVisibleTimer();
+            // 立即检查（可能已经达到阈值）
             checkReadingTime();
         }
+    });
+    
+    // 页面卸载前保存累计时间
+    window.addEventListener('beforeunload', function() {
+        stopVisibleTimer();
     });
     </script>
     <noscript><img height="1" width="1" style="display:none"
@@ -2051,10 +2152,10 @@
                 <p>Lowering her head, she let her gaze soften, tender eyes locking onto his. &#34;The baby and I are both safe before you, aren&#39;t we? Isaac, you mustn&#39;t torment yourself with fear.&#34; Feeling the warmth beneath his palm, lsaac tightened his grip slightly on her abdomen. Slowly,the storm inside him began to ease.</p>
                 <p>He swallowed hard, words sticking in his throat.When he finally spoke, his voice was still hoarse with emotion. &#34;Verena... I ask for nothing else. Your safety is all that matters.&#34;</p>
                 <p>With his free hand, he gently caressed her face,thumb tracing the delicate line of her cheek. His eyes brimmed with devotion.</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_5 -->
-                <div id='div-gpt-ad-1762512161163-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_2 -->
+                <div id='div-gpt-ad-1762512094799-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512161163-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512094799-0'); });
                   </script>
                 </div>
                 <p>Verena leaned into his touch, brushing her cheek against his palm. A soft smile curved her lips. &#34;I understand. I&#39;ll take good care of myself. I won&#39;t let this happen again-nor let you worry so.&#34;</p>
@@ -2064,10 +2165,10 @@
                 <p>Verena nodded, her expression solemn. &#34;This is something that deserves careful thought.&#34;</p>
                 <p>As she spoke, she remembered something, her eyes softening as she glanced at Luis. &#34;And thank you for bringing me to the hospital.&#34;</p>
                 <p>Luis allowed himself a faint smile. &#34;Merely doing what needed to be done.&#34;</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_4 -->
-                <div id='div-gpt-ad-1762512031919-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_3 -->
+                <div id='div-gpt-ad-1762512008111-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512031919-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512008111-0'); });
                   </script>
                 </div>
                 <p>With that, he cast a passing glance at Isaac, and then turned back to Verena. &#34;I have business to attend to.I&#39;ll be taking my leave.&#34;</p>
@@ -2077,10 +2178,10 @@
                 <p>Her lips pressed together as she weighed her words,and then she explained, &#34;These past days, I&#39;ve been thinking. Luis has no personal vendetta against you.It makes no sense for him to strike at you directly. A rational businessman never acts against his own interest-hurting you by sabotaging himself would be sheer folly.&#34;</p>
                 <p>She paused briefly, and then continued, &#34;Which leaves only one explanation: he&#39;s being used by Simon. I suspect Simon holds something over him,forcing him into obedience. With that suspicion, I tested him today. From his reaction, it seemed he tacitly admitted as much. So I proposed a collaboration. If we join hands with him and deceive Simon, we can turn the tables and break this deadlock.&#34;</p>
                 <p>Isaac listened in silence, and then exhaled, as though a heavy burden had eased. He knew precisely what she intended.</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_3 -->
-                <div id='div-gpt-ad-1762512008111-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_1 -->
+                <div id='div-gpt-ad-1762512074266-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512008111-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512074266-0'); });
                   </script>
                 </div>
                 <p>He nodded lightly, pride flickering across his face as a smile tugged at his lips. &#34;Verena, you never fail to astonish me.&#34;</p>
@@ -2090,10 +2191,10 @@
                 <p>It was as if he had been struck still. Only when Verena repeated herself did Jacob stir from his daze.</p>
                 <p>His body trembled faintly, and he raised a shaking hand,pointing directly at Isaac.</p>
                 <p>His voice quavered with disbelief and joy. &#34;Mr.Bennett, you... you just stood up from the wheelchair.&#34; For an instant, Verena&#39;s mind went blank, stunned into stillness.</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_4 -->
-                <div id='div-gpt-ad-1762512140538-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_5 -->
+                <div id='div-gpt-ad-1762512054239-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512140538-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512054239-0'); });
                   </script>
                 </div>
                 <p>Then, like a spark catching fire, joy flared across her face, her smile widening as her eyes lit up. &#34;Really?&#34;.</p>
@@ -2106,10 +2207,10 @@
                 <p>His body had responded on its own. He really had stood up.</p>
                 <p>It only lasted a fleeting moment, yet it filled him with courage,with the seed of hope.</p>
                 <p>Isaac&#39;s lips trembled as he lifted his gaze to Verena.Like a child seeking approval, his eyes glistened with longing. &#34;Verena...I...I can stand ndw.&#34;</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_3 -->
-                <div id='div-gpt-ad-1762512119068-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_1 -->
+                <div id='div-gpt-ad-1762511964282-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512119068-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762511964282-0'); });
                   </script>
                 </div>
             </div>

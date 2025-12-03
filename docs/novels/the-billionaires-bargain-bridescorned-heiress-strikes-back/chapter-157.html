@@ -981,15 +981,15 @@
       googletag.cmd.push(function() {
         // Define ad slots for the chapter page (randomly selected 5 out of 10)
         
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_3', [300, 250], 'div-gpt-ad-1762512008111-0').addService(googletag.pubads());
-        
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_2', [300, 250], 'div-gpt-ad-1762512094799-0').addService(googletag.pubads());
-        
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_4', [300, 250], 'div-gpt-ad-1762512031919-0').addService(googletag.pubads());
-        
         googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_4', [300, 250], 'div-gpt-ad-1762512140538-0').addService(googletag.pubads());
         
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_5', [300, 250], 'div-gpt-ad-1762512161163-0').addService(googletag.pubads());
+        
         googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_5', [300, 250], 'div-gpt-ad-1762512054239-0').addService(googletag.pubads());
+        
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_1', [300, 250], 'div-gpt-ad-1762511964282-0').addService(googletag.pubads());
+        
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_4', [300, 250], 'div-gpt-ad-1762512031919-0').addService(googletag.pubads());
         
         googletag.pubads().enableSingleRequest();
         googletag.enableServices();
@@ -1033,44 +1033,145 @@
         console.log('Facebook event skipped: PageView (already sent within 72 hours)');
     }
     
-    // Reading time tracking for Facebook Pixel
-    let readingStartTime = Date.now();
+    // Reading time tracking for Facebook Pixel (跨页面累计 + 仅计算可见时间)
+    const READING_TIME_STORAGE_KEY = 'fb_accumulated_reading_time';
+    const READING_TIME_DATE_KEY = 'fb_reading_time_date';
+    
+    let visibleStartTime = null;
+    let accumulatedTime = 0; // 当前累计时间（秒）
     let oneMinuteSent = false;
+    let threeMinutesSent = false;
     let tenMinutesSent = false;
     
+    // 获取今天的日期字符串
+    function getTodayDateString() {
+        return new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD
+    }
+    
+    // 加载累计阅读时间（跨页面）
+    function loadAccumulatedTime() {
+        try {
+            const storedDate = localStorage.getItem(READING_TIME_DATE_KEY);
+            const today = getTodayDateString();
+            
+            // 如果是新的一天，重置累计时间
+            if (storedDate !== today) {
+                localStorage.setItem(READING_TIME_DATE_KEY, today);
+                localStorage.setItem(READING_TIME_STORAGE_KEY, '0');
+                return 0;
+            }
+            
+            const stored = localStorage.getItem(READING_TIME_STORAGE_KEY);
+            return stored ? parseFloat(stored) : 0;
+        } catch (e) {
+            console.error('Failed to load accumulated time:', e);
+            return 0;
+        }
+    }
+    
+    // 保存累计阅读时间
+    function saveAccumulatedTime(seconds) {
+        try {
+            localStorage.setItem(READING_TIME_STORAGE_KEY, seconds.toString());
+            localStorage.setItem(READING_TIME_DATE_KEY, getTodayDateString());
+        } catch (e) {
+            console.error('Failed to save accumulated time:', e);
+        }
+    }
+    
+    // 开始计时（页面可见时）
+    function startVisibleTimer() {
+        if (!visibleStartTime && !document.hidden) {
+            visibleStartTime = Date.now();
+            console.log('Reading timer started');
+        }
+    }
+    
+    // 停止计时并累加时间（页面不可见时）
+    function stopVisibleTimer() {
+        if (visibleStartTime) {
+            const visibleDuration = (Date.now() - visibleStartTime) / 1000; // 秒
+            accumulatedTime += visibleDuration;
+            saveAccumulatedTime(accumulatedTime);
+            console.log(`Reading time accumulated: ${visibleDuration.toFixed(1)}s, Total: ${accumulatedTime.toFixed(1)}s`);
+            visibleStartTime = null;
+        }
+    }
+    
+    // 检查阅读时间并触发事件
     function checkReadingTime() {
-        const currentTime = Date.now();
-        const readingTime = (currentTime - readingStartTime) / 1000 / 60; // in minutes
+        // 如果页面当前可见，计算当前会话的时间
+        let currentTotalTime = accumulatedTime;
+        if (visibleStartTime && !document.hidden) {
+            const currentSessionTime = (Date.now() - visibleStartTime) / 1000;
+            currentTotalTime += currentSessionTime;
+        }
         
-        if (!oneMinuteSent && readingTime >= 1) {
+        const readingMinutes = currentTotalTime / 60;
+        // 检查1分钟事件
+        if (!oneMinuteSent && readingMinutes >= 1) {
             if (shouldTrackEvent('1m_web')) {
                 fbq('track', '1m_web');
-                console.log('Facebook event sent: 1m_web (user read for 1 minute)');
+                console.log(`Facebook event sent: 1m_web (accumulated ${readingMinutes.toFixed(2)} minutes)`);
             } else {
                 console.log('Facebook event skipped: 1m_web (already sent within 72 hours)');
             }
             oneMinuteSent = true;
         }
         
-        if (!tenMinutesSent && readingTime >= 10) {
+        // 检查3分钟事件
+        if (!threeMinutesSent && readingMinutes >= 3) {
+            if (shouldTrackEvent('3m_web')) {
+                fbq('track', '3m_web');
+                console.log(`Facebook event sent: 3m_web (accumulated ${readingMinutes.toFixed(2)} minutes)`);
+            } else {
+                console.log('Facebook event skipped: 3m_web (already sent within 72 hours)');
+            }
+            threeMinutesSent = true;
+        }
+        
+        // 检查10分钟事件
+        if (!tenMinutesSent && readingMinutes >= 10) {
             if (shouldTrackEvent('10m_web')) {
                 fbq('track', '10m_web');
-                console.log('Facebook event sent: 10m_web (user read for 10 minutes)');
+                console.log(`Facebook event sent: 10m_web (accumulated ${readingMinutes.toFixed(2)} minutes)`);
             } else {
                 console.log('Facebook event skipped: 10m_web (already sent within 72 hours)');
             }
             tenMinutesSent = true;
+        }   tenMinutesSent = true;
         }
     }
     
-    // Check reading time every 30 seconds
+    // 初始化：加载之前的累计时间
+    accumulatedTime = loadAccumulatedTime();
+    console.log(`Accumulated reading time loaded: ${accumulatedTime.toFixed(1)}s (${(accumulatedTime/60).toFixed(2)} minutes)`);
+    
+    // 页面加载后立即开始计时（如果页面可见）
+    startVisibleTimer();
+    
+    // 立即检查一次（可能已经累计超过阈值）
+    checkReadingTime();
+    
+    // 定期检查阅读时间（每30秒）
     setInterval(checkReadingTime, 30000);
     
-    // Also check when page becomes visible again (in case user switches tabs)
+    // 监听页面可见性变化
     document.addEventListener('visibilitychange', function() {
-        if (!document.hidden) {
+        if (document.hidden) {
+            // 页面隐藏：停止计时并保存
+            stopVisibleTimer();
+        } else {
+            // 页面显示：开始计时
+            startVisibleTimer();
+            // 立即检查（可能已经达到阈值）
             checkReadingTime();
         }
+    });
+    
+    // 页面卸载前保存累计时间
+    window.addEventListener('beforeunload', function() {
+        stopVisibleTimer();
     });
     </script>
     <noscript><img height="1" width="1" style="display:none"
@@ -2047,46 +2148,46 @@
                 <p>Evelyn shook her head slightly. &#34;No. It&#39;s my mother...&#34;</p>
                 <p>A sardonic smile twisted her lips as she continued, &#34;She wants me to let Lila win.&#34;</p>
                 <p>&#34;What?&#34; Alexander&#39;s shock was palpable. &#34;Your mother actually said that? She expects you to just... throw the competition?&#34;</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_3 -->
-                <div id='div-gpt-ad-1762512008111-0' style='min-width: 300px; min-height: 250px;'>
-                  <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512008111-0'); });
-                  </script>
-                </div>
-                <p>Evelyn nodded. &#34;Exactly. Ridiculous, right?&#34;</p>
-                <p>Alexander was momentarily speechless, struggling to process the absurdity. Finally, he demanded, &#34;But why? Why would she ask that of you?&#34;</p>
-                <p>Evelyn&#39;s gaze dropped to her glass. &#34;She said if Lila gets expelled because of our rivalry, it&#39;ll only make things worse for both of us at home.&#34;</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_2 -->
-                <div id='div-gpt-ad-1762512094799-0' style='min-width: 300px; min-height: 250px;'>
-                  <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512094799-0'); });
-                  </script>
-                </div>
-                <p>Alexander absorbed her words before sighing. &#34;I get her concern, but that doesn&#39;t make it right. Does she even realize what losing would mean for you?&#34;</p>
-                <p>&#34;Oh, she knows,&#34; Evelyn replied, exhaling sharply before recounting Grace&#39;s disheartening words.</p>
-                <p>When she finished, Alexander let out a dry chuckle. &#34;She&#39;s only looking out for herself, isn&#39;t she? But has she considered your reputation? If you lose now, the gossip will explode. You can&#39;t agree to this!&#34;</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_4 -->
-                <div id='div-gpt-ad-1762512031919-0' style='min-width: 300px; min-height: 250px;'>
-                  <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512031919-0'); });
-                  </script>
-                </div>
-                <p>Evelyn smirked, a glint of mischief in her eyes. &#34;I already told her I&#39;d let Lila have her way.&#34;</p>
-                <p>Alexander&#39;s frown deepened. &#34;Evelyn! Have you lost your mind?&#34;</p>
-                <p>Her sly grin widened. &#34;Why so serious? I said I&#39;d let her win. But the how... that&#39;s up to me.&#34;</p>
                 <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_4 -->
                 <div id='div-gpt-ad-1762512140538-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
                     googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512140538-0'); });
                   </script>
                 </div>
-                <p>Understanding dawned on Alexander, and he burst into laughter. &#34;Now that sounds like you.&#34; He grabbed his glass and raised it. &#34;Alright, since you&#39;re clearly in a mood, let&#39;s drink until you forget this nonsense.&#34;</p>
-                <p>The weight of her mother&#39;s betrayal pressed heavily on Evelyn, and alcohol seemed the easiest escape. She knocked back another glass, her usual composure slipping as the liquor took hold.</p>
-                <p>Soon, she was standing on the sofa, a fake flower in one hand and a vase as her makeshift microphone. &#34;Hello, everyone! Let&#39;s get this party started! Hands up!&#34; she shouted, her inhibitions long gone.</p>
+                <p>Evelyn nodded. &#34;Exactly. Ridiculous, right?&#34;</p>
+                <p>Alexander was momentarily speechless, struggling to process the absurdity. Finally, he demanded, &#34;But why? Why would she ask that of you?&#34;</p>
+                <p>Evelyn&#39;s gaze dropped to her glass. &#34;She said if Lila gets expelled because of our rivalry, it&#39;ll only make things worse for both of us at home.&#34;</p>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_5 -->
+                <div id='div-gpt-ad-1762512161163-0' style='min-width: 300px; min-height: 250px;'>
+                  <script>
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512161163-0'); });
+                  </script>
+                </div>
+                <p>Alexander absorbed her words before sighing. &#34;I get her concern, but that doesn&#39;t make it right. Does she even realize what losing would mean for you?&#34;</p>
+                <p>&#34;Oh, she knows,&#34; Evelyn replied, exhaling sharply before recounting Grace&#39;s disheartening words.</p>
+                <p>When she finished, Alexander let out a dry chuckle. &#34;She&#39;s only looking out for herself, isn&#39;t she? But has she considered your reputation? If you lose now, the gossip will explode. You can&#39;t agree to this!&#34;</p>
                 <!-- /22796784223/Netlink/goodluckark.com/banner_5 -->
                 <div id='div-gpt-ad-1762512054239-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
                     googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512054239-0'); });
+                  </script>
+                </div>
+                <p>Evelyn smirked, a glint of mischief in her eyes. &#34;I already told her I&#39;d let Lila have her way.&#34;</p>
+                <p>Alexander&#39;s frown deepened. &#34;Evelyn! Have you lost your mind?&#34;</p>
+                <p>Her sly grin widened. &#34;Why so serious? I said I&#39;d let her win. But the how... that&#39;s up to me.&#34;</p>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_1 -->
+                <div id='div-gpt-ad-1762511964282-0' style='min-width: 300px; min-height: 250px;'>
+                  <script>
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762511964282-0'); });
+                  </script>
+                </div>
+                <p>Understanding dawned on Alexander, and he burst into laughter. &#34;Now that sounds like you.&#34; He grabbed his glass and raised it. &#34;Alright, since you&#39;re clearly in a mood, let&#39;s drink until you forget this nonsense.&#34;</p>
+                <p>The weight of her mother&#39;s betrayal pressed heavily on Evelyn, and alcohol seemed the easiest escape. She knocked back another glass, her usual composure slipping as the liquor took hold.</p>
+                <p>Soon, she was standing on the sofa, a fake flower in one hand and a vase as her makeshift microphone. &#34;Hello, everyone! Let&#39;s get this party started! Hands up!&#34; she shouted, her inhibitions long gone.</p>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_4 -->
+                <div id='div-gpt-ad-1762512031919-0' style='min-width: 300px; min-height: 250px;'>
+                  <script>
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512031919-0'); });
                   </script>
                 </div>
             </div>
