@@ -981,15 +981,15 @@
       googletag.cmd.push(function() {
         // Define ad slots for the chapter page (randomly selected 5 out of 10)
         
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_2', [300, 250], 'div-gpt-ad-1762512094799-0').addService(googletag.pubads());
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_2', [300, 250], 'div-gpt-ad-1762511986518-0').addService(googletag.pubads());
+        
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_3', [300, 250], 'div-gpt-ad-1762512008111-0').addService(googletag.pubads());
         
         googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_4', [300, 250], 'div-gpt-ad-1762512140538-0').addService(googletag.pubads());
         
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_4', [300, 250], 'div-gpt-ad-1762512031919-0').addService(googletag.pubads());
-        
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_5', [300, 250], 'div-gpt-ad-1762512161163-0').addService(googletag.pubads());
-        
         googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_3', [300, 250], 'div-gpt-ad-1762512119068-0').addService(googletag.pubads());
+        
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_1', [300, 250], 'div-gpt-ad-1762511964282-0').addService(googletag.pubads());
         
         googletag.pubads().enableSingleRequest();
         googletag.enableServices();
@@ -1036,12 +1036,11 @@
     // Reading time tracking for Facebook Pixel (跨页面累计 + 仅计算可见时间)
     const READING_TIME_STORAGE_KEY = 'fb_accumulated_reading_time';
     const READING_TIME_DATE_KEY = 'fb_reading_time_date';
+    const EVENT_SENT_KEY = 'fb_events_sent'; // 存储已发送的事件
     
     let visibleStartTime = null;
     let accumulatedTime = 0; // 当前累计时间（秒）
-    let oneMinuteSent = false;
-    let threeMinutesSent = false;
-    let tenMinutesSent = false;
+    let eventsSent = {}; // 已发送的事件标记
     
     // 获取今天的日期字符串
     function getTodayDateString() {
@@ -1054,10 +1053,11 @@
             const storedDate = localStorage.getItem(READING_TIME_DATE_KEY);
             const today = getTodayDateString();
             
-            // 如果是新的一天，重置累计时间
+            // 如果是新的一天，重置累计时间和事件标记
             if (storedDate !== today) {
                 localStorage.setItem(READING_TIME_DATE_KEY, today);
                 localStorage.setItem(READING_TIME_STORAGE_KEY, '0');
+                localStorage.setItem(EVENT_SENT_KEY, '{}');
                 return 0;
             }
             
@@ -1066,6 +1066,34 @@
         } catch (e) {
             console.error('Failed to load accumulated time:', e);
             return 0;
+        }
+    }
+    
+    // 加载已发送事件标记
+    function loadEventsSent() {
+        try {
+            const storedDate = localStorage.getItem(READING_TIME_DATE_KEY);
+            const today = getTodayDateString();
+            
+            // 如果是新的一天，重置
+            if (storedDate !== today) {
+                return {};
+            }
+            
+            const stored = localStorage.getItem(EVENT_SENT_KEY);
+            return stored ? JSON.parse(stored) : {};
+        } catch (e) {
+            console.error('Failed to load events sent:', e);
+            return {};
+        }
+    }
+    
+    // 保存已发送事件标记
+    function saveEventsSent() {
+        try {
+            localStorage.setItem(EVENT_SENT_KEY, JSON.stringify(eventsSent));
+        } catch (e) {
+            console.error('Failed to save events sent:', e);
         }
     }
     
@@ -1079,73 +1107,77 @@
         }
     }
     
-    // 开始计时（页面可见时）
+    // 开始可见时间计时
     function startVisibleTimer() {
-        if (!visibleStartTime && !document.hidden) {
+        if (!document.hidden && visibleStartTime === null) {
             visibleStartTime = Date.now();
-            console.log('Reading timer started');
         }
     }
     
-    // 停止计时并累加时间（页面不可见时）
+    // 停止可见时间计时并累加
     function stopVisibleTimer() {
-        if (visibleStartTime) {
-            const visibleDuration = (Date.now() - visibleStartTime) / 1000; // 秒
-            accumulatedTime += visibleDuration;
+        if (visibleStartTime !== null) {
+            const elapsed = (Date.now() - visibleStartTime) / 1000; // 转换为秒
+            accumulatedTime += elapsed;
             saveAccumulatedTime(accumulatedTime);
-            console.log(`Reading time accumulated: ${visibleDuration.toFixed(1)}s, Total: ${accumulatedTime.toFixed(1)}s`);
             visibleStartTime = null;
         }
     }
     
-    // 检查阅读时间并触发事件
+    // 检查阅读时间并发送事件
     function checkReadingTime() {
-        // 如果页面当前可见，计算当前会话的时间
-        let currentTotalTime = accumulatedTime;
-        if (visibleStartTime && !document.hidden) {
-            const currentSessionTime = (Date.now() - visibleStartTime) / 1000;
-            currentTotalTime += currentSessionTime;
-        }
+        // 先停止计时并保存当前进度
+        stopVisibleTimer();
         
+        // 计算总时间（分钟）
+        const currentTotalTime = accumulatedTime;
         const readingMinutes = currentTotalTime / 60;
+        
         // 检查1分钟事件
-        if (!oneMinuteSent && readingMinutes >= 1) {
+        if (!eventsSent['1m'] && readingMinutes >= 1) {
             if (shouldTrackEvent('1m_web')) {
                 fbq('track', '1m_web');
                 console.log(`Facebook event sent: 1m_web (accumulated ${readingMinutes.toFixed(2)} minutes)`);
+                eventsSent['1m'] = true;
+                saveEventsSent();
             } else {
                 console.log('Facebook event skipped: 1m_web (already sent within 72 hours)');
             }
-            oneMinuteSent = true;
         }
         
         // 检查3分钟事件
-        if (!threeMinutesSent && readingMinutes >= 3) {
+        if (!eventsSent['3m'] && readingMinutes >= 3) {
             if (shouldTrackEvent('3m_web')) {
                 fbq('track', '3m_web');
                 console.log(`Facebook event sent: 3m_web (accumulated ${readingMinutes.toFixed(2)} minutes)`);
+                eventsSent['3m'] = true;
+                saveEventsSent();
             } else {
                 console.log('Facebook event skipped: 3m_web (already sent within 72 hours)');
             }
-            threeMinutesSent = true;
         }
         
         // 检查10分钟事件
-        if (!tenMinutesSent && readingMinutes >= 10) {
+        if (!eventsSent['10m'] && readingMinutes >= 10) {
             if (shouldTrackEvent('10m_web')) {
                 fbq('track', '10m_web');
                 console.log(`Facebook event sent: 10m_web (accumulated ${readingMinutes.toFixed(2)} minutes)`);
+                eventsSent['10m'] = true;
+                saveEventsSent();
             } else {
                 console.log('Facebook event skipped: 10m_web (already sent within 72 hours)');
             }
-            tenMinutesSent = true;
-        }   tenMinutesSent = true;
         }
+        
+        // 继续计时（如果页面可见）
+        startVisibleTimer();
     }
     
-    // 初始化：加载之前的累计时间
+    // 初始化：加载之前的累计时间和事件标记
     accumulatedTime = loadAccumulatedTime();
+    eventsSent = loadEventsSent();
     console.log(`Accumulated reading time loaded: ${accumulatedTime.toFixed(1)}s (${(accumulatedTime/60).toFixed(2)} minutes)`);
+    console.log(`Events sent status:`, eventsSent);
     
     // 页面加载后立即开始计时（如果页面可见）
     startVisibleTimer();
@@ -2152,10 +2184,10 @@
                 <p>With a frustrated growl, she grabbed a massive umbrella and marched toward the entrance. The door swung open with more force than necessary.</p>
                 <p>When Nathan saw Evelyn&#39;s slender silhouette approaching through the downpour, he wondered if hypothermia was making him hallucinate.</p>
                 <p>Only when she stood before him—close enough for raindrops to catch in her lashes—did reality sink in. Warmth flooded his chest, his frozen lips twitching into an involuntary smile.</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_2 -->
-                <div id='div-gpt-ad-1762512094799-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_2 -->
+                <div id='div-gpt-ad-1762511986518-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512094799-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762511986518-0'); });
                   </script>
                 </div>
                 <p>&#34;What the hell are you trying to prove?&#34; Evelyn&#39;s voice cut through the storm like shattered crystal. &#34;Trying to get yourself hospitalized?&#34;</p>
@@ -2165,10 +2197,10 @@
                 <p>Strangely, her anger thrilled him. There was something perversely satisfying about her fury.</p>
                 <p>&#34;Were you planning to stand here all night if I didn&#39;t come out?&#34;</p>
                 <p>&#34;Yes.&#34; His breath formed ghostly clouds between them. &#34;I needed to tell you something.&#34;</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_4 -->
-                <div id='div-gpt-ad-1762512140538-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_3 -->
+                <div id='div-gpt-ad-1762512008111-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512140538-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512008111-0'); });
                   </script>
                 </div>
                 <p>Evelyn&#39;s laugh was sharp enough to draw blood. &#34;Nathan Blackwood, you never fail to disgust me. Can&#39;t you come up with anything more original than emotional blackmail? Are you the CEO of Blackwood Industries or some desperate stalker?&#34;</p>
@@ -2178,10 +2210,10 @@
                 <p>&#34;You&#39;re not sleeping well.&#34;</p>
                 <p>&#34;What?&#34;</p>
                 <p>&#34;You never used to wake at night. Slept like the dead till morning.&#34;</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_4 -->
-                <div id='div-gpt-ad-1762512031919-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_4 -->
+                <div id='div-gpt-ad-1762512140538-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512031919-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512140538-0'); });
                   </script>
                 </div>
                 <p>Evelyn&#39;s grip on the umbrella handle turned white-knuckled.</p>
@@ -2191,10 +2223,10 @@
                 <p>&#34;Whatever you came to say, spit it out! It&#39;s freezing out here!&#34;</p>
                 <p>A violent shiver racked her body.</p>
                 <p>&#34;Let&#39;s talk in the car.&#34;</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_5 -->
-                <div id='div-gpt-ad-1762512161163-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_3 -->
+                <div id='div-gpt-ad-1762512119068-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512161163-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512119068-0'); });
                   </script>
                 </div>
                 <p>Nathan seized the umbrella with one hand while yanking the car door open with the other. Before she could protest, he&#39;d maneuvered her inside.</p>
@@ -2204,10 +2236,10 @@
                 <p>&#34;I found who leaked the photos. Vivian Prescott. Her father is Vincent Prescott—you know why she did this. She&#39;s been waiting years for revenge.&#34;</p>
                 <p>Evelyn&#39;s head snapped up. &#34;You stood in the rain for hours just to tell me that?&#34;</p>
                 <p>&#34;Partly.&#34; Nathan&#39;s voice was hoarse with more than cold. &#34;I needed to see if you were... affected by what happened.&#34;</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_3 -->
-                <div id='div-gpt-ad-1762512119068-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_1 -->
+                <div id='div-gpt-ad-1762511964282-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512119068-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762511964282-0'); });
                   </script>
                 </div>
             </div>

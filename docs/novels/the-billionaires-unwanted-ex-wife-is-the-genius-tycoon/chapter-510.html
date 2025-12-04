@@ -981,15 +981,15 @@
       googletag.cmd.push(function() {
         // Define ad slots for the chapter page (randomly selected 5 out of 10)
         
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_4', [300, 250], 'div-gpt-ad-1762512031919-0').addService(googletag.pubads());
-        
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_2', [300, 250], 'div-gpt-ad-1762512094799-0').addService(googletag.pubads());
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_1', [300, 250], 'div-gpt-ad-1762512074266-0').addService(googletag.pubads());
         
         googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_5', [300, 250], 'div-gpt-ad-1762512161163-0').addService(googletag.pubads());
         
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_5', [300, 250], 'div-gpt-ad-1762512054239-0').addService(googletag.pubads());
+        
         googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_3', [300, 250], 'div-gpt-ad-1762512008111-0').addService(googletag.pubads());
         
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_5', [300, 250], 'div-gpt-ad-1762512054239-0').addService(googletag.pubads());
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_2', [300, 250], 'div-gpt-ad-1762512094799-0').addService(googletag.pubads());
         
         googletag.pubads().enableSingleRequest();
         googletag.enableServices();
@@ -1036,12 +1036,11 @@
     // Reading time tracking for Facebook Pixel (跨页面累计 + 仅计算可见时间)
     const READING_TIME_STORAGE_KEY = 'fb_accumulated_reading_time';
     const READING_TIME_DATE_KEY = 'fb_reading_time_date';
+    const EVENT_SENT_KEY = 'fb_events_sent'; // 存储已发送的事件
     
     let visibleStartTime = null;
     let accumulatedTime = 0; // 当前累计时间（秒）
-    let oneMinuteSent = false;
-    let threeMinutesSent = false;
-    let tenMinutesSent = false;
+    let eventsSent = {}; // 已发送的事件标记
     
     // 获取今天的日期字符串
     function getTodayDateString() {
@@ -1054,10 +1053,11 @@
             const storedDate = localStorage.getItem(READING_TIME_DATE_KEY);
             const today = getTodayDateString();
             
-            // 如果是新的一天，重置累计时间
+            // 如果是新的一天，重置累计时间和事件标记
             if (storedDate !== today) {
                 localStorage.setItem(READING_TIME_DATE_KEY, today);
                 localStorage.setItem(READING_TIME_STORAGE_KEY, '0');
+                localStorage.setItem(EVENT_SENT_KEY, '{}');
                 return 0;
             }
             
@@ -1066,6 +1066,34 @@
         } catch (e) {
             console.error('Failed to load accumulated time:', e);
             return 0;
+        }
+    }
+    
+    // 加载已发送事件标记
+    function loadEventsSent() {
+        try {
+            const storedDate = localStorage.getItem(READING_TIME_DATE_KEY);
+            const today = getTodayDateString();
+            
+            // 如果是新的一天，重置
+            if (storedDate !== today) {
+                return {};
+            }
+            
+            const stored = localStorage.getItem(EVENT_SENT_KEY);
+            return stored ? JSON.parse(stored) : {};
+        } catch (e) {
+            console.error('Failed to load events sent:', e);
+            return {};
+        }
+    }
+    
+    // 保存已发送事件标记
+    function saveEventsSent() {
+        try {
+            localStorage.setItem(EVENT_SENT_KEY, JSON.stringify(eventsSent));
+        } catch (e) {
+            console.error('Failed to save events sent:', e);
         }
     }
     
@@ -1079,73 +1107,77 @@
         }
     }
     
-    // 开始计时（页面可见时）
+    // 开始可见时间计时
     function startVisibleTimer() {
-        if (!visibleStartTime && !document.hidden) {
+        if (!document.hidden && visibleStartTime === null) {
             visibleStartTime = Date.now();
-            console.log('Reading timer started');
         }
     }
     
-    // 停止计时并累加时间（页面不可见时）
+    // 停止可见时间计时并累加
     function stopVisibleTimer() {
-        if (visibleStartTime) {
-            const visibleDuration = (Date.now() - visibleStartTime) / 1000; // 秒
-            accumulatedTime += visibleDuration;
+        if (visibleStartTime !== null) {
+            const elapsed = (Date.now() - visibleStartTime) / 1000; // 转换为秒
+            accumulatedTime += elapsed;
             saveAccumulatedTime(accumulatedTime);
-            console.log(`Reading time accumulated: ${visibleDuration.toFixed(1)}s, Total: ${accumulatedTime.toFixed(1)}s`);
             visibleStartTime = null;
         }
     }
     
-    // 检查阅读时间并触发事件
+    // 检查阅读时间并发送事件
     function checkReadingTime() {
-        // 如果页面当前可见，计算当前会话的时间
-        let currentTotalTime = accumulatedTime;
-        if (visibleStartTime && !document.hidden) {
-            const currentSessionTime = (Date.now() - visibleStartTime) / 1000;
-            currentTotalTime += currentSessionTime;
-        }
+        // 先停止计时并保存当前进度
+        stopVisibleTimer();
         
+        // 计算总时间（分钟）
+        const currentTotalTime = accumulatedTime;
         const readingMinutes = currentTotalTime / 60;
+        
         // 检查1分钟事件
-        if (!oneMinuteSent && readingMinutes >= 1) {
+        if (!eventsSent['1m'] && readingMinutes >= 1) {
             if (shouldTrackEvent('1m_web')) {
                 fbq('track', '1m_web');
                 console.log(`Facebook event sent: 1m_web (accumulated ${readingMinutes.toFixed(2)} minutes)`);
+                eventsSent['1m'] = true;
+                saveEventsSent();
             } else {
                 console.log('Facebook event skipped: 1m_web (already sent within 72 hours)');
             }
-            oneMinuteSent = true;
         }
         
         // 检查3分钟事件
-        if (!threeMinutesSent && readingMinutes >= 3) {
+        if (!eventsSent['3m'] && readingMinutes >= 3) {
             if (shouldTrackEvent('3m_web')) {
                 fbq('track', '3m_web');
                 console.log(`Facebook event sent: 3m_web (accumulated ${readingMinutes.toFixed(2)} minutes)`);
+                eventsSent['3m'] = true;
+                saveEventsSent();
             } else {
                 console.log('Facebook event skipped: 3m_web (already sent within 72 hours)');
             }
-            threeMinutesSent = true;
         }
         
         // 检查10分钟事件
-        if (!tenMinutesSent && readingMinutes >= 10) {
+        if (!eventsSent['10m'] && readingMinutes >= 10) {
             if (shouldTrackEvent('10m_web')) {
                 fbq('track', '10m_web');
                 console.log(`Facebook event sent: 10m_web (accumulated ${readingMinutes.toFixed(2)} minutes)`);
+                eventsSent['10m'] = true;
+                saveEventsSent();
             } else {
                 console.log('Facebook event skipped: 10m_web (already sent within 72 hours)');
             }
-            tenMinutesSent = true;
-        }   tenMinutesSent = true;
         }
+        
+        // 继续计时（如果页面可见）
+        startVisibleTimer();
     }
     
-    // 初始化：加载之前的累计时间
+    // 初始化：加载之前的累计时间和事件标记
     accumulatedTime = loadAccumulatedTime();
+    eventsSent = loadEventsSent();
     console.log(`Accumulated reading time loaded: ${accumulatedTime.toFixed(1)}s (${(accumulatedTime/60).toFixed(2)} minutes)`);
+    console.log(`Events sent status:`, eventsSent);
     
     // 页面加载后立即开始计时（如果页面可见）
     startVisibleTimer();
@@ -2150,10 +2182,10 @@
                 <p>&#34;I don’t,&#34; he replied evenly.</p>
                 <p>&#34;Stop playing dumb,&#34; she snapped. &#34;Who were those girls you took on your bike?&#34;</p>
                 <p>Everett&#39;s expression remained unreadable. &#34;My mother and Lillian.&#34;</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_4 -->
-                <div id='div-gpt-ad-1762512031919-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_1 -->
+                <div id='div-gpt-ad-1762512074266-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512031919-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512074266-0'); });
                   </script>
                 </div>
                 <p>Rosalind&#39;s breath hitched. Her porcelain skin flushed crimson. She&#39;d assumed he meant romantic interests, not his family.</p>
@@ -2161,10 +2193,10 @@
                 <p>Amusement flickered in Everett&#39;s eyes as he watched her flustered reaction. A quiet chuckle escaped him.</p>
                 <p>Rosalind stomped her foot. &#34;Are you laughing at me?&#34;</p>
                 <p>&#34;Not at all,&#34; he said, though his smirk betrayed him.</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_2 -->
-                <div id='div-gpt-ad-1762512094799-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_5 -->
+                <div id='div-gpt-ad-1762512161163-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512094799-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512161163-0'); });
                   </script>
                 </div>
                 <p>She surged forward, rising on her toes until their bodies nearly touched. Her fingers pressed against the corners of his mouth. &#34;Liar! I saw you!&#34;</p>
@@ -2172,10 +2204,10 @@
                 <p>He averted his gaze.</p>
                 <p>That&#39;s when Rosalind noticed the wound near his collarbone. &#34;What happened here?&#34; Her voice softened with concern.</p>
                 <p>The injury, partially hidden by his T-shirt collar, appeared raw and inflamed. Rosalind gently tugged the fabric aside, her warm breath ghosting over the cut.</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_5 -->
-                <div id='div-gpt-ad-1762512161163-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_5 -->
+                <div id='div-gpt-ad-1762512054239-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512161163-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512054239-0'); });
                   </script>
                 </div>
                 <p>Everett tensed. The sensation wasn&#39;t painful—just unsettlingly intimate. He tried to push her away. &#34;It&#39;s nothing.&#34;</p>
@@ -2195,10 +2227,10 @@
                 <p>This wasn&#39;t their first kiss, but Rosalind&#39;s boldness surprised him. Her tongue traced the seam of his lips before slipping inside, igniting a fire in his veins.</p>
                 <p>That familiar, overwhelming sensation returned—the same primal urge he&#39;d fought when drugged with aphrodisiac incense. At his age, curiosity and hormones raged uncontrollably.</p>
                 <p>His hands twitched to push her away, yet they refused to obey. His eyelids fluttered shut as, against his better judgment, he began kissing her back.</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_5 -->
-                <div id='div-gpt-ad-1762512054239-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_2 -->
+                <div id='div-gpt-ad-1762512094799-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512054239-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512094799-0'); });
                   </script>
                 </div>
             </div>

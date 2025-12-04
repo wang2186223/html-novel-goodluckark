@@ -981,15 +981,15 @@
       googletag.cmd.push(function() {
         // Define ad slots for the chapter page (randomly selected 5 out of 10)
         
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_5', [300, 250], 'div-gpt-ad-1762512054239-0').addService(googletag.pubads());
-        
         googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_3', [300, 250], 'div-gpt-ad-1762512119068-0').addService(googletag.pubads());
         
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_2', [300, 250], 'div-gpt-ad-1762511986518-0').addService(googletag.pubads());
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_4', [300, 250], 'div-gpt-ad-1762512031919-0').addService(googletag.pubads());
         
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_3', [300, 250], 'div-gpt-ad-1762512008111-0').addService(googletag.pubads());
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_4', [300, 250], 'div-gpt-ad-1762512140538-0').addService(googletag.pubads());
         
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_2', [300, 250], 'div-gpt-ad-1762512094799-0').addService(googletag.pubads());
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_1', [300, 250], 'div-gpt-ad-1762511964282-0').addService(googletag.pubads());
+        
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_1', [300, 250], 'div-gpt-ad-1762512074266-0').addService(googletag.pubads());
         
         googletag.pubads().enableSingleRequest();
         googletag.enableServices();
@@ -1036,12 +1036,11 @@
     // Reading time tracking for Facebook Pixel (跨页面累计 + 仅计算可见时间)
     const READING_TIME_STORAGE_KEY = 'fb_accumulated_reading_time';
     const READING_TIME_DATE_KEY = 'fb_reading_time_date';
+    const EVENT_SENT_KEY = 'fb_events_sent'; // 存储已发送的事件
     
     let visibleStartTime = null;
     let accumulatedTime = 0; // 当前累计时间（秒）
-    let oneMinuteSent = false;
-    let threeMinutesSent = false;
-    let tenMinutesSent = false;
+    let eventsSent = {}; // 已发送的事件标记
     
     // 获取今天的日期字符串
     function getTodayDateString() {
@@ -1054,10 +1053,11 @@
             const storedDate = localStorage.getItem(READING_TIME_DATE_KEY);
             const today = getTodayDateString();
             
-            // 如果是新的一天，重置累计时间
+            // 如果是新的一天，重置累计时间和事件标记
             if (storedDate !== today) {
                 localStorage.setItem(READING_TIME_DATE_KEY, today);
                 localStorage.setItem(READING_TIME_STORAGE_KEY, '0');
+                localStorage.setItem(EVENT_SENT_KEY, '{}');
                 return 0;
             }
             
@@ -1066,6 +1066,34 @@
         } catch (e) {
             console.error('Failed to load accumulated time:', e);
             return 0;
+        }
+    }
+    
+    // 加载已发送事件标记
+    function loadEventsSent() {
+        try {
+            const storedDate = localStorage.getItem(READING_TIME_DATE_KEY);
+            const today = getTodayDateString();
+            
+            // 如果是新的一天，重置
+            if (storedDate !== today) {
+                return {};
+            }
+            
+            const stored = localStorage.getItem(EVENT_SENT_KEY);
+            return stored ? JSON.parse(stored) : {};
+        } catch (e) {
+            console.error('Failed to load events sent:', e);
+            return {};
+        }
+    }
+    
+    // 保存已发送事件标记
+    function saveEventsSent() {
+        try {
+            localStorage.setItem(EVENT_SENT_KEY, JSON.stringify(eventsSent));
+        } catch (e) {
+            console.error('Failed to save events sent:', e);
         }
     }
     
@@ -1079,73 +1107,77 @@
         }
     }
     
-    // 开始计时（页面可见时）
+    // 开始可见时间计时
     function startVisibleTimer() {
-        if (!visibleStartTime && !document.hidden) {
+        if (!document.hidden && visibleStartTime === null) {
             visibleStartTime = Date.now();
-            console.log('Reading timer started');
         }
     }
     
-    // 停止计时并累加时间（页面不可见时）
+    // 停止可见时间计时并累加
     function stopVisibleTimer() {
-        if (visibleStartTime) {
-            const visibleDuration = (Date.now() - visibleStartTime) / 1000; // 秒
-            accumulatedTime += visibleDuration;
+        if (visibleStartTime !== null) {
+            const elapsed = (Date.now() - visibleStartTime) / 1000; // 转换为秒
+            accumulatedTime += elapsed;
             saveAccumulatedTime(accumulatedTime);
-            console.log(`Reading time accumulated: ${visibleDuration.toFixed(1)}s, Total: ${accumulatedTime.toFixed(1)}s`);
             visibleStartTime = null;
         }
     }
     
-    // 检查阅读时间并触发事件
+    // 检查阅读时间并发送事件
     function checkReadingTime() {
-        // 如果页面当前可见，计算当前会话的时间
-        let currentTotalTime = accumulatedTime;
-        if (visibleStartTime && !document.hidden) {
-            const currentSessionTime = (Date.now() - visibleStartTime) / 1000;
-            currentTotalTime += currentSessionTime;
-        }
+        // 先停止计时并保存当前进度
+        stopVisibleTimer();
         
+        // 计算总时间（分钟）
+        const currentTotalTime = accumulatedTime;
         const readingMinutes = currentTotalTime / 60;
+        
         // 检查1分钟事件
-        if (!oneMinuteSent && readingMinutes >= 1) {
+        if (!eventsSent['1m'] && readingMinutes >= 1) {
             if (shouldTrackEvent('1m_web')) {
                 fbq('track', '1m_web');
                 console.log(`Facebook event sent: 1m_web (accumulated ${readingMinutes.toFixed(2)} minutes)`);
+                eventsSent['1m'] = true;
+                saveEventsSent();
             } else {
                 console.log('Facebook event skipped: 1m_web (already sent within 72 hours)');
             }
-            oneMinuteSent = true;
         }
         
         // 检查3分钟事件
-        if (!threeMinutesSent && readingMinutes >= 3) {
+        if (!eventsSent['3m'] && readingMinutes >= 3) {
             if (shouldTrackEvent('3m_web')) {
                 fbq('track', '3m_web');
                 console.log(`Facebook event sent: 3m_web (accumulated ${readingMinutes.toFixed(2)} minutes)`);
+                eventsSent['3m'] = true;
+                saveEventsSent();
             } else {
                 console.log('Facebook event skipped: 3m_web (already sent within 72 hours)');
             }
-            threeMinutesSent = true;
         }
         
         // 检查10分钟事件
-        if (!tenMinutesSent && readingMinutes >= 10) {
+        if (!eventsSent['10m'] && readingMinutes >= 10) {
             if (shouldTrackEvent('10m_web')) {
                 fbq('track', '10m_web');
                 console.log(`Facebook event sent: 10m_web (accumulated ${readingMinutes.toFixed(2)} minutes)`);
+                eventsSent['10m'] = true;
+                saveEventsSent();
             } else {
                 console.log('Facebook event skipped: 10m_web (already sent within 72 hours)');
             }
-            tenMinutesSent = true;
-        }   tenMinutesSent = true;
         }
+        
+        // 继续计时（如果页面可见）
+        startVisibleTimer();
     }
     
-    // 初始化：加载之前的累计时间
+    // 初始化：加载之前的累计时间和事件标记
     accumulatedTime = loadAccumulatedTime();
+    eventsSent = loadEventsSent();
     console.log(`Accumulated reading time loaded: ${accumulatedTime.toFixed(1)}s (${(accumulatedTime/60).toFixed(2)} minutes)`);
+    console.log(`Events sent status:`, eventsSent);
     
     // 页面加载后立即开始计时（如果页面可见）
     startVisibleTimer();
@@ -2155,10 +2187,10 @@
                 <p>The truth had been clear-Louis had been set up-but he hadn&#39;t pushed deeper. because she hadn&#39;t given the word.</p>
                 <p>She hesitated, then replied, &#34;Let&#39;s hold off for now.&#34; From the way Stella had reacted, there was more to the matter than it seemed.</p>
                 <p>The Onyx Syndicate already had eyes on them, and probing into Louis&#39;s case would only invite trouble Besides, she had a strong feeling Louis might have walked into it on purpose. That made rash moves dangerous.</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_5 -->
-                <div id='div-gpt-ad-1762512054239-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_3 -->
+                <div id='div-gpt-ad-1762512119068-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512054239-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512119068-0'); });
                   </script>
                 </div>
                 <p>&#34;Got it,&#34; Seth replied. He took her caution for mistrust toward the Murray family and left it there. &#34;I&#39;ll get things lined up so the transfer starts first thing tomorrow.&#34;</p>
@@ -2171,10 +2203,10 @@
                 <p>A short distance away, Barry advanced with cautious steps.</p>
                 <p>He hadn&#39;t wanted to set foot in the Murray estate. In his mind, marrying a girl from the countryside was unthinkable.</p>
                 <p>But Zach&#39;s orders weren&#39;t something he could ignore, not when he still owed both Zach and Addie enough to sink him for life. His pride could wait.</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_3 -->
-                <div id='div-gpt-ad-1762512119068-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_4 -->
+                <div id='div-gpt-ad-1762512031919-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512119068-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512031919-0'); });
                   </script>
                 </div>
                 <p>That resolve cracked the moment he saw Eliana.</p>
@@ -2187,10 +2219,10 @@
                 <p>Pain and humiliation flared in Barry, but when he looked up, the sight of her face bathed in moonlight stole the heat from his anger.</p>
                 <p>For extraordinary beauty like this, he thought, maybe she could be forgiven for putting him on the ground.</p>
                 <p>A quick, eager smile spread across his face. &#34;Hey now, no need to get the wrong idea. I&#39;m not some creep...&#34;</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_2 -->
-                <div id='div-gpt-ad-1762511986518-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_4 -->
+                <div id='div-gpt-ad-1762512140538-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762511986518-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512140538-0'); });
                   </script>
                 </div>
                 <p>&#34;Talk. Who are you? Because if you don&#39;t, I might just forget to keep this knife steady.&#34; Eliana cut in, her voice low and dangerous.</p>
@@ -2203,10 +2235,10 @@
                 <p>&#34;Zach White?&#34; Eliana&#39;s brows lifted, a glint of mockery flashing in her eyes. &#34;So his wife works fast-already arranging me a future husband.&#34;</p>
                 <p>A flicker of excitement lit Barry&#39;s face. &#34;Then Addie has spoken to you about me. How about putting that knife down? I&#39;m really your future fiancé...&#34;</p>
                 <p>Noticing the knife still in her grip, he quickly added, &#34;Listen, if you marry me, I&#39;ll make sure you&#39;re taken care of. Anything you want, it&#39;s yours. And your father-since he&#39;s been taken in-we&#39;ve got the power to pull some strings and get him released.&#34;</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_3 -->
-                <div id='div-gpt-ad-1762512008111-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_1 -->
+                <div id='div-gpt-ad-1762511964282-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512008111-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762511964282-0'); });
                   </script>
                 </div>
                 <p>Eliana almost laughed outright. She was seconds from calling Jordy to drag Barry out when a rich, smooth voice cut through the night. &#34;Seems the title of Ms. Murray&#39;s fiancé is in high demand tonight...&#34;</p>
@@ -2219,10 +2251,10 @@
                 <p>Pain shot up Barry&#39;s legs, dragging a hiss from his throat, but he swallowed it quickly, replacing it with a forced, toothy smile. &#34;Mr. Pearson, what&#39;s going on? I don&#39;t understand... I haven&#39;t done anything wrong.&#34;</p>
                 <p>Tristan stepped forward, his gaze unwavering. &#34;No, you haven&#39;t-unless you count attempting to steal my fiancée.&#34; &#34;Y-your fiancée?&#34; Barry blurted, whipping around to stare at Eliana as if the words themselves were absurd.A country-raised girl like her-Tristan&#39;s fiancée? No way. If that were true, why would Addie be arranging his marriage to Eliana? And the Pearsons? With their standards, they&#39;d never welcome the disgraced Murray family,let alone replace the well-bred Leyla with someone who&#39;d grown up far from privilege.</p>
                 <p>&#34;Mr. Pearson, there&#39;s got to be a mistake here. Ms. Murray is about to get engaged to me..&#34;</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_2 -->
-                <div id='div-gpt-ad-1762512094799-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_1 -->
+                <div id='div-gpt-ad-1762512074266-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512094799-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512074266-0'); });
                   </script>
                 </div>
             </div>
