@@ -981,13 +981,13 @@
       googletag.cmd.push(function() {
         // Define ad slots for the chapter page (randomly selected 5 out of 10)
         
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_3', [300, 250], 'div-gpt-ad-1762512119068-0').addService(googletag.pubads());
-        
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_1', [300, 250], 'div-gpt-ad-1762511964282-0').addService(googletag.pubads());
-        
         googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_5', [300, 250], 'div-gpt-ad-1762512054239-0').addService(googletag.pubads());
         
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_3', [300, 250], 'div-gpt-ad-1762512119068-0').addService(googletag.pubads());
+        
         googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_5', [300, 250], 'div-gpt-ad-1762512161163-0').addService(googletag.pubads());
+        
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_4', [300, 250], 'div-gpt-ad-1762512031919-0').addService(googletag.pubads());
         
         googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_1', [300, 250], 'div-gpt-ad-1762512074266-0').addService(googletag.pubads());
         
@@ -1324,6 +1324,28 @@
         }
         
         /**
+         * 24小时去重检查（独立实现）
+         */
+        function shouldTrackClickEvent(eventName) {
+            try {
+                const now = new Date();
+                const currentPeriod = Math.floor(now.getTime() / (24 * 60 * 60 * 1000));
+                const storageKey = `fb_event_${eventName}`;
+                const lastTrackedPeriod = localStorage.getItem(storageKey);
+                
+                if (!lastTrackedPeriod || parseInt(lastTrackedPeriod) !== currentPeriod) {
+                    localStorage.setItem(storageKey, currentPeriod.toString());
+                    return true;
+                }
+                
+                return false;
+            } catch (e) {
+                console.error('Failed to check event tracking:', e);
+                return true; // 出错时允许发送
+            }
+        }
+        
+        /**
          * 检查并触发点击里程碑事件
          */
         function checkAndTriggerMilestones(clickCount) {
@@ -1332,24 +1354,29 @@
             CLICK_MILESTONES.forEach(milestone => {
                 // 如果达到里程碑且尚未发送该事件
                 if (clickCount >= milestone.count && !eventsSent[milestone.event]) {
-                    // 使用 shouldTrackEvent 确保24小时内只发送一次
-                    if (typeof shouldTrackEvent === 'function' && shouldTrackEvent(milestone.event)) {
-                        fbq('trackCustom', milestone.event, {
-                            content_name: 'My Rejected Mate Regrets',
-                            content_type: 'chapter',
-                            content_category: 'chapter_navigation',
-                            value: milestone.value,
-                            currency: 'USD',
-                            click_count: clickCount
-                        });
-                        
-                        console.log(`Facebook event sent: ${milestone.event} (${clickCount} clicks, value: $${milestone.value})`);
+                    // 24小时去重检查
+                    if (shouldTrackClickEvent(milestone.event)) {
+                        // 确保 fbq 函数已加载
+                        if (typeof fbq !== 'undefined') {
+                            fbq('trackCustom', milestone.event, {
+                                content_name: 'My Rejected Mate Regrets',
+                                content_type: 'chapter',
+                                content_category: 'chapter_navigation',
+                                value: milestone.value,
+                                currency: 'USD',
+                                click_count: clickCount
+                            });
+                            
+                            console.log(`✅ Facebook event sent: ${milestone.event} (${clickCount} clicks, value: $${milestone.value})`);
+                        } else {
+                            console.warn(`⚠️ fbq not loaded, skipping ${milestone.event}`);
+                        }
                         
                         // 标记该事件已发送
                         eventsSent[milestone.event] = true;
                         saveClickEventsSent(eventsSent);
                     } else {
-                        console.log(`Facebook event skipped: ${milestone.event} (already sent within 24 hours)`);
+                        console.log(`⏭️ Facebook event skipped: ${milestone.event} (already sent within 24 hours)`);
                     }
                 }
             });
@@ -2372,34 +2399,34 @@
                 <p>&#34;Maybe.&#34; If my name&#39;s on that list, placing a bet could throw everyone off her scent.</p>
                 <p>&#34;Top five includes you and Donovan here.&#34;</p>
                 <p>Donovan blinks. &#34;Why me?&#34;</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_3 -->
-                <div id='div-gpt-ad-1762512119068-0' style='min-width: 300px; min-height: 250px;'>
-                  <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512119068-0'); });
-                  </script>
-                </div>
-                <p>Julian rolls his eyes. &#34;You&#39;re the only Beta who buys Celestia&#39;s gold-leaf desserts, genius.&#34;</p>
-                <p>I toss fifty on the table. &#34;My money&#39;s on Donovan.&#34;</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_1 -->
-                <div id='div-gpt-ad-1762511964282-0' style='min-width: 300px; min-height: 250px;'>
-                  <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762511964282-0'); });
-                  </script>
-                </div>
-                <p>My Beta freezes mid-bite, syrup dripping from his croissant. Slowly, he wipes his hands and matches my bet. &#34;Fifty says it&#39;s Adrian.&#34;</p>
-                <p>Bastard knows he&#39;ll win.</p>
                 <!-- /22796784223/Netlink/goodluckark.com/banner_5 -->
                 <div id='div-gpt-ad-1762512054239-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
                     googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512054239-0'); });
                   </script>
                 </div>
-                <p>Julian cackles as he recalculates odds, muttering about &#34;psychological warfare&#34; as he disappears into the crowd.</p>
-                <p>Lunch is a spectacle. The entire student body crams into the cafeteria, waiting. When Evelyn enters, her gaze darts around—searching. That tiny frown? Perfect. Just wait, sweetheart.</p>
+                <p>Julian rolls his eyes. &#34;You&#39;re the only Beta who buys Celestia&#39;s gold-leaf desserts, genius.&#34;</p>
+                <p>I toss fifty on the table. &#34;My money&#39;s on Donovan.&#34;</p>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_3 -->
+                <div id='div-gpt-ad-1762512119068-0' style='min-width: 300px; min-height: 250px;'>
+                  <script>
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512119068-0'); });
+                  </script>
+                </div>
+                <p>My Beta freezes mid-bite, syrup dripping from his croissant. Slowly, he wipes his hands and matches my bet. &#34;Fifty says it&#39;s Adrian.&#34;</p>
+                <p>Bastard knows he&#39;ll win.</p>
                 <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_5 -->
                 <div id='div-gpt-ad-1762512161163-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
                     googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512161163-0'); });
+                  </script>
+                </div>
+                <p>Julian cackles as he recalculates odds, muttering about &#34;psychological warfare&#34; as he disappears into the crowd.</p>
+                <p>Lunch is a spectacle. The entire student body crams into the cafeteria, waiting. When Evelyn enters, her gaze darts around—searching. That tiny frown? Perfect. Just wait, sweetheart.</p>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_4 -->
+                <div id='div-gpt-ad-1762512031919-0' style='min-width: 300px; min-height: 250px;'>
+                  <script>
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512031919-0'); });
                   </script>
                 </div>
                 <p>The quartet&#39;s entrance silences the room. Rose petals rain down as they launch into an upbeat rendition of Perfect. Evelyn&#39;s laughter rings out, bright and unguarded, and Theron purrs approval in my mind. We did that.</p>

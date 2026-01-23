@@ -981,15 +981,15 @@
       googletag.cmd.push(function() {
         // Define ad slots for the chapter page (randomly selected 5 out of 10)
         
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_2', [300, 250], 'div-gpt-ad-1762512094799-0').addService(googletag.pubads());
-        
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_3', [300, 250], 'div-gpt-ad-1762512008111-0').addService(googletag.pubads());
-        
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_4', [300, 250], 'div-gpt-ad-1762512031919-0').addService(googletag.pubads());
-        
         googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_5', [300, 250], 'div-gpt-ad-1762512161163-0').addService(googletag.pubads());
         
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_1', [300, 250], 'div-gpt-ad-1762512074266-0').addService(googletag.pubads());
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_1', [300, 250], 'div-gpt-ad-1762511964282-0').addService(googletag.pubads());
+        
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_3', [300, 250], 'div-gpt-ad-1762512119068-0').addService(googletag.pubads());
+        
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_5', [300, 250], 'div-gpt-ad-1762512054239-0').addService(googletag.pubads());
+        
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_2', [300, 250], 'div-gpt-ad-1762512094799-0').addService(googletag.pubads());
         
         googletag.pubads().enableSingleRequest();
         googletag.enableServices();
@@ -1324,6 +1324,28 @@
         }
         
         /**
+         * 24小时去重检查（独立实现）
+         */
+        function shouldTrackClickEvent(eventName) {
+            try {
+                const now = new Date();
+                const currentPeriod = Math.floor(now.getTime() / (24 * 60 * 60 * 1000));
+                const storageKey = `fb_event_${eventName}`;
+                const lastTrackedPeriod = localStorage.getItem(storageKey);
+                
+                if (!lastTrackedPeriod || parseInt(lastTrackedPeriod) !== currentPeriod) {
+                    localStorage.setItem(storageKey, currentPeriod.toString());
+                    return true;
+                }
+                
+                return false;
+            } catch (e) {
+                console.error('Failed to check event tracking:', e);
+                return true; // 出错时允许发送
+            }
+        }
+        
+        /**
          * 检查并触发点击里程碑事件
          */
         function checkAndTriggerMilestones(clickCount) {
@@ -1332,24 +1354,29 @@
             CLICK_MILESTONES.forEach(milestone => {
                 // 如果达到里程碑且尚未发送该事件
                 if (clickCount >= milestone.count && !eventsSent[milestone.event]) {
-                    // 使用 shouldTrackEvent 确保24小时内只发送一次
-                    if (typeof shouldTrackEvent === 'function' && shouldTrackEvent(milestone.event)) {
-                        fbq('trackCustom', milestone.event, {
-                            content_name: 'Bearing His Twins： The CEO&#39;s Hidden Bride Runs Away',
-                            content_type: 'chapter',
-                            content_category: 'chapter_navigation',
-                            value: milestone.value,
-                            currency: 'USD',
-                            click_count: clickCount
-                        });
-                        
-                        console.log(`Facebook event sent: ${milestone.event} (${clickCount} clicks, value: $${milestone.value})`);
+                    // 24小时去重检查
+                    if (shouldTrackClickEvent(milestone.event)) {
+                        // 确保 fbq 函数已加载
+                        if (typeof fbq !== 'undefined') {
+                            fbq('trackCustom', milestone.event, {
+                                content_name: 'Bearing His Twins： The CEO&#39;s Hidden Bride Runs Away',
+                                content_type: 'chapter',
+                                content_category: 'chapter_navigation',
+                                value: milestone.value,
+                                currency: 'USD',
+                                click_count: clickCount
+                            });
+                            
+                            console.log(`✅ Facebook event sent: ${milestone.event} (${clickCount} clicks, value: $${milestone.value})`);
+                        } else {
+                            console.warn(`⚠️ fbq not loaded, skipping ${milestone.event}`);
+                        }
                         
                         // 标记该事件已发送
                         eventsSent[milestone.event] = true;
                         saveClickEventsSent(eventsSent);
                     } else {
-                        console.log(`Facebook event skipped: ${milestone.event} (already sent within 24 hours)`);
+                        console.log(`⏭️ Facebook event skipped: ${milestone.event} (already sent within 24 hours)`);
                     }
                 }
             });
@@ -2379,10 +2406,10 @@
                 <p>Despite losing the game, the elder Blackwood couldn&#39;t stop smiling.</p>
                 <p>The scene unfolding was simply too perfect.</p>
                 <p>Margaret had barely stepped inside when the child leaped into Evelyn&#39;s arms, clinging like she&#39;d missed her mother terribly after a long separation.</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_2 -->
-                <div id='div-gpt-ad-1762512094799-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_5 -->
+                <div id='div-gpt-ad-1762512161163-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512094799-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512161163-0'); });
                   </script>
                 </div>
                 <p>Meanwhile, Dominic stood nearby with his usual aristocratic bearing, though unconsciously he&#39;d shed his CEO demeanor, transforming into nothing more than a stubborn husband who refused to admit his mistakes.</p>
@@ -2394,10 +2421,10 @@
                 <p>&#34;Madam, no gifts necessary!&#34; Reginald Sinclair interjected, unwilling for his granddaughter to accept anything valuable before marriage.</p>
                 <p>&#34;Nonsense!&#34; Reginald Blackwood waved off the objection. &#34;We consider Evelyn family. This is between mother-in-law and daughter-in-law.&#34;</p>
                 <p>The gravity of the statement silenced further protest.</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_3 -->
-                <div id='div-gpt-ad-1762512008111-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_1 -->
+                <div id='div-gpt-ad-1762511964282-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512008111-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762511964282-0'); });
                   </script>
                 </div>
                 <p>Isabella wriggled down from Evelyn&#39;s arms to join her brother Alexander on the swings.</p>
@@ -2409,10 +2436,10 @@
                 <p>Twenty minutes later, Beatrice found Evelyn in the kitchen pouring water for Isabella.</p>
                 <p>&#34;My apologies,&#34; Beatrice said without sincerity. &#34;I assumed you&#39;d appreciate jewelry.&#34;</p>
                 <p>Evelyn set down the glass. &#34;After abandoning your family to marry into wealth, you&#39;ve lived luxuriously for decades. Yet you still behave like some nouveau riche social climber.&#34;</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_4 -->
-                <div id='div-gpt-ad-1762512031919-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_3 -->
+                <div id='div-gpt-ad-1762512119068-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512031919-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512119068-0'); });
                   </script>
                 </div>
                 <p>Beatrice&#39;s jaw clenched at the insult.</p>
@@ -2424,10 +2451,10 @@
                 <p>Evelyn closed her eyes against her mother&#39;s venom. She thanked God she hadn&#39;t inherited Beatrice&#39;s contempt for the less fortunate.</p>
                 <p>If not for Grandpa, she&#39;d never have come.</p>
                 <p>She couldn&#39;t let him know the truth - it would devastate him.</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_5 -->
-                <div id='div-gpt-ad-1762512161163-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_5 -->
+                <div id='div-gpt-ad-1762512054239-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512161163-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512054239-0'); });
                   </script>
                 </div>
                 <p>Without another word, Evelyn walked out.</p>
@@ -2440,10 +2467,10 @@
                 <p>No one knew what possessed the man. With his considerable strength, he&#39;d forgotten children have limits.</p>
                 <p>Dominic stopped the swing with one hand and reached for his trembling, sobbing daughter.</p>
                 <p>&#34;No more playing with Daddy!&#34; Isabella cried between hiccups.</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_1 -->
-                <div id='div-gpt-ad-1762512074266-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_2 -->
+                <div id='div-gpt-ad-1762512094799-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512074266-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512094799-0'); });
                   </script>
                 </div>
             </div>

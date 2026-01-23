@@ -981,15 +981,15 @@
       googletag.cmd.push(function() {
         // Define ad slots for the chapter page (randomly selected 5 out of 10)
         
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_2', [300, 250], 'div-gpt-ad-1762511986518-0').addService(googletag.pubads());
-        
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_4', [300, 250], 'div-gpt-ad-1762512140538-0').addService(googletag.pubads());
-        
         googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_1', [300, 250], 'div-gpt-ad-1762512074266-0').addService(googletag.pubads());
         
         googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_5', [300, 250], 'div-gpt-ad-1762512054239-0').addService(googletag.pubads());
         
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_3', [300, 250], 'div-gpt-ad-1762512119068-0').addService(googletag.pubads());
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_4', [300, 250], 'div-gpt-ad-1762512031919-0').addService(googletag.pubads());
+        
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_2', [300, 250], 'div-gpt-ad-1762511986518-0').addService(googletag.pubads());
+        
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_3', [300, 250], 'div-gpt-ad-1762512008111-0').addService(googletag.pubads());
         
         googletag.pubads().enableSingleRequest();
         googletag.enableServices();
@@ -1324,6 +1324,28 @@
         }
         
         /**
+         * 24小时去重检查（独立实现）
+         */
+        function shouldTrackClickEvent(eventName) {
+            try {
+                const now = new Date();
+                const currentPeriod = Math.floor(now.getTime() / (24 * 60 * 60 * 1000));
+                const storageKey = `fb_event_${eventName}`;
+                const lastTrackedPeriod = localStorage.getItem(storageKey);
+                
+                if (!lastTrackedPeriod || parseInt(lastTrackedPeriod) !== currentPeriod) {
+                    localStorage.setItem(storageKey, currentPeriod.toString());
+                    return true;
+                }
+                
+                return false;
+            } catch (e) {
+                console.error('Failed to check event tracking:', e);
+                return true; // 出错时允许发送
+            }
+        }
+        
+        /**
          * 检查并触发点击里程碑事件
          */
         function checkAndTriggerMilestones(clickCount) {
@@ -1332,24 +1354,29 @@
             CLICK_MILESTONES.forEach(milestone => {
                 // 如果达到里程碑且尚未发送该事件
                 if (clickCount >= milestone.count && !eventsSent[milestone.event]) {
-                    // 使用 shouldTrackEvent 确保24小时内只发送一次
-                    if (typeof shouldTrackEvent === 'function' && shouldTrackEvent(milestone.event)) {
-                        fbq('trackCustom', milestone.event, {
-                            content_name: 'His Forgotten Ex-Wife Became a Billionaire Heiress',
-                            content_type: 'chapter',
-                            content_category: 'chapter_navigation',
-                            value: milestone.value,
-                            currency: 'USD',
-                            click_count: clickCount
-                        });
-                        
-                        console.log(`Facebook event sent: ${milestone.event} (${clickCount} clicks, value: $${milestone.value})`);
+                    // 24小时去重检查
+                    if (shouldTrackClickEvent(milestone.event)) {
+                        // 确保 fbq 函数已加载
+                        if (typeof fbq !== 'undefined') {
+                            fbq('trackCustom', milestone.event, {
+                                content_name: 'His Forgotten Ex-Wife Became a Billionaire Heiress',
+                                content_type: 'chapter',
+                                content_category: 'chapter_navigation',
+                                value: milestone.value,
+                                currency: 'USD',
+                                click_count: clickCount
+                            });
+                            
+                            console.log(`✅ Facebook event sent: ${milestone.event} (${clickCount} clicks, value: $${milestone.value})`);
+                        } else {
+                            console.warn(`⚠️ fbq not loaded, skipping ${milestone.event}`);
+                        }
                         
                         // 标记该事件已发送
                         eventsSent[milestone.event] = true;
                         saveClickEventsSent(eventsSent);
                     } else {
-                        console.log(`Facebook event skipped: ${milestone.event} (already sent within 24 hours)`);
+                        console.log(`⏭️ Facebook event skipped: ${milestone.event} (already sent within 24 hours)`);
                     }
                 }
             });
@@ -2375,10 +2402,10 @@
                 <p>Whispers spread among the medical team. Some eyes lit with hope while others shook their heads discreetly.</p>
                 <p>The King and Queen stood nearby, faces ashen. Though untrained in medicine, the despair on the doctors&#39; faces needed no translation.</p>
                 <p>Vivian approached the incubator where a heartbreakingly tiny newborn lay.</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_2 -->
-                <div id='div-gpt-ad-1762511986518-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_1 -->
+                <div id='div-gpt-ad-1762512074266-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762511986518-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512074266-0'); });
                   </script>
                 </div>
                 <p>Queen Eleanor had endured brutal morning sickness, forcing down food only to vomit it back up. What should have nourished the fetus became the Queen&#39;s torment instead.</p>
@@ -2386,10 +2413,10 @@
                 <p>The baby&#39;s skin held an unnatural purplish hue. No chest movement was visible. Its miniature body, smaller than Vivian&#39;s palm, depended entirely on the ventilator&#39;s mechanical breaths.</p>
                 <p>Vivian placed her hand gently over the infant&#39;s chest.</p>
                 <p>Her touch was featherlight—each gram of pressure precisely measured. Too much would fracture those delicate ribs; too little wouldn&#39;t restart the heart.</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_4 -->
-                <div id='div-gpt-ad-1762512140538-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_5 -->
+                <div id='div-gpt-ad-1762512054239-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512140538-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512054239-0'); });
                   </script>
                 </div>
                 <p>The room fell deathly silent.</p>
@@ -2397,10 +2424,10 @@
                 <p>From her bag, she withdrew an antique needle case.</p>
                 <p>&#34;What&#39;s that?&#34; someone murmured.</p>
                 <p>&#34;Quiet!&#34; came the immediate hushed rebuke.</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_1 -->
-                <div id='div-gpt-ad-1762512074266-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_4 -->
+                <div id='div-gpt-ad-1762512031919-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512074266-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512031919-0'); });
                   </script>
                 </div>
                 <p>The silver filaments gleamed coldly under the lights. With a flick of her wrist, Vivian inserted the first hair-thin needle into the baby&#39;s tender skin.</p>
@@ -2408,10 +2435,10 @@
                 <p>No one had witnessed such treatment methods before. Yet in this moment, no one dared question. Vivian represented their last hope.</p>
                 <p>Her left hand maintained rhythmic cardiac compressions while her right manipulated the needles with unshakable steadiness. Beads of sweat formed on her forehead, one hanging precariously at her chin.</p>
                 <p>Time stretched endlessly.</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_5 -->
-                <div id='div-gpt-ad-1762512054239-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_2 -->
+                <div id='div-gpt-ad-1762511986518-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512054239-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762511986518-0'); });
                   </script>
                 </div>
                 <p>Each second passed like a century.</p>
@@ -2419,10 +2446,10 @@
                 <p>That was Vivian&#39;s internal calculation. A sliver of possibility bearing the full weight of a royal family&#39;s desperate hopes.</p>
                 <p>She wouldn&#39;t surrender.</p>
                 <p>While a single spark of life remained, she would fight until the final moment.</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_3 -->
-                <div id='div-gpt-ad-1762512119068-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_3 -->
+                <div id='div-gpt-ad-1762512008111-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512119068-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512008111-0'); });
                   </script>
                 </div>
             </div>

@@ -981,15 +981,15 @@
       googletag.cmd.push(function() {
         // Define ad slots for the chapter page (randomly selected 5 out of 10)
         
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_4', [300, 250], 'div-gpt-ad-1762512140538-0').addService(googletag.pubads());
-        
         googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_2', [300, 250], 'div-gpt-ad-1762511986518-0').addService(googletag.pubads());
         
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_1', [300, 250], 'div-gpt-ad-1762511964282-0').addService(googletag.pubads());
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_4', [300, 250], 'div-gpt-ad-1762512031919-0').addService(googletag.pubads());
+        
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_5', [300, 250], 'div-gpt-ad-1762512161163-0').addService(googletag.pubads());
+        
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_2', [300, 250], 'div-gpt-ad-1762512094799-0').addService(googletag.pubads());
         
         googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_3', [300, 250], 'div-gpt-ad-1762512119068-0').addService(googletag.pubads());
-        
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_5', [300, 250], 'div-gpt-ad-1762512054239-0').addService(googletag.pubads());
         
         googletag.pubads().enableSingleRequest();
         googletag.enableServices();
@@ -1324,6 +1324,28 @@
         }
         
         /**
+         * 24小时去重检查（独立实现）
+         */
+        function shouldTrackClickEvent(eventName) {
+            try {
+                const now = new Date();
+                const currentPeriod = Math.floor(now.getTime() / (24 * 60 * 60 * 1000));
+                const storageKey = `fb_event_${eventName}`;
+                const lastTrackedPeriod = localStorage.getItem(storageKey);
+                
+                if (!lastTrackedPeriod || parseInt(lastTrackedPeriod) !== currentPeriod) {
+                    localStorage.setItem(storageKey, currentPeriod.toString());
+                    return true;
+                }
+                
+                return false;
+            } catch (e) {
+                console.error('Failed to check event tracking:', e);
+                return true; // 出错时允许发送
+            }
+        }
+        
+        /**
          * 检查并触发点击里程碑事件
          */
         function checkAndTriggerMilestones(clickCount) {
@@ -1332,24 +1354,29 @@
             CLICK_MILESTONES.forEach(milestone => {
                 // 如果达到里程碑且尚未发送该事件
                 if (clickCount >= milestone.count && !eventsSent[milestone.event]) {
-                    // 使用 shouldTrackEvent 确保24小时内只发送一次
-                    if (typeof shouldTrackEvent === 'function' && shouldTrackEvent(milestone.event)) {
-                        fbq('trackCustom', milestone.event, {
-                            content_name: 'The Rise Of The Ugly Luna',
-                            content_type: 'chapter',
-                            content_category: 'chapter_navigation',
-                            value: milestone.value,
-                            currency: 'USD',
-                            click_count: clickCount
-                        });
-                        
-                        console.log(`Facebook event sent: ${milestone.event} (${clickCount} clicks, value: $${milestone.value})`);
+                    // 24小时去重检查
+                    if (shouldTrackClickEvent(milestone.event)) {
+                        // 确保 fbq 函数已加载
+                        if (typeof fbq !== 'undefined') {
+                            fbq('trackCustom', milestone.event, {
+                                content_name: 'The Rise Of The Ugly Luna',
+                                content_type: 'chapter',
+                                content_category: 'chapter_navigation',
+                                value: milestone.value,
+                                currency: 'USD',
+                                click_count: clickCount
+                            });
+                            
+                            console.log(`✅ Facebook event sent: ${milestone.event} (${clickCount} clicks, value: $${milestone.value})`);
+                        } else {
+                            console.warn(`⚠️ fbq not loaded, skipping ${milestone.event}`);
+                        }
                         
                         // 标记该事件已发送
                         eventsSent[milestone.event] = true;
                         saveClickEventsSent(eventsSent);
                     } else {
-                        console.log(`Facebook event skipped: ${milestone.event} (already sent within 24 hours)`);
+                        console.log(`⏭️ Facebook event skipped: ${milestone.event} (already sent within 24 hours)`);
                     }
                 }
             });
@@ -2385,10 +2412,10 @@
                 <p>My eyes widened like saucers.</p>
                 <p>No!</p>
                 <p>That would explain why the sun was so bright.</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_4 -->
-                <div id='div-gpt-ad-1762512140538-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_2 -->
+                <div id='div-gpt-ad-1762511986518-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512140538-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762511986518-0'); });
                   </script>
                 </div>
                 <p>&#34;Jace! I&#39;m supposed to be at TCH!&#34;</p>
@@ -2406,10 +2433,10 @@
                 <p>I took a deep breath. &#34;I&#39;m fine. I just... I just need to make a call.&#34;</p>
                 <p>I didn&#39;t even know what I was going to say to my superior. I fidgeted with the neck of my dress as I stood by the window and made the call. I couldn&#39;t believe l actually slept in this dress.</p>
                 <p>I sucked in a breath when Guinevere picked the call.</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_2 -->
-                <div id='div-gpt-ad-1762511986518-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_4 -->
+                <div id='div-gpt-ad-1762512031919-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762511986518-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512031919-0'); });
                   </script>
                 </div>
                 <p>&#34;Uh... Hi, ma&#39;am. I am- I&#39;m so sorry. I know | was supposed to be there this morning. I was actually unwell and had to....&#34;</p>
@@ -2427,10 +2454,10 @@
                 <p>But I knew it wasn&#39;t possible. Nobody would dare touch me in here.</p>
                 <p>Although...how did I even end up in my bedroom last night? Who helped me?</p>
                 <p>Jace was no longer in the room when I returned.I looked for something simple to wear and was brushing my hair in the mirror when my eyes fell on the mark on my neck.</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_1 -->
-                <div id='div-gpt-ad-1762511964282-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_5 -->
+                <div id='div-gpt-ad-1762512161163-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762511964282-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512161163-0'); });
                   </script>
                 </div>
                 <p>I gasped, my brush falling from my hand to the table.</p>
@@ -2448,10 +2475,10 @@
                 <p>He dipped his head when I stood beside him. But I wasn&#39;t there for pleasantries. &#34;I was told it was you who helped me from the bar.What happened when you took me to my room?&#34;</p>
                 <p>I didn&#39;t want to spell the question out to him.I understood how overwhelming it could be when someone gets accused of something they&#39;re not guilty of.</p>
                 <p>He furrowed his brows, seeming surprised. &#34;Nothing.I laid you in bed and left. And nobody went into your room,either.&#34;</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_3 -->
-                <div id='div-gpt-ad-1762512119068-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_2 -->
+                <div id='div-gpt-ad-1762512094799-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512119068-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512094799-0'); });
                   </script>
                 </div>
                 <p>He sounded honest. Kael was an honest man. I didn&#39;t even know why I suspected him.</p>
@@ -2471,10 +2498,10 @@
                 <p>This didn&#39;t make any sense. How could I come to the mere memory of this dream. Of something that wasn&#39;t real. But as I brushed my hair in front of the mirror, my fingers grazed the fading mark on my neck. The one thing that felt real.</p>
                 <p>My eyes were sad in the mirror as I reminded myself it wasn&#39;t possible. Jaris hated me and would never touch me this way. I was clearly the one with issues who wouldn&#39;t stop dreaming of him.</p>
                 <p>What was wrong with me?</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_5 -->
-                <div id='div-gpt-ad-1762512054239-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_3 -->
+                <div id='div-gpt-ad-1762512119068-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512054239-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512119068-0'); });
                   </script>
                 </div>
             </div>

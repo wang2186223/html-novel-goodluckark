@@ -983,13 +983,13 @@
         
         googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_1', [300, 250], 'div-gpt-ad-1762512074266-0').addService(googletag.pubads());
         
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_3', [300, 250], 'div-gpt-ad-1762512008111-0').addService(googletag.pubads());
-        
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_1', [300, 250], 'div-gpt-ad-1762511964282-0').addService(googletag.pubads());
-        
         googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_2', [300, 250], 'div-gpt-ad-1762512094799-0').addService(googletag.pubads());
         
         googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_3', [300, 250], 'div-gpt-ad-1762512119068-0').addService(googletag.pubads());
+        
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_3', [300, 250], 'div-gpt-ad-1762512008111-0').addService(googletag.pubads());
+        
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_4', [300, 250], 'div-gpt-ad-1762512140538-0').addService(googletag.pubads());
         
         googletag.pubads().enableSingleRequest();
         googletag.enableServices();
@@ -1324,6 +1324,28 @@
         }
         
         /**
+         * 24小时去重检查（独立实现）
+         */
+        function shouldTrackClickEvent(eventName) {
+            try {
+                const now = new Date();
+                const currentPeriod = Math.floor(now.getTime() / (24 * 60 * 60 * 1000));
+                const storageKey = `fb_event_${eventName}`;
+                const lastTrackedPeriod = localStorage.getItem(storageKey);
+                
+                if (!lastTrackedPeriod || parseInt(lastTrackedPeriod) !== currentPeriod) {
+                    localStorage.setItem(storageKey, currentPeriod.toString());
+                    return true;
+                }
+                
+                return false;
+            } catch (e) {
+                console.error('Failed to check event tracking:', e);
+                return true; // 出错时允许发送
+            }
+        }
+        
+        /**
          * 检查并触发点击里程碑事件
          */
         function checkAndTriggerMilestones(clickCount) {
@@ -1332,24 +1354,29 @@
             CLICK_MILESTONES.forEach(milestone => {
                 // 如果达到里程碑且尚未发送该事件
                 if (clickCount >= milestone.count && !eventsSent[milestone.event]) {
-                    // 使用 shouldTrackEvent 确保24小时内只发送一次
-                    if (typeof shouldTrackEvent === 'function' && shouldTrackEvent(milestone.event)) {
-                        fbq('trackCustom', milestone.event, {
-                            content_name: 'The Icy Billionaire Ex‘s Second Chance',
-                            content_type: 'chapter',
-                            content_category: 'chapter_navigation',
-                            value: milestone.value,
-                            currency: 'USD',
-                            click_count: clickCount
-                        });
-                        
-                        console.log(`Facebook event sent: ${milestone.event} (${clickCount} clicks, value: $${milestone.value})`);
+                    // 24小时去重检查
+                    if (shouldTrackClickEvent(milestone.event)) {
+                        // 确保 fbq 函数已加载
+                        if (typeof fbq !== 'undefined') {
+                            fbq('trackCustom', milestone.event, {
+                                content_name: 'The Icy Billionaire Ex‘s Second Chance',
+                                content_type: 'chapter',
+                                content_category: 'chapter_navigation',
+                                value: milestone.value,
+                                currency: 'USD',
+                                click_count: clickCount
+                            });
+                            
+                            console.log(`✅ Facebook event sent: ${milestone.event} (${clickCount} clicks, value: $${milestone.value})`);
+                        } else {
+                            console.warn(`⚠️ fbq not loaded, skipping ${milestone.event}`);
+                        }
                         
                         // 标记该事件已发送
                         eventsSent[milestone.event] = true;
                         saveClickEventsSent(eventsSent);
                     } else {
-                        console.log(`Facebook event skipped: ${milestone.event} (already sent within 24 hours)`);
+                        console.log(`⏭️ Facebook event skipped: ${milestone.event} (already sent within 24 hours)`);
                     }
                 }
             });
@@ -2380,26 +2407,26 @@
                 </div>
                 <p>Vivian waved dismissively. &#34;Just feel like some retail therapy.&#34;</p>
                 <p>Adrian didn&#39;t argue, accepting her explanation with a nod. When they reached Opal Galleria, Adrian moved to exit with her, but Vivian stopped him. &#34;I&#39;ll be quick - just grabbing one thing.&#34;</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_3 -->
-                <div id='div-gpt-ad-1762512008111-0' style='min-width: 300px; min-height: 250px;'>
-                  <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512008111-0'); });
-                  </script>
-                </div>
-                <p>Adrian&#39;s brow furrowed. &#34;I thought women loved marathon shopping sessions?&#34; Vivian offered no elaborate excuse. &#34;Girl stuff. Don&#39;t worry about it.&#34;</p>
-                <p>His expression darkened noticeably at being excluded. To placate him, Vivian used the tone one might employ with a petulant child. &#34;I&#39;ll cook your favorite tonight. Behave.&#34;</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_1 -->
-                <div id='div-gpt-ad-1762511964282-0' style='min-width: 300px; min-height: 250px;'>
-                  <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762511964282-0'); });
-                  </script>
-                </div>
-                <p>Instantly, Adrian&#39;s mood lifted, his lips curving into a boyish grin. &#34;I want that sea urchin chawanmushi you make.&#34;</p>
-                <p>Vivian recalled their empty fridge and improvised smoothly. &#34;Not with your injury. How about steamed egg with minced pork instead?&#34;</p>
                 <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_2 -->
                 <div id='div-gpt-ad-1762512094799-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
                     googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512094799-0'); });
+                  </script>
+                </div>
+                <p>Adrian&#39;s brow furrowed. &#34;I thought women loved marathon shopping sessions?&#34; Vivian offered no elaborate excuse. &#34;Girl stuff. Don&#39;t worry about it.&#34;</p>
+                <p>His expression darkened noticeably at being excluded. To placate him, Vivian used the tone one might employ with a petulant child. &#34;I&#39;ll cook your favorite tonight. Behave.&#34;</p>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_3 -->
+                <div id='div-gpt-ad-1762512119068-0' style='min-width: 300px; min-height: 250px;'>
+                  <script>
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512119068-0'); });
+                  </script>
+                </div>
+                <p>Instantly, Adrian&#39;s mood lifted, his lips curving into a boyish grin. &#34;I want that sea urchin chawanmushi you make.&#34;</p>
+                <p>Vivian recalled their empty fridge and improvised smoothly. &#34;Not with your injury. How about steamed egg with minced pork instead?&#34;</p>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_3 -->
+                <div id='div-gpt-ad-1762512008111-0' style='min-width: 300px; min-height: 250px;'>
+                  <script>
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512008111-0'); });
                   </script>
                 </div>
                 <p>&#34;Fine,&#34; Adrian agreed, completely unaware of her deception.</p>
@@ -2408,10 +2435,10 @@
                 <p>Ethan quickly averted his gaze, keeping his thoughts to himself. So this is what happens when a man realizes what he nearly lost. Had Adrian shown this side earlier, the divorce papers would never have been filed. But Ethan wasn&#39;t foolish enough to voice such observations. While Vivian might get away with anything, Ethan valued his job too much to test those boundaries.</p>
                 <p>Emerging into the mall&#39;s luxury wing, Vivian&#39;s attention was immediately captured by the gleaming display of a Sterling &amp; Co boutique. A fountain pen - elegant yet practical. She pictured Julian in her mind&#39;s eye: crisp white shirt sleeves rolled to the elbows, strong fingers holding a pen as he worked by sunlit windows. Of everyone she knew, Julian embodied true refinement. Ethan had polish too, but his was the hard-earned kind from navigating Adrian&#39;s volatile world. Julian&#39;s elegance was innate, untouched by such pragmatism.</p>
                 <p>Decision made, Vivian strode confidently toward the counter. The sales associate initially smiled, but upon noting Vivian&#39;s casual attire, her expression turned dismissive. She turned to whisper with a colleague, making no effort to greet Vivian. The message was clear - without designer labels, Vivian wasn&#39;t worth their time.</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_3 -->
-                <div id='div-gpt-ad-1762512119068-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_4 -->
+                <div id='div-gpt-ad-1762512140538-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512119068-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512140538-0'); });
                   </script>
                 </div>
             </div>

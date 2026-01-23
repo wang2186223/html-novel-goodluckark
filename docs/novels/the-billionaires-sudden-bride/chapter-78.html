@@ -981,15 +981,15 @@
       googletag.cmd.push(function() {
         // Define ad slots for the chapter page (randomly selected 5 out of 10)
         
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_2', [300, 250], 'div-gpt-ad-1762511986518-0').addService(googletag.pubads());
-        
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_5', [300, 250], 'div-gpt-ad-1762512161163-0').addService(googletag.pubads());
-        
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_3', [300, 250], 'div-gpt-ad-1762512008111-0').addService(googletag.pubads());
-        
         googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_3', [300, 250], 'div-gpt-ad-1762512119068-0').addService(googletag.pubads());
         
         googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_1', [300, 250], 'div-gpt-ad-1762512074266-0').addService(googletag.pubads());
+        
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_5', [300, 250], 'div-gpt-ad-1762512161163-0').addService(googletag.pubads());
+        
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_2', [300, 250], 'div-gpt-ad-1762511986518-0').addService(googletag.pubads());
+        
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_1', [300, 250], 'div-gpt-ad-1762511964282-0').addService(googletag.pubads());
         
         googletag.pubads().enableSingleRequest();
         googletag.enableServices();
@@ -1324,6 +1324,28 @@
         }
         
         /**
+         * 24小时去重检查（独立实现）
+         */
+        function shouldTrackClickEvent(eventName) {
+            try {
+                const now = new Date();
+                const currentPeriod = Math.floor(now.getTime() / (24 * 60 * 60 * 1000));
+                const storageKey = `fb_event_${eventName}`;
+                const lastTrackedPeriod = localStorage.getItem(storageKey);
+                
+                if (!lastTrackedPeriod || parseInt(lastTrackedPeriod) !== currentPeriod) {
+                    localStorage.setItem(storageKey, currentPeriod.toString());
+                    return true;
+                }
+                
+                return false;
+            } catch (e) {
+                console.error('Failed to check event tracking:', e);
+                return true; // 出错时允许发送
+            }
+        }
+        
+        /**
          * 检查并触发点击里程碑事件
          */
         function checkAndTriggerMilestones(clickCount) {
@@ -1332,24 +1354,29 @@
             CLICK_MILESTONES.forEach(milestone => {
                 // 如果达到里程碑且尚未发送该事件
                 if (clickCount >= milestone.count && !eventsSent[milestone.event]) {
-                    // 使用 shouldTrackEvent 确保24小时内只发送一次
-                    if (typeof shouldTrackEvent === 'function' && shouldTrackEvent(milestone.event)) {
-                        fbq('trackCustom', milestone.event, {
-                            content_name: 'The Billionaire&#39;s Sudden Bride',
-                            content_type: 'chapter',
-                            content_category: 'chapter_navigation',
-                            value: milestone.value,
-                            currency: 'USD',
-                            click_count: clickCount
-                        });
-                        
-                        console.log(`Facebook event sent: ${milestone.event} (${clickCount} clicks, value: $${milestone.value})`);
+                    // 24小时去重检查
+                    if (shouldTrackClickEvent(milestone.event)) {
+                        // 确保 fbq 函数已加载
+                        if (typeof fbq !== 'undefined') {
+                            fbq('trackCustom', milestone.event, {
+                                content_name: 'The Billionaire&#39;s Sudden Bride',
+                                content_type: 'chapter',
+                                content_category: 'chapter_navigation',
+                                value: milestone.value,
+                                currency: 'USD',
+                                click_count: clickCount
+                            });
+                            
+                            console.log(`✅ Facebook event sent: ${milestone.event} (${clickCount} clicks, value: $${milestone.value})`);
+                        } else {
+                            console.warn(`⚠️ fbq not loaded, skipping ${milestone.event}`);
+                        }
                         
                         // 标记该事件已发送
                         eventsSent[milestone.event] = true;
                         saveClickEventsSent(eventsSent);
                     } else {
-                        console.log(`Facebook event skipped: ${milestone.event} (already sent within 24 hours)`);
+                        console.log(`⏭️ Facebook event skipped: ${milestone.event} (already sent within 24 hours)`);
                     }
                 }
             });
@@ -2377,10 +2404,10 @@
                 <p>&#34;You&#39;re the best! I&#39;ll be there in twenty.&#34; I hung up before he could change his mind. I walked through the imposing glass doors of Fortune Corp, holding a perfectly arranged meal in an elegant white box. The security guard recognized me immediately - not surprising, given how often my face had been splashed across entertainment news this week. &#34;Miss Taylor,&#34; he nodded, trying not to stare.</p>
                 <p>As I waited for the elevator, I became acutely aware of the whispers around me. Office workers pretended to be occupied with their phones while stealing glances in my direction.</p>
                 <p>&#34;That&#39;s her-Victoria Taylor...&#34;</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_2 -->
-                <div id='div-gpt-ad-1762511986518-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_3 -->
+                <div id='div-gpt-ad-1762512119068-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762511986518-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512119068-0'); });
                   </script>
                 </div>
                 <p>&#34;Didn&#39;t you see the photos? She totally slept her way...&#34;</p>
@@ -2390,10 +2417,10 @@
                 <p>Victoria. Remember why you&#39;re here.</p>
                 <p>Alexander was hunched over his desk when I entered, surrounded by stacks of papers. His usually immaculate appearance was slightly rumpled - tie loosened, hair mussed as if he&#39;d been running his hands through it repeatedly. He glanced up briefly as I walked in.</p>
                 <p>&#34;Alex!&#34; I infused my voice with warmth. &#34;Look what I brought you!&#34;I held up the Jean-Georges bag.</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_5 -->
-                <div id='div-gpt-ad-1762512161163-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_1 -->
+                <div id='div-gpt-ad-1762512074266-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512161163-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512074266-0'); });
                   </script>
                 </div>
                 <p>He barely looked at it. &#34;You can set it down. I need to finish these reports first.&#34; &#34;Sure!&#34; I studied him as he worked, noting the dark circles under his eyes and the tension in his shoulders. The scandal had hit him too,though not nearly as hard as me. The Stark name had shielded him somewhat, but I&#39;d heard whispers that his family was pressuring him to reconsider our engagement. *Not a chance.&#34; I needed this marriage more than ever now. The Taylor name had taken enough hits lately- I needed the stability and protection of becoming a Stark.</p>
@@ -2403,10 +2430,10 @@
                 <p>&#34;Alex, you must be starving,&#34; I smiled warmly. &#34;I specifically ordered from Jean-Georges-your favorite!&#34;</p>
                 <p>Alexander&#39;s gaze sharpened, a slight frown creasing his brow as he looked from the food to me.</p>
                 <p>My heart skipped uncomfortably. &#34;What? Don&#39;t you like it? Is something wrong?&#34;</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_3 -->
-                <div id='div-gpt-ad-1762512008111-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_5 -->
+                <div id='div-gpt-ad-1762512161163-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512008111-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512161163-0'); });
                   </script>
                 </div>
                 <p>He shook his head slowly. &#34;No, it&#39;s fine. I&#39;m just surprised to see you here,that&#39;s all. You usually avoid office visits- something about paparazzi and being photographed in the same outfit twice,&#34; *Shit.* I&#39;d forgotten I&#39;d used that excuse before. I forced alight laugh.11People change, don&#39;t they? Can&#39;t a girl do something nice for her fiancé?&#34; I leaned forward slightly, letting my blouse gap just enough to be distracting. &#34;Don&#39;t you like me being thoughtful?&#34; Alexander&#39;s eyes didn&#39;t drop to my cleavage as expected. Instead, he maintained uncomfortable eye contact. &#34;Of course I do. Thank you.&#34;</p>
@@ -2416,10 +2443,10 @@
                 <p>I reached across the table, grasping his free hand between both of mine.I could feel him tense at the contact, but I held on tighter. &#34;Alex, if you love me, you&#39;ll help me, right? I have nowhere else to turn. I&#39;m *begging* you.&#34;</p>
                 <p>Alexander set down his fork with a soft clink, his appetite visibly gone. &#34;What exactly do you want me to do, Victoria?&#34;</p>
                 <p>*Here goes nothing.*</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_3 -->
-                <div id='div-gpt-ad-1762512119068-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_2 -->
+                <div id='div-gpt-ad-1762511986518-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512119068-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762511986518-0'); });
                   </script>
                 </div>
                 <p>&#34;You&#39;re close with Brandon, aren&#39;t you? You&#39;re both Starks!&#34;I leaned forward eagerly. &#34;That man who gave Grandpa that priceless chess set at his birthday party. He&#39;s incredibly influential, isn&#39;t he? I heard he owns a media company. Could you possibly...&#34;</p>
@@ -2432,10 +2459,10 @@
                 <p>His father silenced him with a stern look. &#34;Victoria, don&#39;t worry about a thing. Alex will help you. And I&#39;m certain Brandon will offer his assistance as well!&#34;</p>
                 <p>&#34;But Dad,&#34; Alexander protested weakly. &#34;Brandon and I aren&#39;t exactly-&#34;</p>
                 <p>&#34;She&#39;s your fiancée,&#34; his father cut in harshly. &#34;Her reputation affects our family name now. Besides, I&#39;m sure Victoría is the victim of a smear campaign. What kind of man stands by while his future wife is attacked?The decision is made.&#34; I could have kissed the old man. Instead, I gave him my most grateful smile. &#34;Thank you so mauch, sir. I really appreciate your support.&#34;*Perfect. With old Mr. Stark on my side, Alexander would have to help me. And once Brandon Stark got involved, my problems would disappear overnight. I&#39;d be back on magazine covers in no time. Everything was going according to plan</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_1 -->
-                <div id='div-gpt-ad-1762512074266-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_1 -->
+                <div id='div-gpt-ad-1762511964282-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512074266-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762511964282-0'); });
                   </script>
                 </div>
             </div>

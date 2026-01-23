@@ -981,15 +981,15 @@
       googletag.cmd.push(function() {
         // Define ad slots for the chapter page (randomly selected 5 out of 10)
         
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_5', [300, 250], 'div-gpt-ad-1762512161163-0').addService(googletag.pubads());
+        
         googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_3', [300, 250], 'div-gpt-ad-1762512008111-0').addService(googletag.pubads());
         
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_2', [300, 250], 'div-gpt-ad-1762512094799-0').addService(googletag.pubads());
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_1', [300, 250], 'div-gpt-ad-1762511964282-0').addService(googletag.pubads());
         
         googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_5', [300, 250], 'div-gpt-ad-1762512054239-0').addService(googletag.pubads());
         
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_3', [300, 250], 'div-gpt-ad-1762512119068-0').addService(googletag.pubads());
-        
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_1', [300, 250], 'div-gpt-ad-1762511964282-0').addService(googletag.pubads());
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_2', [300, 250], 'div-gpt-ad-1762512094799-0').addService(googletag.pubads());
         
         googletag.pubads().enableSingleRequest();
         googletag.enableServices();
@@ -1324,6 +1324,28 @@
         }
         
         /**
+         * 24小时去重检查（独立实现）
+         */
+        function shouldTrackClickEvent(eventName) {
+            try {
+                const now = new Date();
+                const currentPeriod = Math.floor(now.getTime() / (24 * 60 * 60 * 1000));
+                const storageKey = `fb_event_${eventName}`;
+                const lastTrackedPeriod = localStorage.getItem(storageKey);
+                
+                if (!lastTrackedPeriod || parseInt(lastTrackedPeriod) !== currentPeriod) {
+                    localStorage.setItem(storageKey, currentPeriod.toString());
+                    return true;
+                }
+                
+                return false;
+            } catch (e) {
+                console.error('Failed to check event tracking:', e);
+                return true; // 出错时允许发送
+            }
+        }
+        
+        /**
          * 检查并触发点击里程碑事件
          */
         function checkAndTriggerMilestones(clickCount) {
@@ -1332,24 +1354,29 @@
             CLICK_MILESTONES.forEach(milestone => {
                 // 如果达到里程碑且尚未发送该事件
                 if (clickCount >= milestone.count && !eventsSent[milestone.event]) {
-                    // 使用 shouldTrackEvent 确保24小时内只发送一次
-                    if (typeof shouldTrackEvent === 'function' && shouldTrackEvent(milestone.event)) {
-                        fbq('trackCustom', milestone.event, {
-                            content_name: 'The Neglected Silent Heiress',
-                            content_type: 'chapter',
-                            content_category: 'chapter_navigation',
-                            value: milestone.value,
-                            currency: 'USD',
-                            click_count: clickCount
-                        });
-                        
-                        console.log(`Facebook event sent: ${milestone.event} (${clickCount} clicks, value: $${milestone.value})`);
+                    // 24小时去重检查
+                    if (shouldTrackClickEvent(milestone.event)) {
+                        // 确保 fbq 函数已加载
+                        if (typeof fbq !== 'undefined') {
+                            fbq('trackCustom', milestone.event, {
+                                content_name: 'The Neglected Silent Heiress',
+                                content_type: 'chapter',
+                                content_category: 'chapter_navigation',
+                                value: milestone.value,
+                                currency: 'USD',
+                                click_count: clickCount
+                            });
+                            
+                            console.log(`✅ Facebook event sent: ${milestone.event} (${clickCount} clicks, value: $${milestone.value})`);
+                        } else {
+                            console.warn(`⚠️ fbq not loaded, skipping ${milestone.event}`);
+                        }
                         
                         // 标记该事件已发送
                         eventsSent[milestone.event] = true;
                         saveClickEventsSent(eventsSent);
                     } else {
-                        console.log(`Facebook event skipped: ${milestone.event} (already sent within 24 hours)`);
+                        console.log(`⏭️ Facebook event skipped: ${milestone.event} (already sent within 24 hours)`);
                     }
                 }
             });
@@ -2372,42 +2399,42 @@
                 <p>The sound of Isabelle&#39;s sobbing snapped Olivia from her spiraling thoughts. Kneeling, she gathered the trembling child into her arms. &#34;This isn&#39;t your fault, sweetheart. It&#39;s mine. If I&#39;d taken you to preschool today, none of this would have happened. Go rest now. I promise we&#39;ll find Great-grandpa Alistair.&#34;</p>
                 <p>Turning to the elderly butler, Olivia continued, &#34;Alfred, you&#39;ve served the Kensingtons for decades. You could have retired years ago, but your devotion kept you here. I&#39;m truly grateful. Don&#39;t blame yourself - this is my responsibility.&#34;</p>
                 <p>Tears glistened in Alfred&#39;s eyes. &#34;Mr. Kensington has always treated me like family. And yet I failed in this simple duty.&#34;</p>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_5 -->
+                <div id='div-gpt-ad-1762512161163-0' style='min-width: 300px; min-height: 250px;'>
+                  <script>
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512161163-0'); });
+                  </script>
+                </div>
+                <p>When the butler raised a hand to strike himself in anguish, Olivia caught his wrist firmly. &#34;Alfred, we need you sharp and focused right now. Remember when Alistair wandered off to Eldermere during one of his episodes? It took Donovan weeks to find him then. We&#39;ll find him again. Now think - where would he most likely go? You know him better than anyone.&#34;</p>
+                <p>Wiping his eyes, Alfred quickly suggested several locations. Olivia and her team searched through the night but found nothing.</p>
                 <!-- /22796784223/Netlink/goodluckark.com/banner_3 -->
                 <div id='div-gpt-ad-1762512008111-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
                     googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512008111-0'); });
                   </script>
                 </div>
-                <p>When the butler raised a hand to strike himself in anguish, Olivia caught his wrist firmly. &#34;Alfred, we need you sharp and focused right now. Remember when Alistair wandered off to Eldermere during one of his episodes? It took Donovan weeks to find him then. We&#39;ll find him again. Now think - where would he most likely go? You know him better than anyone.&#34;</p>
-                <p>Wiping his eyes, Alfred quickly suggested several locations. Olivia and her team searched through the night but found nothing.</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_2 -->
-                <div id='div-gpt-ad-1762512094799-0' style='min-width: 300px; min-height: 250px;'>
-                  <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512094799-0'); });
-                  </script>
-                </div>
                 <p>After twenty-four fruitless hours, Olivia filed a missing persons report with the police, providing detailed descriptions of Alistair&#39;s appearance, clothing, and last known whereabouts.</p>
                 <p>She also hired a specialized private investigation firm, instructing firmly: &#34;Spare no expense. Use whatever resources necessary to bring him home.&#34;</p>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_1 -->
+                <div id='div-gpt-ad-1762511964282-0' style='min-width: 300px; min-height: 250px;'>
+                  <script>
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762511964282-0'); });
+                  </script>
+                </div>
+                <p>Still, no leads emerged.</p>
+                <p>The professional search team offered their analysis: &#34;An elderly gentleman couldn&#39;t have traveled far on foot in this timeframe. Even using public transportation, there would be traces. Our assessment suggests he may have been taken. Identifying the perpetrators will require police involvement. Ms. Sinclair, we&#39;ve exhausted all options.&#34;</p>
                 <!-- /22796784223/Netlink/goodluckark.com/banner_5 -->
                 <div id='div-gpt-ad-1762512054239-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
                     googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512054239-0'); });
                   </script>
                 </div>
-                <p>Still, no leads emerged.</p>
-                <p>The professional search team offered their analysis: &#34;An elderly gentleman couldn&#39;t have traveled far on foot in this timeframe. Even using public transportation, there would be traces. Our assessment suggests he may have been taken. Identifying the perpetrators will require police involvement. Ms. Sinclair, we&#39;ve exhausted all options.&#34;</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_3 -->
-                <div id='div-gpt-ad-1762512119068-0' style='min-width: 300px; min-height: 250px;'>
-                  <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512119068-0'); });
-                  </script>
-                </div>
                 <p>Olivia&#39;s knees nearly buckled. She bit her tongue hard, using the sharp pain to ground herself. Heartbreak threatened to overwhelm her, but she couldn&#39;t afford to lose control now. She needed to remain composed.</p>
                 <p>Handing the team leader an envelope, Olivia&#39;s voice turned steely. &#34;Continue the search. Money is no object. But understand this - my grandfather&#39;s disappearance remains confidential. I&#39;ve impressed this upon my staff. If word leaks, I&#39;ll hold each of you personally accountable.&#34;</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_1 -->
-                <div id='div-gpt-ad-1762511964282-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_2 -->
+                <div id='div-gpt-ad-1762512094799-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762511964282-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512094799-0'); });
                   </script>
                 </div>
             </div>

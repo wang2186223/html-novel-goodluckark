@@ -981,13 +981,13 @@
       googletag.cmd.push(function() {
         // Define ad slots for the chapter page (randomly selected 5 out of 10)
         
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_2', [300, 250], 'div-gpt-ad-1762512094799-0').addService(googletag.pubads());
-        
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_4', [300, 250], 'div-gpt-ad-1762512031919-0').addService(googletag.pubads());
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_3', [300, 250], 'div-gpt-ad-1762512119068-0').addService(googletag.pubads());
         
         googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_1', [300, 250], 'div-gpt-ad-1762512074266-0').addService(googletag.pubads());
         
         googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_2', [300, 250], 'div-gpt-ad-1762511986518-0').addService(googletag.pubads());
+        
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_4', [300, 250], 'div-gpt-ad-1762512031919-0').addService(googletag.pubads());
         
         googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_1', [300, 250], 'div-gpt-ad-1762511964282-0').addService(googletag.pubads());
         
@@ -1324,6 +1324,28 @@
         }
         
         /**
+         * 24小时去重检查（独立实现）
+         */
+        function shouldTrackClickEvent(eventName) {
+            try {
+                const now = new Date();
+                const currentPeriod = Math.floor(now.getTime() / (24 * 60 * 60 * 1000));
+                const storageKey = `fb_event_${eventName}`;
+                const lastTrackedPeriod = localStorage.getItem(storageKey);
+                
+                if (!lastTrackedPeriod || parseInt(lastTrackedPeriod) !== currentPeriod) {
+                    localStorage.setItem(storageKey, currentPeriod.toString());
+                    return true;
+                }
+                
+                return false;
+            } catch (e) {
+                console.error('Failed to check event tracking:', e);
+                return true; // 出错时允许发送
+            }
+        }
+        
+        /**
          * 检查并触发点击里程碑事件
          */
         function checkAndTriggerMilestones(clickCount) {
@@ -1332,24 +1354,29 @@
             CLICK_MILESTONES.forEach(milestone => {
                 // 如果达到里程碑且尚未发送该事件
                 if (clickCount >= milestone.count && !eventsSent[milestone.event]) {
-                    // 使用 shouldTrackEvent 确保24小时内只发送一次
-                    if (typeof shouldTrackEvent === 'function' && shouldTrackEvent(milestone.event)) {
-                        fbq('trackCustom', milestone.event, {
-                            content_name: 'The Icy Billionaire Ex‘s Second Chance',
-                            content_type: 'chapter',
-                            content_category: 'chapter_navigation',
-                            value: milestone.value,
-                            currency: 'USD',
-                            click_count: clickCount
-                        });
-                        
-                        console.log(`Facebook event sent: ${milestone.event} (${clickCount} clicks, value: $${milestone.value})`);
+                    // 24小时去重检查
+                    if (shouldTrackClickEvent(milestone.event)) {
+                        // 确保 fbq 函数已加载
+                        if (typeof fbq !== 'undefined') {
+                            fbq('trackCustom', milestone.event, {
+                                content_name: 'The Icy Billionaire Ex‘s Second Chance',
+                                content_type: 'chapter',
+                                content_category: 'chapter_navigation',
+                                value: milestone.value,
+                                currency: 'USD',
+                                click_count: clickCount
+                            });
+                            
+                            console.log(`✅ Facebook event sent: ${milestone.event} (${clickCount} clicks, value: $${milestone.value})`);
+                        } else {
+                            console.warn(`⚠️ fbq not loaded, skipping ${milestone.event}`);
+                        }
                         
                         // 标记该事件已发送
                         eventsSent[milestone.event] = true;
                         saveClickEventsSent(eventsSent);
                     } else {
-                        console.log(`Facebook event skipped: ${milestone.event} (already sent within 24 hours)`);
+                        console.log(`⏭️ Facebook event skipped: ${milestone.event} (already sent within 24 hours)`);
                     }
                 }
             });
@@ -2372,34 +2399,34 @@
                 <p>&#34;Vivian.&#34; Margaret&#39;s response was clipped, her smile not reaching her eyes.</p>
                 <p>Social appearances meant everything to Margaret. Though she clearly despised Vivian, she&#39;d rather die than cause a scene at such a public event.</p>
                 <p>Bianca stood nearby, her gaze so venomous Vivian could almost feel it pricking her skin. The younger woman&#39;s eyes raked over Vivian&#39;s ensemble with barely concealed envy. How did this nobody carry herself with such effortless elegance? Even that bold emerald green—a color that would make most women look garish—only accentuated her poise. How could someone from such a nouveau riche family possess such natural refinement?</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_2 -->
-                <div id='div-gpt-ad-1762512094799-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_3 -->
+                <div id='div-gpt-ad-1762512119068-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512094799-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512119068-0'); });
                   </script>
                 </div>
                 <p>Vivian met Serena&#39;s gaze directly, her voice crisp. &#34;Ms. Whitmore, there&#39;s no need to concern yourself with my professional connections. If you have such valuable resources at your disposal, I suggest you utilize them for your own benefit rather than wasting them on me.&#34;</p>
                 <p>Though they looked down on her, Vivian had no intention of revealing her true identity as the acclaimed screenwriter Vivian Hartley—her most carefully guarded secret.</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_4 -->
-                <div id='div-gpt-ad-1762512031919-0' style='min-width: 300px; min-height: 250px;'>
-                  <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512031919-0'); });
-                  </script>
-                </div>
-                <p>Bianca, still smarting from the earlier confrontation about invitations, couldn&#39;t resist sneering, &#34;Acting so high and mighty about not needing help? Then why even show up at these events?&#34;</p>
-                <p>Serena jumped in with exaggerated enthusiasm. &#34;This screenwriter has several major hits under her belt—some say her work rivals Vivian Hartley&#39;s. If you&#39;re interested, I&#39;d be happy to arrange an introduction.&#34;</p>
                 <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_1 -->
                 <div id='div-gpt-ad-1762512074266-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
                     googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512074266-0'); });
                   </script>
                 </div>
-                <p>The claim was laughable. Screenwriters of Vivian Hartley&#39;s caliber were unicorns in the industry. Serena&#39;s offer was clearly disingenuous—even if she knew such a writer, securing a meeting would be nearly impossible.</p>
-                <p>Vivian&#39;s smile remained unshaken. &#34;I&#39;m quite satisfied with my current project&#39;s screenwriter.&#34;</p>
+                <p>Bianca, still smarting from the earlier confrontation about invitations, couldn&#39;t resist sneering, &#34;Acting so high and mighty about not needing help? Then why even show up at these events?&#34;</p>
+                <p>Serena jumped in with exaggerated enthusiasm. &#34;This screenwriter has several major hits under her belt—some say her work rivals Vivian Hartley&#39;s. If you&#39;re interested, I&#39;d be happy to arrange an introduction.&#34;</p>
                 <!-- /22796784223/Netlink/goodluckark.com/banner_2 -->
                 <div id='div-gpt-ad-1762511986518-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
                     googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762511986518-0'); });
+                  </script>
+                </div>
+                <p>The claim was laughable. Screenwriters of Vivian Hartley&#39;s caliber were unicorns in the industry. Serena&#39;s offer was clearly disingenuous—even if she knew such a writer, securing a meeting would be nearly impossible.</p>
+                <p>Vivian&#39;s smile remained unshaken. &#34;I&#39;m quite satisfied with my current project&#39;s screenwriter.&#34;</p>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_4 -->
+                <div id='div-gpt-ad-1762512031919-0' style='min-width: 300px; min-height: 250px;'>
+                  <script>
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512031919-0'); });
                   </script>
                 </div>
                 <p>Serena&#39;s eyes sparkled with mischief. &#34;How loyal of you. Though if I recall correctly, wasn&#39;t Damien Vaughn also a screenwriter? His works never quite achieved commercial success, did they?&#34; She paused dramatically. &#34;Ah, but given your... close relationship, of course you&#39;d want to support his work. My apologies for overstepping.&#34;</p>

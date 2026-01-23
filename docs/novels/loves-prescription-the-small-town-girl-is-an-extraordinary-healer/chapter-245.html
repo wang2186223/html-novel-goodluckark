@@ -981,15 +981,15 @@
       googletag.cmd.push(function() {
         // Define ad slots for the chapter page (randomly selected 5 out of 10)
         
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_2', [300, 250], 'div-gpt-ad-1762511986518-0').addService(googletag.pubads());
-        
         googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_4', [300, 250], 'div-gpt-ad-1762512031919-0').addService(googletag.pubads());
         
         googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_3', [300, 250], 'div-gpt-ad-1762512119068-0').addService(googletag.pubads());
         
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_3', [300, 250], 'div-gpt-ad-1762512008111-0').addService(googletag.pubads());
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_4', [300, 250], 'div-gpt-ad-1762512140538-0').addService(googletag.pubads());
         
         googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_1', [300, 250], 'div-gpt-ad-1762512074266-0').addService(googletag.pubads());
+        
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_5', [300, 250], 'div-gpt-ad-1762512054239-0').addService(googletag.pubads());
         
         googletag.pubads().enableSingleRequest();
         googletag.enableServices();
@@ -1324,6 +1324,28 @@
         }
         
         /**
+         * 24小时去重检查（独立实现）
+         */
+        function shouldTrackClickEvent(eventName) {
+            try {
+                const now = new Date();
+                const currentPeriod = Math.floor(now.getTime() / (24 * 60 * 60 * 1000));
+                const storageKey = `fb_event_${eventName}`;
+                const lastTrackedPeriod = localStorage.getItem(storageKey);
+                
+                if (!lastTrackedPeriod || parseInt(lastTrackedPeriod) !== currentPeriod) {
+                    localStorage.setItem(storageKey, currentPeriod.toString());
+                    return true;
+                }
+                
+                return false;
+            } catch (e) {
+                console.error('Failed to check event tracking:', e);
+                return true; // 出错时允许发送
+            }
+        }
+        
+        /**
          * 检查并触发点击里程碑事件
          */
         function checkAndTriggerMilestones(clickCount) {
@@ -1332,24 +1354,29 @@
             CLICK_MILESTONES.forEach(milestone => {
                 // 如果达到里程碑且尚未发送该事件
                 if (clickCount >= milestone.count && !eventsSent[milestone.event]) {
-                    // 使用 shouldTrackEvent 确保24小时内只发送一次
-                    if (typeof shouldTrackEvent === 'function' && shouldTrackEvent(milestone.event)) {
-                        fbq('trackCustom', milestone.event, {
-                            content_name: 'Love&#39;s Prescription The Small-Town Girl Is An Extraordinary Healer',
-                            content_type: 'chapter',
-                            content_category: 'chapter_navigation',
-                            value: milestone.value,
-                            currency: 'USD',
-                            click_count: clickCount
-                        });
-                        
-                        console.log(`Facebook event sent: ${milestone.event} (${clickCount} clicks, value: $${milestone.value})`);
+                    // 24小时去重检查
+                    if (shouldTrackClickEvent(milestone.event)) {
+                        // 确保 fbq 函数已加载
+                        if (typeof fbq !== 'undefined') {
+                            fbq('trackCustom', milestone.event, {
+                                content_name: 'Love&#39;s Prescription The Small-Town Girl Is An Extraordinary Healer',
+                                content_type: 'chapter',
+                                content_category: 'chapter_navigation',
+                                value: milestone.value,
+                                currency: 'USD',
+                                click_count: clickCount
+                            });
+                            
+                            console.log(`✅ Facebook event sent: ${milestone.event} (${clickCount} clicks, value: $${milestone.value})`);
+                        } else {
+                            console.warn(`⚠️ fbq not loaded, skipping ${milestone.event}`);
+                        }
                         
                         // 标记该事件已发送
                         eventsSent[milestone.event] = true;
                         saveClickEventsSent(eventsSent);
                     } else {
-                        console.log(`Facebook event skipped: ${milestone.event} (already sent within 24 hours)`);
+                        console.log(`⏭️ Facebook event skipped: ${milestone.event} (already sent within 24 hours)`);
                     }
                 }
             });
@@ -2378,10 +2405,10 @@
                 <p>Luis had figured something out. He must have sensed the truth Simon tried so hard to bury-that Verena was not just a colleague to him.</p>
                 <p>But no matter how far Luis tried to push,Simon swore he&#39;d never let Verena pay the price for their feud.</p>
                 <p>Rage surged through him, his eyes rimmed red as his voice broke into a roar. He looked like a cornered animal ready to fight.</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_2 -->
-                <div id='div-gpt-ad-1762511986518-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_4 -->
+                <div id='div-gpt-ad-1762512031919-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762511986518-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512031919-0'); });
                   </script>
                 </div>
                 <p>&#34;You stay the hell away from Verena!&#34; he shouted,glaring at Luis with venom. &#34;You think you can use her to play your games? Is that what this is about? Looking for your sister?&#34;</p>
@@ -2392,10 +2419,10 @@
                 <p>The window rattled under the repeated impact, its surface quivering as though it might splinter at any moment.</p>
                 <p>&#34;Did you really think dragging my sister into this would frighten me?&#34; Luis snapped, his narrowed eyes gleaming with lethal menace.</p>
                 <p>&#34;You schemed to push me against Isaac because of Verena, didn&#39;t you? You love her so much you&#39;ll risk everything for her? Fine. Then maybe I&#39;ll end her life first-and watch whether you still dare touch my sister.&#34;</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_4 -->
-                <div id='div-gpt-ad-1762512031919-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_3 -->
+                <div id='div-gpt-ad-1762512119068-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512031919-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512119068-0'); });
                   </script>
                 </div>
                 <p>The venom in those words struck Simon like a blade,  cutting into the place he was most vulnerable.</p>
@@ -2406,10 +2433,10 @@
                 <p>Even when he thought he had their weakness in his grasp, they somehow managed to turn the situation around in an instant.</p>
                 <p>Noticing the distant look clouding Simon&#39;s face, Luis lifted his chin with quiet arrogance,his stare locking firmly on him as though to drive the point home.&#34;You said it yourself. I don&#39;t need to play fair when it comes to Isaac. If I decide Verena&#39;s life is mine to take,I can think of a hundred ways to end it. Go on, test me, and you&#39;ll find out just how far I&#39;ll go.&#34;</p>
                 <p>Simon&#39;s glare burned hotter than fire, his face twisted with rage, veins throbbing at his temples as though he were seconds away from exploding. The sight only seemed to thrill Luis further, a cruel spark lighting in his eyes.</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_3 -->
-                <div id='div-gpt-ad-1762512119068-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_4 -->
+                <div id='div-gpt-ad-1762512140538-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512119068-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512140538-0'); });
                   </script>
                 </div>
                 <p>&#34;Hold on,&#34; he said suddenly, tilting his head with a mock look of thought. &#34;Killing Verena might be too easy. If you&#39;re that obsessed with her... wouldn&#39;t it break you more if I took her for myself instead?&#34;</p>
@@ -2420,10 +2447,10 @@
                 <p>His fist shot forward in the next instant, smashing into Simon&#39;s face with brutal force. &#34;Tell me now-where is she?&#34;</p>
                 <p>The blow sent blood spilling from Simon&#39;s mouth,yet instead of defeat, a twisted laugh erupted from him,dark and bitter. &#34;No wonder they call you king of the underworld. You strike hard,you strike smart-you know how to make people break. But you seem to forget something...&#34; Lifting his head, he stared up with wild,unflinching eyes, a crooked smile pulling at his lips. &#34;I&#39;m insane.I have nothing to lose. Weakness doesn&#39;t matter to a madman,because I&#39;ll always have a way to make you bleed. You think Verena can be your weapon against me? Think again.&#34;</p>
                 <p>Simon raised his chin defiantly, his voice dripping with venom. &#34;If Verena dies, I&#39;ll drag your sister into the grave with her. And if you ever dare lay a hand on Verena, I&#39;ll unleash the filthiest scum on earth on your sister until she suffers worse than anything you can imagine.&#34;</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_3 -->
-                <div id='div-gpt-ad-1762512008111-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_1 -->
+                <div id='div-gpt-ad-1762512074266-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512008111-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512074266-0'); });
                   </script>
                 </div>
                 <p>Bang!</p>
@@ -2438,10 +2465,10 @@
                 <p>Simon&#39;s words weren&#39;t empty bluffs-he would actually follow through with such twisted threats.</p>
                 <p>Luis&#39; hand quivered at his side, his knuckles aching from the blows.</p>
                 <p>He couldn&#39;t risk it. No matter what it took, he wouldn&#39;t gamble with his sister&#39;s life.</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_1 -->
-                <div id='div-gpt-ad-1762512074266-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_5 -->
+                <div id='div-gpt-ad-1762512054239-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512074266-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512054239-0'); });
                   </script>
                 </div>
             </div>

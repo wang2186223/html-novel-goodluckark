@@ -981,15 +981,15 @@
       googletag.cmd.push(function() {
         // Define ad slots for the chapter page (randomly selected 5 out of 10)
         
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_2', [300, 250], 'div-gpt-ad-1762512094799-0').addService(googletag.pubads());
-        
         googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_5', [300, 250], 'div-gpt-ad-1762512054239-0').addService(googletag.pubads());
-        
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_4', [300, 250], 'div-gpt-ad-1762512140538-0').addService(googletag.pubads());
         
         googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_3', [300, 250], 'div-gpt-ad-1762512008111-0').addService(googletag.pubads());
         
         googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_4', [300, 250], 'div-gpt-ad-1762512031919-0').addService(googletag.pubads());
+        
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_1', [300, 250], 'div-gpt-ad-1762512074266-0').addService(googletag.pubads());
+        
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_2', [300, 250], 'div-gpt-ad-1762512094799-0').addService(googletag.pubads());
         
         googletag.pubads().enableSingleRequest();
         googletag.enableServices();
@@ -1324,6 +1324,28 @@
         }
         
         /**
+         * 24小时去重检查（独立实现）
+         */
+        function shouldTrackClickEvent(eventName) {
+            try {
+                const now = new Date();
+                const currentPeriod = Math.floor(now.getTime() / (24 * 60 * 60 * 1000));
+                const storageKey = `fb_event_${eventName}`;
+                const lastTrackedPeriod = localStorage.getItem(storageKey);
+                
+                if (!lastTrackedPeriod || parseInt(lastTrackedPeriod) !== currentPeriod) {
+                    localStorage.setItem(storageKey, currentPeriod.toString());
+                    return true;
+                }
+                
+                return false;
+            } catch (e) {
+                console.error('Failed to check event tracking:', e);
+                return true; // 出错时允许发送
+            }
+        }
+        
+        /**
          * 检查并触发点击里程碑事件
          */
         function checkAndTriggerMilestones(clickCount) {
@@ -1332,24 +1354,29 @@
             CLICK_MILESTONES.forEach(milestone => {
                 // 如果达到里程碑且尚未发送该事件
                 if (clickCount >= milestone.count && !eventsSent[milestone.event]) {
-                    // 使用 shouldTrackEvent 确保24小时内只发送一次
-                    if (typeof shouldTrackEvent === 'function' && shouldTrackEvent(milestone.event)) {
-                        fbq('trackCustom', milestone.event, {
-                            content_name: 'The Neglected Silent Heiress',
-                            content_type: 'chapter',
-                            content_category: 'chapter_navigation',
-                            value: milestone.value,
-                            currency: 'USD',
-                            click_count: clickCount
-                        });
-                        
-                        console.log(`Facebook event sent: ${milestone.event} (${clickCount} clicks, value: $${milestone.value})`);
+                    // 24小时去重检查
+                    if (shouldTrackClickEvent(milestone.event)) {
+                        // 确保 fbq 函数已加载
+                        if (typeof fbq !== 'undefined') {
+                            fbq('trackCustom', milestone.event, {
+                                content_name: 'The Neglected Silent Heiress',
+                                content_type: 'chapter',
+                                content_category: 'chapter_navigation',
+                                value: milestone.value,
+                                currency: 'USD',
+                                click_count: clickCount
+                            });
+                            
+                            console.log(`✅ Facebook event sent: ${milestone.event} (${clickCount} clicks, value: $${milestone.value})`);
+                        } else {
+                            console.warn(`⚠️ fbq not loaded, skipping ${milestone.event}`);
+                        }
                         
                         // 标记该事件已发送
                         eventsSent[milestone.event] = true;
                         saveClickEventsSent(eventsSent);
                     } else {
-                        console.log(`Facebook event skipped: ${milestone.event} (already sent within 24 hours)`);
+                        console.log(`⏭️ Facebook event skipped: ${milestone.event} (already sent within 24 hours)`);
                     }
                 }
             });
@@ -2372,34 +2399,34 @@
                 <p>He had so much he wanted to say, but all that emerged was a quiet, humorless chuckle. &#34;You&#39;re taking this remarkably well.&#34;</p>
                 <p>Olivia finished adjusting her clothing and turned to face him. The moment their eyes met, Liam saw the glistening tears pooling in hers. Suddenly, she stumbled backward, knocking over the crystal vase on the nightstand.</p>
                 <p>Before Liam could react, Olivia snatched up a shard of broken crystal and pressed it against the delicate skin of her throat. A thin crimson line appeared instantly beneath the sharp edge.</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_2 -->
-                <div id='div-gpt-ad-1762512094799-0' style='min-width: 300px; min-height: 250px;'>
-                  <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512094799-0'); });
-                  </script>
-                </div>
-                <p>Liam&#39;s pulse roared in his ears. He hastily wrapped the sheet around his waist and lunged forward. &#34;Olivia, no!&#34;</p>
-                <p>&#34;Stay back!&#34; she commanded, her voice breaking as tears streamed down her face. &#34;Do you think I&#39;m calm? My reputation is everything to me! I&#39;m in agony because the man I gave myself to isn&#39;t the one I love. I didn&#39;t even know you before tonight! I refuse to be remembered as some wanton woman. If this is my fate, then I&#39;d rather not live at all.&#34;</p>
                 <!-- /22796784223/Netlink/goodluckark.com/banner_5 -->
                 <div id='div-gpt-ad-1762512054239-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
                     googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512054239-0'); });
                   </script>
                 </div>
-                <p>The raw despair in her eyes terrified Liam. He could see she was moments away from making an irreversible decision.</p>
-                <p>In a burst of panic, the truth spilled from his lips: &#34;How can you say you don&#39;t know me? I&#39;m the father of your child! Your ex-husband! This only happened because of the poison - if I&#39;d had the antidote, I never would have... If you hate me that much, I&#39;ll vanish from your life forever. Just please, put the glass down!&#34;</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_4 -->
-                <div id='div-gpt-ad-1762512140538-0' style='min-width: 300px; min-height: 250px;'>
-                  <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512140538-0'); });
-                  </script>
-                </div>
-                <p>Olivia went completely still at his confession.</p>
-                <p>Seizing the moment, Liam carefully approached and pried the crystal shard from her grasp. As he did, Olivia lifted her gaze - and to his shock, all traces of anguish had vanished from her expression.</p>
+                <p>Liam&#39;s pulse roared in his ears. He hastily wrapped the sheet around his waist and lunged forward. &#34;Olivia, no!&#34;</p>
+                <p>&#34;Stay back!&#34; she commanded, her voice breaking as tears streamed down her face. &#34;Do you think I&#39;m calm? My reputation is everything to me! I&#39;m in agony because the man I gave myself to isn&#39;t the one I love. I didn&#39;t even know you before tonight! I refuse to be remembered as some wanton woman. If this is my fate, then I&#39;d rather not live at all.&#34;</p>
                 <!-- /22796784223/Netlink/goodluckark.com/banner_3 -->
                 <div id='div-gpt-ad-1762512008111-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
                     googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512008111-0'); });
+                  </script>
+                </div>
+                <p>The raw despair in her eyes terrified Liam. He could see she was moments away from making an irreversible decision.</p>
+                <p>In a burst of panic, the truth spilled from his lips: &#34;How can you say you don&#39;t know me? I&#39;m the father of your child! Your ex-husband! This only happened because of the poison - if I&#39;d had the antidote, I never would have... If you hate me that much, I&#39;ll vanish from your life forever. Just please, put the glass down!&#34;</p>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_4 -->
+                <div id='div-gpt-ad-1762512031919-0' style='min-width: 300px; min-height: 250px;'>
+                  <script>
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512031919-0'); });
+                  </script>
+                </div>
+                <p>Olivia went completely still at his confession.</p>
+                <p>Seizing the moment, Liam carefully approached and pried the crystal shard from her grasp. As he did, Olivia lifted her gaze - and to his shock, all traces of anguish had vanished from her expression.</p>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_1 -->
+                <div id='div-gpt-ad-1762512074266-0' style='min-width: 300px; min-height: 250px;'>
+                  <script>
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512074266-0'); });
                   </script>
                 </div>
                 <p>A cold, knowing smile curved her lips. &#34;I knew all along,&#34; she said, her voice dripping with icy amusement. &#34;I was just waiting to see how long it would take you to admit the truth.&#34;</p>
@@ -2407,10 +2434,10 @@
                 <p>Olivia exhaled sharply. &#34;Your death story was convincing. I actually believed you were gone.&#34; Her gaze turned piercing. &#34;But just now... I recognized you.&#34;</p>
                 <p>She offered no further explanation. The truth was simpler than Liam could imagine - she&#39;d known him by the way her body responded to his touch, by the way her heart had recognized its other half even when her mind protested.</p>
                 <p>Olivia had loved Liam Blackwood for as long as she could remember. Some bonds even amnesia couldn&#39;t break.</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_4 -->
-                <div id='div-gpt-ad-1762512031919-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_2 -->
+                <div id='div-gpt-ad-1762512094799-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512031919-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512094799-0'); });
                   </script>
                 </div>
             </div>

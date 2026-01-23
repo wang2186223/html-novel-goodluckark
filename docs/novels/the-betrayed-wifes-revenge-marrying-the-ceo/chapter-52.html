@@ -983,13 +983,13 @@
         
         googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_4', [300, 250], 'div-gpt-ad-1762512140538-0').addService(googletag.pubads());
         
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_3', [300, 250], 'div-gpt-ad-1762512119068-0').addService(googletag.pubads());
-        
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_4', [300, 250], 'div-gpt-ad-1762512031919-0').addService(googletag.pubads());
-        
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_1', [300, 250], 'div-gpt-ad-1762512074266-0').addService(googletag.pubads());
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_2', [300, 250], 'div-gpt-ad-1762512094799-0').addService(googletag.pubads());
         
         googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_5', [300, 250], 'div-gpt-ad-1762512054239-0').addService(googletag.pubads());
+        
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_1', [300, 250], 'div-gpt-ad-1762511964282-0').addService(googletag.pubads());
+        
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_3', [300, 250], 'div-gpt-ad-1762512119068-0').addService(googletag.pubads());
         
         googletag.pubads().enableSingleRequest();
         googletag.enableServices();
@@ -1324,6 +1324,28 @@
         }
         
         /**
+         * 24小时去重检查（独立实现）
+         */
+        function shouldTrackClickEvent(eventName) {
+            try {
+                const now = new Date();
+                const currentPeriod = Math.floor(now.getTime() / (24 * 60 * 60 * 1000));
+                const storageKey = `fb_event_${eventName}`;
+                const lastTrackedPeriod = localStorage.getItem(storageKey);
+                
+                if (!lastTrackedPeriod || parseInt(lastTrackedPeriod) !== currentPeriod) {
+                    localStorage.setItem(storageKey, currentPeriod.toString());
+                    return true;
+                }
+                
+                return false;
+            } catch (e) {
+                console.error('Failed to check event tracking:', e);
+                return true; // 出错时允许发送
+            }
+        }
+        
+        /**
          * 检查并触发点击里程碑事件
          */
         function checkAndTriggerMilestones(clickCount) {
@@ -1332,24 +1354,29 @@
             CLICK_MILESTONES.forEach(milestone => {
                 // 如果达到里程碑且尚未发送该事件
                 if (clickCount >= milestone.count && !eventsSent[milestone.event]) {
-                    // 使用 shouldTrackEvent 确保24小时内只发送一次
-                    if (typeof shouldTrackEvent === 'function' && shouldTrackEvent(milestone.event)) {
-                        fbq('trackCustom', milestone.event, {
-                            content_name: 'The Betrayed Wife&#39;s Revenge Marrying the CEO',
-                            content_type: 'chapter',
-                            content_category: 'chapter_navigation',
-                            value: milestone.value,
-                            currency: 'USD',
-                            click_count: clickCount
-                        });
-                        
-                        console.log(`Facebook event sent: ${milestone.event} (${clickCount} clicks, value: $${milestone.value})`);
+                    // 24小时去重检查
+                    if (shouldTrackClickEvent(milestone.event)) {
+                        // 确保 fbq 函数已加载
+                        if (typeof fbq !== 'undefined') {
+                            fbq('trackCustom', milestone.event, {
+                                content_name: 'The Betrayed Wife&#39;s Revenge Marrying the CEO',
+                                content_type: 'chapter',
+                                content_category: 'chapter_navigation',
+                                value: milestone.value,
+                                currency: 'USD',
+                                click_count: clickCount
+                            });
+                            
+                            console.log(`✅ Facebook event sent: ${milestone.event} (${clickCount} clicks, value: $${milestone.value})`);
+                        } else {
+                            console.warn(`⚠️ fbq not loaded, skipping ${milestone.event}`);
+                        }
                         
                         // 标记该事件已发送
                         eventsSent[milestone.event] = true;
                         saveClickEventsSent(eventsSent);
                     } else {
-                        console.log(`Facebook event skipped: ${milestone.event} (already sent within 24 hours)`);
+                        console.log(`⏭️ Facebook event skipped: ${milestone.event} (already sent within 24 hours)`);
                     }
                 }
             });
@@ -2392,10 +2419,10 @@
                 <p>&#34;She said you confronted her at her apartment-&#34;</p>
                 <p>&#34;Confronted?&#34; Betty&#39;s laugh was sharp. &#34;I simply expressed concern about Brian&#39;s recent behavior. That woman has him parroting the most awful things about Annie.&#34;</p>
                 <p>I shifted in my chair. &#34;Sarah&#39;s going through a difficult time-&#34;</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_3 -->
-                <div id='div-gpt-ad-1762512119068-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_2 -->
+                <div id='div-gpt-ad-1762512094799-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512119068-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512094799-0'); });
                   </script>
                 </div>
                 <p>&#34;Oh, spare me.&#34; Betty&#39;s patience clearly had its limits. &#34;Sarah&#39;s &#39;difficult time&#39; seems to consist mainly of shopping sprees and manipulating my grandson. Meanwhile, Brian is the one truly suffering.&#34;</p>
@@ -2406,10 +2433,10 @@
                 <p>&#34;That&#39;s not enough anymore, Philip.&#34; Betty&#39;s sigh carried years of maternal concern. &#34;You need to really think about what&#39;s best for Brian. And for yourself.&#34; The credit card statements landed on my desk with the weight of an accusation. Each page I turned revealed another of Sarah&#39;s extravagant purchases-designer bags,jewelry, furniture. The total made my throat tight:nearly two million dollars in three months. The same amount Annie had once suggested we invest in Brian&#39;s education fund.</p>
                 <p>My hands shook as I reviewed the charges. Designer boutiques,jewelry stores,high-end furniture-a steady stream of extravagant purchases that dwarfed our household expenses during my entire marriage to Annie.</p>
                 <p>Annie, who had furnished our first apartment with carefully chosen second-hand pieces. Who had insisted on saving for Brian&#39;s education before buying herself new clothes. Who hadsupported every one of my business ventures without ever demanding compensation for her sacrifices.</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_4 -->
-                <div id='div-gpt-ad-1762512031919-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_5 -->
+                <div id='div-gpt-ad-1762512054239-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512031919-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512054239-0'); });
                   </script>
                 </div>
                 <p>The contrast was nauseating. While Annie had helped build our life from nothing, Sarah was systematically draining resources without contributing anything of value. The realization hit me with the force of a physical blow:I had traded substance for shadow, reality for illusion.</p>
@@ -2420,10 +2447,10 @@
                 <p>The simple statement hit like a sledgehammer. After six years of marriage, I couldn&#39;t even remember such a basic preference. Had I ever really known her at all?</p>
                 <p>&#34;I made a mistake,&#34; I bluarted out. &#34;Divorcing you. I see that now.&#34;</p>
                 <p>Annie&#39;s laugh held no humor. &#34;Really? You&#39;re only realizing this after Sarah&#39;s shown her true colors?&#34;</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_1 -->
-                <div id='div-gpt-ad-1762512074266-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_1 -->
+                <div id='div-gpt-ad-1762511964282-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512074266-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762511964282-0'); });
                   </script>
                 </div>
                 <p>&#34;It&#39;s not about Sarah-&#34;</p>
@@ -2437,10 +2464,10 @@
                 <p>She stood,reaching for her wallet. &#34;You know what&#39;s ironic? You&#39;re not actually missing me - you&#39;re missing having someone who would sacrifice everything to make your life easier. But I&#39;m not that person anymore.&#34;She placed several bills on the table, more than enough to cover both drinks.&#34;Consider this the last transaction between us.&#34;</p>
                 <p>I watched her walk away, somehing ugly and desperate clawing at my chest. The truth of her words burned like acid: I hadn&#39;t been thinking about Annie&#39;s happiness or growth, only about reclaiming what I&#39;d carelessly thrown away.</p>
                 <p>The bills she&#39;d left seemed to mock me - a final, stinging reminder that she no longer needed anything from me, not even the hollow gesture of paying for her coffee.</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_5 -->
-                <div id='div-gpt-ad-1762512054239-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_3 -->
+                <div id='div-gpt-ad-1762512119068-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512054239-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512119068-0'); });
                   </script>
                 </div>
             </div>

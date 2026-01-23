@@ -983,13 +983,13 @@
         
         googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_5', [300, 250], 'div-gpt-ad-1762512054239-0').addService(googletag.pubads());
         
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_2', [300, 250], 'div-gpt-ad-1762511986518-0').addService(googletag.pubads());
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_3', [300, 250], 'div-gpt-ad-1762512119068-0').addService(googletag.pubads());
+        
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_4', [300, 250], 'div-gpt-ad-1762512140538-0').addService(googletag.pubads());
         
         googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_5', [300, 250], 'div-gpt-ad-1762512161163-0').addService(googletag.pubads());
         
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_1', [300, 250], 'div-gpt-ad-1762512074266-0').addService(googletag.pubads());
-        
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_2', [300, 250], 'div-gpt-ad-1762512094799-0').addService(googletag.pubads());
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_4', [300, 250], 'div-gpt-ad-1762512031919-0').addService(googletag.pubads());
         
         googletag.pubads().enableSingleRequest();
         googletag.enableServices();
@@ -1324,6 +1324,28 @@
         }
         
         /**
+         * 24小时去重检查（独立实现）
+         */
+        function shouldTrackClickEvent(eventName) {
+            try {
+                const now = new Date();
+                const currentPeriod = Math.floor(now.getTime() / (24 * 60 * 60 * 1000));
+                const storageKey = `fb_event_${eventName}`;
+                const lastTrackedPeriod = localStorage.getItem(storageKey);
+                
+                if (!lastTrackedPeriod || parseInt(lastTrackedPeriod) !== currentPeriod) {
+                    localStorage.setItem(storageKey, currentPeriod.toString());
+                    return true;
+                }
+                
+                return false;
+            } catch (e) {
+                console.error('Failed to check event tracking:', e);
+                return true; // 出错时允许发送
+            }
+        }
+        
+        /**
          * 检查并触发点击里程碑事件
          */
         function checkAndTriggerMilestones(clickCount) {
@@ -1332,24 +1354,29 @@
             CLICK_MILESTONES.forEach(milestone => {
                 // 如果达到里程碑且尚未发送该事件
                 if (clickCount >= milestone.count && !eventsSent[milestone.event]) {
-                    // 使用 shouldTrackEvent 确保24小时内只发送一次
-                    if (typeof shouldTrackEvent === 'function' && shouldTrackEvent(milestone.event)) {
-                        fbq('trackCustom', milestone.event, {
-                            content_name: 'The Billionaire&#39;s Sudden Bride',
-                            content_type: 'chapter',
-                            content_category: 'chapter_navigation',
-                            value: milestone.value,
-                            currency: 'USD',
-                            click_count: clickCount
-                        });
-                        
-                        console.log(`Facebook event sent: ${milestone.event} (${clickCount} clicks, value: $${milestone.value})`);
+                    // 24小时去重检查
+                    if (shouldTrackClickEvent(milestone.event)) {
+                        // 确保 fbq 函数已加载
+                        if (typeof fbq !== 'undefined') {
+                            fbq('trackCustom', milestone.event, {
+                                content_name: 'The Billionaire&#39;s Sudden Bride',
+                                content_type: 'chapter',
+                                content_category: 'chapter_navigation',
+                                value: milestone.value,
+                                currency: 'USD',
+                                click_count: clickCount
+                            });
+                            
+                            console.log(`✅ Facebook event sent: ${milestone.event} (${clickCount} clicks, value: $${milestone.value})`);
+                        } else {
+                            console.warn(`⚠️ fbq not loaded, skipping ${milestone.event}`);
+                        }
                         
                         // 标记该事件已发送
                         eventsSent[milestone.event] = true;
                         saveClickEventsSent(eventsSent);
                     } else {
-                        console.log(`Facebook event skipped: ${milestone.event} (already sent within 24 hours)`);
+                        console.log(`⏭️ Facebook event skipped: ${milestone.event} (already sent within 24 hours)`);
                     }
                 }
             });
@@ -2386,10 +2413,10 @@
                 <p>&#34;I saw you get out of a Bentley.&#34; Alexander&#39;s voice had taken on an edge I&#39;d never heard before. &#34;Were you with him last night? Where did you go?&#34; &#34;Enough!&#34; The word exploded fromme like a bullet. &#34;Who I&#39;m with is none of your business.&#34; *The jealousy in his voice - after everything he&#39;s done, he still thinks he has some claim  on me?* &#34;How is it not my business? I&#39;m your-&#34; &#34;My what?&#34; I cut him off, anger giving me strength. &#34;Or did you forget?You&#39;re Victoria&#39;s fiancé now,&#34; *The words don&#39;t even hurt anymore. Maybe that&#39;s the strangest part - where there used to be pain, there&#39;s just...nothing.*</p>
                 <p>&#34;There&#39;s nothing left to discuss between us. I remember everything from last night, and I&#39;m not someone you can manipulate so easily. Go tell my sister she better watch her step - if I get the evidence of her pulling anything like this again, I&#39;ll make sure she regrets what she did to me!&#34;</p>
                 <p>My mind drifted to childhood memories-all those times my parents favored Victoria,all those quiet afternoons with Grandpa George. *&#34;Chess teaches you to think clearly,&#34;* he&#39;d always say. *&#34;To see what you really want.&#34;* The memory brought unexpected tears tomy eyes. *He always knew, didn&#39;t he? That someday I&#39;d have to learn to stand up for myself.*</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_2 -->
-                <div id='div-gpt-ad-1762511986518-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_3 -->
+                <div id='div-gpt-ad-1762512119068-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762511986518-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512119068-0'); });
                   </script>
                 </div>
                 <p>&#34;T&#39;ve always seen you as a younger sister,&#34; Alexander was saying, his voice softening in that way that used to make my heart flutter. &#34;That year you were in Europe, we spent more time together, and things just...&#34;</p>
@@ -2397,10 +2424,10 @@
                 <p>&#34;Do you even know who that man is?&#34; Alexander demanded.</p>
                 <p>Something warm bloomed in my chest as I thought of Brandon&#39;s quiet strength, his unwavering protection. &#34;I know he&#39;s better than you-better than all of you. At least he won&#39;t betray me. At least he won&#39;t sell me out for two hundred million dollars!&#34; &#34;Better? You barely know him! How long have you even known this man?&#34;</p>
                 <p>&#34;Enough, Alexander. If you don&#39;t leave, I&#39;m calling the police.&#34; I was done with this endless cycle of confrontation. Nothing good could come from dragging this out any longer. But Alexander had always been stubborn,</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_5 -->
-                <div id='div-gpt-ad-1762512161163-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_4 -->
+                <div id='div-gpt-ad-1762512140538-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512161163-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512140538-0'); });
                   </script>
                 </div>
                 <p>incapable of letting things go.</p>
@@ -2408,10 +2435,10 @@
                 <p>*What&#39;s the point of allthis?* I let him continue his tirade, refusing to engage. The silent treatment had never worked with Alexander before, but I had nothing left to say to him.</p>
                 <p>His voice took on an edge of desperation. &#34;Summer, open the fucking door!Do you think running away solves anything?&#34;</p>
                 <p>&#34;Excuse me, sir. Are you a resident here?&#34;</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_1 -->
-                <div id='div-gpt-ad-1762512074266-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_5 -->
+                <div id='div-gpt-ad-1762512161163-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512074266-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512161163-0'); });
                   </script>
                 </div>
                 <p>The unexpected question cut through Alexander&#39;s rant. Two police officers had appeared in the hallway, their expressions professionally neutral as they sized him up.</p>
@@ -2422,10 +2449,10 @@
                 <p>&#34;Brandon?&#34;</p>
                 <p>&#34;Mm.Is he gone?&#34;</p>
                 <p>&#34;Did you...&#34; I glanced at the security guard through the peephole. &#34;Did you call the police? Are you still nearby?&#34;</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_2 -->
-                <div id='div-gpt-ad-1762512094799-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_4 -->
+                <div id='div-gpt-ad-1762512031919-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512094799-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512031919-0'); });
                   </script>
                 </div>
             </div>
