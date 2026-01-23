@@ -981,15 +981,15 @@
       googletag.cmd.push(function() {
         // Define ad slots for the chapter page (randomly selected 5 out of 10)
         
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_1', [300, 250], 'div-gpt-ad-1762512074266-0').addService(googletag.pubads());
-        
         googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_5', [300, 250], 'div-gpt-ad-1762512054239-0').addService(googletag.pubads());
         
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_3', [300, 250], 'div-gpt-ad-1762512008111-0').addService(googletag.pubads());
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_2', [300, 250], 'div-gpt-ad-1762512094799-0').addService(googletag.pubads());
+        
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_4', [300, 250], 'div-gpt-ad-1762512140538-0').addService(googletag.pubads());
+        
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_2', [300, 250], 'div-gpt-ad-1762511986518-0').addService(googletag.pubads());
         
         googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_4', [300, 250], 'div-gpt-ad-1762512031919-0').addService(googletag.pubads());
-        
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_2', [300, 250], 'div-gpt-ad-1762512094799-0').addService(googletag.pubads());
         
         googletag.pubads().enableSingleRequest();
         googletag.enableServices();
@@ -1228,6 +1228,181 @@
     src="https://www.facebook.com/tr?id=1208668507386707&ev=PageView&noscript=1"
     /></noscript>
     <!-- End Facebook Pixel Code -->
+    
+    <!-- Facebook Pixel - Next Button Click Tracking -->
+    <script>
+    (function() {
+        'use strict';
+        
+        const CLICK_COUNT_KEY = 'fb_next_click_count';
+        const CLICK_DATE_KEY = 'fb_next_click_date';
+        const CLICK_EVENTS_SENT_KEY = 'fb_click_events_sent';
+        
+        // 点击里程碑配置
+        const CLICK_MILESTONES = [
+            { count: 1, event: 'read_c_1', value: 0.01 },
+            { count: 3, event: 'read_c_3', value: 0.03 },
+            { count: 5, event: 'read_c_5', value: 0.05 },
+            { count: 10, event: 'read_c_10', value: 0.10 },
+            { count: 30, event: 'read_c_30', value: 0.15 },
+            { count: 50, event: 'read_c_50', value: 0.20 }
+        ];
+        
+        /**
+         * 获取今天的日期字符串
+         */
+        function getTodayDateString() {
+            return new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD
+        }
+        
+        /**
+         * 加载今日点击次数
+         */
+        function loadClickCount() {
+            try {
+                const storedDate = localStorage.getItem(CLICK_DATE_KEY);
+                const today = getTodayDateString();
+                
+                // 如果是新的一天，重置点击次数和事件标记
+                if (storedDate !== today) {
+                    localStorage.setItem(CLICK_DATE_KEY, today);
+                    localStorage.setItem(CLICK_COUNT_KEY, '0');
+                    localStorage.setItem(CLICK_EVENTS_SENT_KEY, '{}');
+                    return 0;
+                }
+                
+                const stored = localStorage.getItem(CLICK_COUNT_KEY);
+                return stored ? parseInt(stored) : 0;
+            } catch (e) {
+                console.error('Failed to load click count:', e);
+                return 0;
+            }
+        }
+        
+        /**
+         * 保存点击次数
+         */
+        function saveClickCount(count) {
+            try {
+                localStorage.setItem(CLICK_COUNT_KEY, count.toString());
+                localStorage.setItem(CLICK_DATE_KEY, getTodayDateString());
+            } catch (e) {
+                console.error('Failed to save click count:', e);
+            }
+        }
+        
+        /**
+         * 加载已发送的点击事件标记
+         */
+        function loadClickEventsSent() {
+            try {
+                const storedDate = localStorage.getItem(CLICK_DATE_KEY);
+                const today = getTodayDateString();
+                
+                // 如果是新的一天，重置
+                if (storedDate !== today) {
+                    return {};
+                }
+                
+                const stored = localStorage.getItem(CLICK_EVENTS_SENT_KEY);
+                return stored ? JSON.parse(stored) : {};
+            } catch (e) {
+                console.error('Failed to load click events sent:', e);
+                return {};
+            }
+        }
+        
+        /**
+         * 保存已发送的点击事件标记
+         */
+        function saveClickEventsSent(eventsSent) {
+            try {
+                localStorage.setItem(CLICK_EVENTS_SENT_KEY, JSON.stringify(eventsSent));
+            } catch (e) {
+                console.error('Failed to save click events sent:', e);
+            }
+        }
+        
+        /**
+         * 检查并触发点击里程碑事件
+         */
+        function checkAndTriggerMilestones(clickCount) {
+            const eventsSent = loadClickEventsSent();
+            
+            CLICK_MILESTONES.forEach(milestone => {
+                // 如果达到里程碑且尚未发送该事件
+                if (clickCount >= milestone.count && !eventsSent[milestone.event]) {
+                    // 使用 shouldTrackEvent 确保24小时内只发送一次
+                    if (typeof shouldTrackEvent === 'function' && shouldTrackEvent(milestone.event)) {
+                        fbq('trackCustom', milestone.event, {
+                            content_name: 'The Icy Billionaire Ex‘s Second Chance',
+                            content_type: 'chapter',
+                            content_category: 'chapter_navigation',
+                            value: milestone.value,
+                            currency: 'USD',
+                            click_count: clickCount
+                        });
+                        
+                        console.log(`Facebook event sent: ${milestone.event} (${clickCount} clicks, value: $${milestone.value})`);
+                        
+                        // 标记该事件已发送
+                        eventsSent[milestone.event] = true;
+                        saveClickEventsSent(eventsSent);
+                    } else {
+                        console.log(`Facebook event skipped: ${milestone.event} (already sent within 24 hours)`);
+                    }
+                }
+            });
+        }
+        
+        /**
+         * 初始化 Next 按钮点击追踪
+         */
+        function initNextButtonTracking() {
+            // 等待 DOM 加载完成
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', setupClickTracking);
+            } else {
+                setupClickTracking();
+            }
+        }
+        
+        /**
+         * 设置点击追踪
+         */
+        function setupClickTracking() {
+            const nextBtn = document.getElementById('next-chapter');
+            
+            if (!nextBtn) {
+                console.log('Next button not found, click tracking disabled');
+                return;
+            }
+            
+            // 加载当前点击次数
+            let clickCount = loadClickCount();
+            console.log(`Next button click count loaded: ${clickCount} clicks today`);
+            
+            // 页面加载时检查一次（可能之前已经达到里程碑）
+            checkAndTriggerMilestones(clickCount);
+            
+            // 监听 Next 按钮点击
+            nextBtn.addEventListener('click', function(e) {
+                // 增加点击次数
+                clickCount++;
+                saveClickCount(clickCount);
+                
+                console.log(`Next button clicked: ${clickCount} times today`);
+                
+                // 检查并触发相应的里程碑事件
+                checkAndTriggerMilestones(clickCount);
+            });
+        }
+        
+        // 初始化
+        initNextButtonTracking();
+    })();
+    </script>
+    <!-- End Facebook Pixel - Next Button Click Tracking -->
     
     <!-- Tracking Parameter Persistence System -->
     <script>
@@ -2197,34 +2372,34 @@
                 <p>Audrey, realizing Vivian had pieced everything together, didn&#39;t bother with denials. Instead, she absently pushed her lobster around the plate with her fork. &#34;I&#39;ve made my choice.&#34;</p>
                 <p>&#34;Whatever consequences come, I&#39;ll face them.&#34;</p>
                 <p>&#34;Nothing worth having comes easy. Where&#39;s that fiery determination you had in high school when you defied your entire family?&#34; Vivian scooped a generous portion of crab gratin into Audrey&#39;s bowl. &#34;Eat this. I want to see that spark in your eyes again, not this... resigned version of you.&#34;</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_1 -->
-                <div id='div-gpt-ad-1762512074266-0' style='min-width: 300px; min-height: 250px;'>
-                  <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512074266-0'); });
-                  </script>
-                </div>
-                <p>An uncomfortable silence settled over the table. Adrian, true to form, remained quiet, maintaining his composed presence. Except for the occasional playful exchange with Vivian, he spoke little. With Audrey present, the silence stretched even longer, leaving Vivian grasping for words. The air felt unnaturally still.</p>
-                <p>Since the tension with Serena had been resolved the previous day, Vivian had no qualms about enjoying her meal. &#34;The food here really is exceptional,&#34; she commented casually.</p>
                 <!-- /22796784223/Netlink/goodluckark.com/banner_5 -->
                 <div id='div-gpt-ad-1762512054239-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
                     googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512054239-0'); });
                   </script>
                 </div>
+                <p>An uncomfortable silence settled over the table. Adrian, true to form, remained quiet, maintaining his composed presence. Except for the occasional playful exchange with Vivian, he spoke little. With Audrey present, the silence stretched even longer, leaving Vivian grasping for words. The air felt unnaturally still.</p>
+                <p>Since the tension with Serena had been resolved the previous day, Vivian had no qualms about enjoying her meal. &#34;The food here really is exceptional,&#34; she commented casually.</p>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_2 -->
+                <div id='div-gpt-ad-1762512094799-0' style='min-width: 300px; min-height: 250px;'>
+                  <script>
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512094799-0'); });
+                  </script>
+                </div>
                 <p>&#34;I&#39;ll have some delivered to your film set,&#34; Adrian said quietly, setting down his fork and dabbing his mouth with a napkin.</p>
                 <p>Vivian&#39;s portions were petite, and Adrian finished his meal with swift elegance, making Vivian and Audrey&#39;s more relaxed dining habits seem almost unrefined in comparison.</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_3 -->
-                <div id='div-gpt-ad-1762512008111-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_4 -->
+                <div id='div-gpt-ad-1762512140538-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512008111-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512140538-0'); });
                   </script>
                 </div>
                 <p>Vivian waved her hand dismissively. &#34;Don&#39;t bother. The crew has their catering, and Ivory Phoenix Productions takes excellent care of us. No need for special treatment.&#34;</p>
                 <p>Adrian didn&#39;t insist. &#34;Enjoy your meal. Don&#39;t worry about cleaning up—I have work to attend to.&#34; With that, he rose and left.</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_4 -->
-                <div id='div-gpt-ad-1762512031919-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_2 -->
+                <div id='div-gpt-ad-1762511986518-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512031919-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762511986518-0'); });
                   </script>
                 </div>
                 <p>Audrey put down her fork and leaned closer to Vivian, curiosity coloring her tone. &#34;So what&#39;s really going on between you two? Still planning that divorce?&#34;</p>
@@ -2232,10 +2407,10 @@
                 <p>&#34;He was hurt?&#34; Audrey&#39;s eyebrows shot up as she glanced toward Adrian, who sat working quietly at a nearby desk. Vivian followed her gaze. Even in silence, Adrian commanded attention. He looked nothing like a man who&#39;d nearly died the day before. Memories of their intense encounter the previous night flooded Vivian&#39;s mind—it had been unforgettable. Hardly the behavior of someone at death&#39;s door.</p>
                 <p>Internally, Vivian sighed. Clearly Adrian was exaggerating his injuries, but perhaps she was using the situation to justify her own wavering resolve. Her determination to end their marriage had weakened amid the ongoing complications.</p>
                 <p>After finishing her meal, Vivian set down her bowl. &#34;Let&#39;s not dwell on it. How are things with you and Dominic?&#34;</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_2 -->
-                <div id='div-gpt-ad-1762512094799-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_4 -->
+                <div id='div-gpt-ad-1762512031919-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512094799-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512031919-0'); });
                   </script>
                 </div>
             </div>

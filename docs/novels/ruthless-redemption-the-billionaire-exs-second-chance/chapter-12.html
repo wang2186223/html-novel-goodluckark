@@ -981,15 +981,15 @@
       googletag.cmd.push(function() {
         // Define ad slots for the chapter page (randomly selected 5 out of 10)
         
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_5', [300, 250], 'div-gpt-ad-1762512054239-0').addService(googletag.pubads());
-        
         googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_2', [300, 250], 'div-gpt-ad-1762512094799-0').addService(googletag.pubads());
         
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_4', [300, 250], 'div-gpt-ad-1762512031919-0').addService(googletag.pubads());
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_1', [300, 250], 'div-gpt-ad-1762512074266-0').addService(googletag.pubads());
         
         googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_4', [300, 250], 'div-gpt-ad-1762512140538-0').addService(googletag.pubads());
         
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_3', [300, 250], 'div-gpt-ad-1762512008111-0').addService(googletag.pubads());
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_5', [300, 250], 'div-gpt-ad-1762512054239-0').addService(googletag.pubads());
+        
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_1', [300, 250], 'div-gpt-ad-1762511964282-0').addService(googletag.pubads());
         
         googletag.pubads().enableSingleRequest();
         googletag.enableServices();
@@ -1228,6 +1228,181 @@
     src="https://www.facebook.com/tr?id=1208668507386707&ev=PageView&noscript=1"
     /></noscript>
     <!-- End Facebook Pixel Code -->
+    
+    <!-- Facebook Pixel - Next Button Click Tracking -->
+    <script>
+    (function() {
+        'use strict';
+        
+        const CLICK_COUNT_KEY = 'fb_next_click_count';
+        const CLICK_DATE_KEY = 'fb_next_click_date';
+        const CLICK_EVENTS_SENT_KEY = 'fb_click_events_sent';
+        
+        // 点击里程碑配置
+        const CLICK_MILESTONES = [
+            { count: 1, event: 'read_c_1', value: 0.01 },
+            { count: 3, event: 'read_c_3', value: 0.03 },
+            { count: 5, event: 'read_c_5', value: 0.05 },
+            { count: 10, event: 'read_c_10', value: 0.10 },
+            { count: 30, event: 'read_c_30', value: 0.15 },
+            { count: 50, event: 'read_c_50', value: 0.20 }
+        ];
+        
+        /**
+         * 获取今天的日期字符串
+         */
+        function getTodayDateString() {
+            return new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD
+        }
+        
+        /**
+         * 加载今日点击次数
+         */
+        function loadClickCount() {
+            try {
+                const storedDate = localStorage.getItem(CLICK_DATE_KEY);
+                const today = getTodayDateString();
+                
+                // 如果是新的一天，重置点击次数和事件标记
+                if (storedDate !== today) {
+                    localStorage.setItem(CLICK_DATE_KEY, today);
+                    localStorage.setItem(CLICK_COUNT_KEY, '0');
+                    localStorage.setItem(CLICK_EVENTS_SENT_KEY, '{}');
+                    return 0;
+                }
+                
+                const stored = localStorage.getItem(CLICK_COUNT_KEY);
+                return stored ? parseInt(stored) : 0;
+            } catch (e) {
+                console.error('Failed to load click count:', e);
+                return 0;
+            }
+        }
+        
+        /**
+         * 保存点击次数
+         */
+        function saveClickCount(count) {
+            try {
+                localStorage.setItem(CLICK_COUNT_KEY, count.toString());
+                localStorage.setItem(CLICK_DATE_KEY, getTodayDateString());
+            } catch (e) {
+                console.error('Failed to save click count:', e);
+            }
+        }
+        
+        /**
+         * 加载已发送的点击事件标记
+         */
+        function loadClickEventsSent() {
+            try {
+                const storedDate = localStorage.getItem(CLICK_DATE_KEY);
+                const today = getTodayDateString();
+                
+                // 如果是新的一天，重置
+                if (storedDate !== today) {
+                    return {};
+                }
+                
+                const stored = localStorage.getItem(CLICK_EVENTS_SENT_KEY);
+                return stored ? JSON.parse(stored) : {};
+            } catch (e) {
+                console.error('Failed to load click events sent:', e);
+                return {};
+            }
+        }
+        
+        /**
+         * 保存已发送的点击事件标记
+         */
+        function saveClickEventsSent(eventsSent) {
+            try {
+                localStorage.setItem(CLICK_EVENTS_SENT_KEY, JSON.stringify(eventsSent));
+            } catch (e) {
+                console.error('Failed to save click events sent:', e);
+            }
+        }
+        
+        /**
+         * 检查并触发点击里程碑事件
+         */
+        function checkAndTriggerMilestones(clickCount) {
+            const eventsSent = loadClickEventsSent();
+            
+            CLICK_MILESTONES.forEach(milestone => {
+                // 如果达到里程碑且尚未发送该事件
+                if (clickCount >= milestone.count && !eventsSent[milestone.event]) {
+                    // 使用 shouldTrackEvent 确保24小时内只发送一次
+                    if (typeof shouldTrackEvent === 'function' && shouldTrackEvent(milestone.event)) {
+                        fbq('trackCustom', milestone.event, {
+                            content_name: 'Ruthless Redemption The Billionaire Ex‘s Second Chance',
+                            content_type: 'chapter',
+                            content_category: 'chapter_navigation',
+                            value: milestone.value,
+                            currency: 'USD',
+                            click_count: clickCount
+                        });
+                        
+                        console.log(`Facebook event sent: ${milestone.event} (${clickCount} clicks, value: $${milestone.value})`);
+                        
+                        // 标记该事件已发送
+                        eventsSent[milestone.event] = true;
+                        saveClickEventsSent(eventsSent);
+                    } else {
+                        console.log(`Facebook event skipped: ${milestone.event} (already sent within 24 hours)`);
+                    }
+                }
+            });
+        }
+        
+        /**
+         * 初始化 Next 按钮点击追踪
+         */
+        function initNextButtonTracking() {
+            // 等待 DOM 加载完成
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', setupClickTracking);
+            } else {
+                setupClickTracking();
+            }
+        }
+        
+        /**
+         * 设置点击追踪
+         */
+        function setupClickTracking() {
+            const nextBtn = document.getElementById('next-chapter');
+            
+            if (!nextBtn) {
+                console.log('Next button not found, click tracking disabled');
+                return;
+            }
+            
+            // 加载当前点击次数
+            let clickCount = loadClickCount();
+            console.log(`Next button click count loaded: ${clickCount} clicks today`);
+            
+            // 页面加载时检查一次（可能之前已经达到里程碑）
+            checkAndTriggerMilestones(clickCount);
+            
+            // 监听 Next 按钮点击
+            nextBtn.addEventListener('click', function(e) {
+                // 增加点击次数
+                clickCount++;
+                saveClickCount(clickCount);
+                
+                console.log(`Next button clicked: ${clickCount} times today`);
+                
+                // 检查并触发相应的里程碑事件
+                checkAndTriggerMilestones(clickCount);
+            });
+        }
+        
+        // 初始化
+        initNextButtonTracking();
+    })();
+    </script>
+    <!-- End Facebook Pixel - Next Button Click Tracking -->
     
     <!-- Tracking Parameter Persistence System -->
     <script>
@@ -2198,37 +2373,37 @@
                 <p>Eleanor tried to walk past her, but Olivia blocked her path. &#34;Where are you rushing off to? Why don’t you join me for some shopping? Or are you too good for that?&#34;</p>
                 <p>Eleanor met her gaze coldly. &#34;I’m afraid I don’t have time for this.&#34;</p>
                 <p>Olivia smirked. &#34;Oh, do you have a secret date? Or is it your lover you’re hiding?&#34;</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_5 -->
-                <div id='div-gpt-ad-1762512054239-0' style='min-width: 300px; min-height: 250px;'>
-                  <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512054239-0'); });
-                  </script>
-                </div>
-                <p>Eleanor’s voice was calm but sharp. &#34;Ms. Davenport, you’re an educated woman, aren’t you?&#34;</p>
-                <p>Olivia blinked, caught off guard. &#34;Of course I am! What’s that supposed to mean?&#34;</p>
-                <p>&#34;Then you should know the consequences of spreading lies. Did your parents and teachers raise you to slander others?&#34; Eleanor’s tone was steady, her eyes locked on Olivia’s.</p>
                 <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_2 -->
                 <div id='div-gpt-ad-1762512094799-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
                     googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512094799-0'); });
                   </script>
                 </div>
+                <p>Eleanor’s voice was calm but sharp. &#34;Ms. Davenport, you’re an educated woman, aren’t you?&#34;</p>
+                <p>Olivia blinked, caught off guard. &#34;Of course I am! What’s that supposed to mean?&#34;</p>
+                <p>&#34;Then you should know the consequences of spreading lies. Did your parents and teachers raise you to slander others?&#34; Eleanor’s tone was steady, her eyes locked on Olivia’s.</p>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_1 -->
+                <div id='div-gpt-ad-1762512074266-0' style='min-width: 300px; min-height: 250px;'>
+                  <script>
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512074266-0'); });
+                  </script>
+                </div>
                 <p>Olivia’s face flushed with anger. &#34;Eleanor Thompson, you have no right to talk down to me! You’re just a nobody from the countryside!&#34;</p>
                 <p>&#34;I didn’t start this,&#34; Eleanor replied coolly. &#34;But since you’re blocking my way, I’ll finish it. Got it?&#34;</p>
                 <p>Olivia’s face turned red, but before she could retort, Isabella hurried over from a nearby store. She grabbed Olivia’s arm, her voice trembling. &#34;Olivia, please, don’t fight with Eleanor.&#34;</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_4 -->
-                <div id='div-gpt-ad-1762512031919-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_4 -->
+                <div id='div-gpt-ad-1762512140538-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512031919-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512140538-0'); });
                   </script>
                 </div>
                 <p>Isabella avoided Eleanor’s gaze, her timid demeanor making it seem like she was the victim of Eleanor’s cruelty. Olivia, however, wasn’t having it. &#34;I can’t stand her! She’s so smug, and she owes everything to you, Isabella! You’re the one who gave up Nathaniel for her!&#34;</p>
                 <p>&#34;Stop it,&#34; Isabella whispered, tugging at Olivia’s arm. She kept her head low as she shuffled toward Eleanor. &#34;I’m sorry, Eleanor. Olivia can be... impulsive. But she’s a good person. Please don’t take it to heart. If it’s not enough, I’ll apologize on her behalf.&#34;</p>
                 <p>This only fueled Olivia’s anger. &#34;Why are you apologizing? She’s the one who started it!&#34;</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_4 -->
-                <div id='div-gpt-ad-1762512140538-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_5 -->
+                <div id='div-gpt-ad-1762512054239-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512140538-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512054239-0'); });
                   </script>
                 </div>
                 <p>Isabella’s voice quivered as she continued, &#34;Olivia, please. Eleanor isn’t well. She was at the hospital this morning...&#34;</p>
@@ -2236,10 +2411,10 @@
                 <p>&#34;The hospital?&#34; Olivia paused, a wicked grin spreading across her face. &#34;Oh, I see. Mrs. Carter must have been at the fertility clinic, right? Poor Nathaniel. Not only did he marry a woman he doesn’t love, but she’s also *barren*!&#34;</p>
                 <p>Eleanor’s heart sank, but she refused to let it show. She straightened her shoulders, her voice steady. &#34;You’re wrong, Olivia. But even if I were, it’s none of your business. Now, if you’ll excuse me, I have better things to do than entertain your petty insults.&#34;</p>
                 <p>With that, Eleanor turned and walked away, leaving Olivia fuming and Isabella staring after her with an unreadable expression.&#34;,</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_3 -->
-                <div id='div-gpt-ad-1762512008111-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_1 -->
+                <div id='div-gpt-ad-1762511964282-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512008111-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762511964282-0'); });
                   </script>
                 </div>
             </div>

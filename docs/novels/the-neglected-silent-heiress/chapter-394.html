@@ -983,13 +983,13 @@
         
         googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_2', [300, 250], 'div-gpt-ad-1762512094799-0').addService(googletag.pubads());
         
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_1', [300, 250], 'div-gpt-ad-1762511964282-0').addService(googletag.pubads());
-        
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_4', [300, 250], 'div-gpt-ad-1762512031919-0').addService(googletag.pubads());
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_5', [300, 250], 'div-gpt-ad-1762512054239-0').addService(googletag.pubads());
         
         googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_4', [300, 250], 'div-gpt-ad-1762512140538-0').addService(googletag.pubads());
         
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_2', [300, 250], 'div-gpt-ad-1762511986518-0').addService(googletag.pubads());
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_3', [300, 250], 'div-gpt-ad-1762512008111-0').addService(googletag.pubads());
+        
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_4', [300, 250], 'div-gpt-ad-1762512031919-0').addService(googletag.pubads());
         
         googletag.pubads().enableSingleRequest();
         googletag.enableServices();
@@ -1228,6 +1228,181 @@
     src="https://www.facebook.com/tr?id=1208668507386707&ev=PageView&noscript=1"
     /></noscript>
     <!-- End Facebook Pixel Code -->
+    
+    <!-- Facebook Pixel - Next Button Click Tracking -->
+    <script>
+    (function() {
+        'use strict';
+        
+        const CLICK_COUNT_KEY = 'fb_next_click_count';
+        const CLICK_DATE_KEY = 'fb_next_click_date';
+        const CLICK_EVENTS_SENT_KEY = 'fb_click_events_sent';
+        
+        // 点击里程碑配置
+        const CLICK_MILESTONES = [
+            { count: 1, event: 'read_c_1', value: 0.01 },
+            { count: 3, event: 'read_c_3', value: 0.03 },
+            { count: 5, event: 'read_c_5', value: 0.05 },
+            { count: 10, event: 'read_c_10', value: 0.10 },
+            { count: 30, event: 'read_c_30', value: 0.15 },
+            { count: 50, event: 'read_c_50', value: 0.20 }
+        ];
+        
+        /**
+         * 获取今天的日期字符串
+         */
+        function getTodayDateString() {
+            return new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD
+        }
+        
+        /**
+         * 加载今日点击次数
+         */
+        function loadClickCount() {
+            try {
+                const storedDate = localStorage.getItem(CLICK_DATE_KEY);
+                const today = getTodayDateString();
+                
+                // 如果是新的一天，重置点击次数和事件标记
+                if (storedDate !== today) {
+                    localStorage.setItem(CLICK_DATE_KEY, today);
+                    localStorage.setItem(CLICK_COUNT_KEY, '0');
+                    localStorage.setItem(CLICK_EVENTS_SENT_KEY, '{}');
+                    return 0;
+                }
+                
+                const stored = localStorage.getItem(CLICK_COUNT_KEY);
+                return stored ? parseInt(stored) : 0;
+            } catch (e) {
+                console.error('Failed to load click count:', e);
+                return 0;
+            }
+        }
+        
+        /**
+         * 保存点击次数
+         */
+        function saveClickCount(count) {
+            try {
+                localStorage.setItem(CLICK_COUNT_KEY, count.toString());
+                localStorage.setItem(CLICK_DATE_KEY, getTodayDateString());
+            } catch (e) {
+                console.error('Failed to save click count:', e);
+            }
+        }
+        
+        /**
+         * 加载已发送的点击事件标记
+         */
+        function loadClickEventsSent() {
+            try {
+                const storedDate = localStorage.getItem(CLICK_DATE_KEY);
+                const today = getTodayDateString();
+                
+                // 如果是新的一天，重置
+                if (storedDate !== today) {
+                    return {};
+                }
+                
+                const stored = localStorage.getItem(CLICK_EVENTS_SENT_KEY);
+                return stored ? JSON.parse(stored) : {};
+            } catch (e) {
+                console.error('Failed to load click events sent:', e);
+                return {};
+            }
+        }
+        
+        /**
+         * 保存已发送的点击事件标记
+         */
+        function saveClickEventsSent(eventsSent) {
+            try {
+                localStorage.setItem(CLICK_EVENTS_SENT_KEY, JSON.stringify(eventsSent));
+            } catch (e) {
+                console.error('Failed to save click events sent:', e);
+            }
+        }
+        
+        /**
+         * 检查并触发点击里程碑事件
+         */
+        function checkAndTriggerMilestones(clickCount) {
+            const eventsSent = loadClickEventsSent();
+            
+            CLICK_MILESTONES.forEach(milestone => {
+                // 如果达到里程碑且尚未发送该事件
+                if (clickCount >= milestone.count && !eventsSent[milestone.event]) {
+                    // 使用 shouldTrackEvent 确保24小时内只发送一次
+                    if (typeof shouldTrackEvent === 'function' && shouldTrackEvent(milestone.event)) {
+                        fbq('trackCustom', milestone.event, {
+                            content_name: 'The Neglected Silent Heiress',
+                            content_type: 'chapter',
+                            content_category: 'chapter_navigation',
+                            value: milestone.value,
+                            currency: 'USD',
+                            click_count: clickCount
+                        });
+                        
+                        console.log(`Facebook event sent: ${milestone.event} (${clickCount} clicks, value: $${milestone.value})`);
+                        
+                        // 标记该事件已发送
+                        eventsSent[milestone.event] = true;
+                        saveClickEventsSent(eventsSent);
+                    } else {
+                        console.log(`Facebook event skipped: ${milestone.event} (already sent within 24 hours)`);
+                    }
+                }
+            });
+        }
+        
+        /**
+         * 初始化 Next 按钮点击追踪
+         */
+        function initNextButtonTracking() {
+            // 等待 DOM 加载完成
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', setupClickTracking);
+            } else {
+                setupClickTracking();
+            }
+        }
+        
+        /**
+         * 设置点击追踪
+         */
+        function setupClickTracking() {
+            const nextBtn = document.getElementById('next-chapter');
+            
+            if (!nextBtn) {
+                console.log('Next button not found, click tracking disabled');
+                return;
+            }
+            
+            // 加载当前点击次数
+            let clickCount = loadClickCount();
+            console.log(`Next button click count loaded: ${clickCount} clicks today`);
+            
+            // 页面加载时检查一次（可能之前已经达到里程碑）
+            checkAndTriggerMilestones(clickCount);
+            
+            // 监听 Next 按钮点击
+            nextBtn.addEventListener('click', function(e) {
+                // 增加点击次数
+                clickCount++;
+                saveClickCount(clickCount);
+                
+                console.log(`Next button clicked: ${clickCount} times today`);
+                
+                // 检查并触发相应的里程碑事件
+                checkAndTriggerMilestones(clickCount);
+            });
+        }
+        
+        // 初始化
+        initNextButtonTracking();
+    })();
+    </script>
+    <!-- End Facebook Pixel - Next Button Click Tracking -->
     
     <!-- Tracking Parameter Persistence System -->
     <script>
@@ -2205,26 +2380,26 @@
                 </div>
                 <p>Liam&#39;s pulse roared in his ears. He hastily wrapped the sheet around his waist and lunged forward. &#34;Olivia, no!&#34;</p>
                 <p>&#34;Stay back!&#34; she commanded, her voice breaking as tears streamed down her face. &#34;Do you think I&#39;m calm? My reputation is everything to me! I&#39;m in agony because the man I gave myself to isn&#39;t the one I love. I didn&#39;t even know you before tonight! I refuse to be remembered as some wanton woman. If this is my fate, then I&#39;d rather not live at all.&#34;</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_1 -->
-                <div id='div-gpt-ad-1762511964282-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_5 -->
+                <div id='div-gpt-ad-1762512054239-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762511964282-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512054239-0'); });
                   </script>
                 </div>
                 <p>The raw despair in her eyes terrified Liam. He could see she was moments away from making an irreversible decision.</p>
                 <p>In a burst of panic, the truth spilled from his lips: &#34;How can you say you don&#39;t know me? I&#39;m the father of your child! Your ex-husband! This only happened because of the poison - if I&#39;d had the antidote, I never would have... If you hate me that much, I&#39;ll vanish from your life forever. Just please, put the glass down!&#34;</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_4 -->
-                <div id='div-gpt-ad-1762512031919-0' style='min-width: 300px; min-height: 250px;'>
-                  <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512031919-0'); });
-                  </script>
-                </div>
-                <p>Olivia went completely still at his confession.</p>
-                <p>Seizing the moment, Liam carefully approached and pried the crystal shard from her grasp. As he did, Olivia lifted her gaze - and to his shock, all traces of anguish had vanished from her expression.</p>
                 <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_4 -->
                 <div id='div-gpt-ad-1762512140538-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
                     googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512140538-0'); });
+                  </script>
+                </div>
+                <p>Olivia went completely still at his confession.</p>
+                <p>Seizing the moment, Liam carefully approached and pried the crystal shard from her grasp. As he did, Olivia lifted her gaze - and to his shock, all traces of anguish had vanished from her expression.</p>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_3 -->
+                <div id='div-gpt-ad-1762512008111-0' style='min-width: 300px; min-height: 250px;'>
+                  <script>
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512008111-0'); });
                   </script>
                 </div>
                 <p>A cold, knowing smile curved her lips. &#34;I knew all along,&#34; she said, her voice dripping with icy amusement. &#34;I was just waiting to see how long it would take you to admit the truth.&#34;</p>
@@ -2232,10 +2407,10 @@
                 <p>Olivia exhaled sharply. &#34;Your death story was convincing. I actually believed you were gone.&#34; Her gaze turned piercing. &#34;But just now... I recognized you.&#34;</p>
                 <p>She offered no further explanation. The truth was simpler than Liam could imagine - she&#39;d known him by the way her body responded to his touch, by the way her heart had recognized its other half even when her mind protested.</p>
                 <p>Olivia had loved Liam Blackwood for as long as she could remember. Some bonds even amnesia couldn&#39;t break.</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_2 -->
-                <div id='div-gpt-ad-1762511986518-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_4 -->
+                <div id='div-gpt-ad-1762512031919-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762511986518-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512031919-0'); });
                   </script>
                 </div>
             </div>

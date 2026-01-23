@@ -981,15 +981,15 @@
       googletag.cmd.push(function() {
         // Define ad slots for the chapter page (randomly selected 5 out of 10)
         
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_4', [300, 250], 'div-gpt-ad-1762512031919-0').addService(googletag.pubads());
-        
         googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_5', [300, 250], 'div-gpt-ad-1762512161163-0').addService(googletag.pubads());
         
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_2', [300, 250], 'div-gpt-ad-1762512094799-0').addService(googletag.pubads());
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_1', [300, 250], 'div-gpt-ad-1762511964282-0').addService(googletag.pubads());
         
         googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_2', [300, 250], 'div-gpt-ad-1762511986518-0').addService(googletag.pubads());
         
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_1', [300, 250], 'div-gpt-ad-1762511964282-0').addService(googletag.pubads());
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_1', [300, 250], 'div-gpt-ad-1762512074266-0').addService(googletag.pubads());
+        
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_4', [300, 250], 'div-gpt-ad-1762512140538-0').addService(googletag.pubads());
         
         googletag.pubads().enableSingleRequest();
         googletag.enableServices();
@@ -1228,6 +1228,181 @@
     src="https://www.facebook.com/tr?id=1208668507386707&ev=PageView&noscript=1"
     /></noscript>
     <!-- End Facebook Pixel Code -->
+    
+    <!-- Facebook Pixel - Next Button Click Tracking -->
+    <script>
+    (function() {
+        'use strict';
+        
+        const CLICK_COUNT_KEY = 'fb_next_click_count';
+        const CLICK_DATE_KEY = 'fb_next_click_date';
+        const CLICK_EVENTS_SENT_KEY = 'fb_click_events_sent';
+        
+        // 点击里程碑配置
+        const CLICK_MILESTONES = [
+            { count: 1, event: 'read_c_1', value: 0.01 },
+            { count: 3, event: 'read_c_3', value: 0.03 },
+            { count: 5, event: 'read_c_5', value: 0.05 },
+            { count: 10, event: 'read_c_10', value: 0.10 },
+            { count: 30, event: 'read_c_30', value: 0.15 },
+            { count: 50, event: 'read_c_50', value: 0.20 }
+        ];
+        
+        /**
+         * 获取今天的日期字符串
+         */
+        function getTodayDateString() {
+            return new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD
+        }
+        
+        /**
+         * 加载今日点击次数
+         */
+        function loadClickCount() {
+            try {
+                const storedDate = localStorage.getItem(CLICK_DATE_KEY);
+                const today = getTodayDateString();
+                
+                // 如果是新的一天，重置点击次数和事件标记
+                if (storedDate !== today) {
+                    localStorage.setItem(CLICK_DATE_KEY, today);
+                    localStorage.setItem(CLICK_COUNT_KEY, '0');
+                    localStorage.setItem(CLICK_EVENTS_SENT_KEY, '{}');
+                    return 0;
+                }
+                
+                const stored = localStorage.getItem(CLICK_COUNT_KEY);
+                return stored ? parseInt(stored) : 0;
+            } catch (e) {
+                console.error('Failed to load click count:', e);
+                return 0;
+            }
+        }
+        
+        /**
+         * 保存点击次数
+         */
+        function saveClickCount(count) {
+            try {
+                localStorage.setItem(CLICK_COUNT_KEY, count.toString());
+                localStorage.setItem(CLICK_DATE_KEY, getTodayDateString());
+            } catch (e) {
+                console.error('Failed to save click count:', e);
+            }
+        }
+        
+        /**
+         * 加载已发送的点击事件标记
+         */
+        function loadClickEventsSent() {
+            try {
+                const storedDate = localStorage.getItem(CLICK_DATE_KEY);
+                const today = getTodayDateString();
+                
+                // 如果是新的一天，重置
+                if (storedDate !== today) {
+                    return {};
+                }
+                
+                const stored = localStorage.getItem(CLICK_EVENTS_SENT_KEY);
+                return stored ? JSON.parse(stored) : {};
+            } catch (e) {
+                console.error('Failed to load click events sent:', e);
+                return {};
+            }
+        }
+        
+        /**
+         * 保存已发送的点击事件标记
+         */
+        function saveClickEventsSent(eventsSent) {
+            try {
+                localStorage.setItem(CLICK_EVENTS_SENT_KEY, JSON.stringify(eventsSent));
+            } catch (e) {
+                console.error('Failed to save click events sent:', e);
+            }
+        }
+        
+        /**
+         * 检查并触发点击里程碑事件
+         */
+        function checkAndTriggerMilestones(clickCount) {
+            const eventsSent = loadClickEventsSent();
+            
+            CLICK_MILESTONES.forEach(milestone => {
+                // 如果达到里程碑且尚未发送该事件
+                if (clickCount >= milestone.count && !eventsSent[milestone.event]) {
+                    // 使用 shouldTrackEvent 确保24小时内只发送一次
+                    if (typeof shouldTrackEvent === 'function' && shouldTrackEvent(milestone.event)) {
+                        fbq('trackCustom', milestone.event, {
+                            content_name: 'CEO&#39;s Ex-Wife Strikes Back',
+                            content_type: 'chapter',
+                            content_category: 'chapter_navigation',
+                            value: milestone.value,
+                            currency: 'USD',
+                            click_count: clickCount
+                        });
+                        
+                        console.log(`Facebook event sent: ${milestone.event} (${clickCount} clicks, value: $${milestone.value})`);
+                        
+                        // 标记该事件已发送
+                        eventsSent[milestone.event] = true;
+                        saveClickEventsSent(eventsSent);
+                    } else {
+                        console.log(`Facebook event skipped: ${milestone.event} (already sent within 24 hours)`);
+                    }
+                }
+            });
+        }
+        
+        /**
+         * 初始化 Next 按钮点击追踪
+         */
+        function initNextButtonTracking() {
+            // 等待 DOM 加载完成
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', setupClickTracking);
+            } else {
+                setupClickTracking();
+            }
+        }
+        
+        /**
+         * 设置点击追踪
+         */
+        function setupClickTracking() {
+            const nextBtn = document.getElementById('next-chapter');
+            
+            if (!nextBtn) {
+                console.log('Next button not found, click tracking disabled');
+                return;
+            }
+            
+            // 加载当前点击次数
+            let clickCount = loadClickCount();
+            console.log(`Next button click count loaded: ${clickCount} clicks today`);
+            
+            // 页面加载时检查一次（可能之前已经达到里程碑）
+            checkAndTriggerMilestones(clickCount);
+            
+            // 监听 Next 按钮点击
+            nextBtn.addEventListener('click', function(e) {
+                // 增加点击次数
+                clickCount++;
+                saveClickCount(clickCount);
+                
+                console.log(`Next button clicked: ${clickCount} times today`);
+                
+                // 检查并触发相应的里程碑事件
+                checkAndTriggerMilestones(clickCount);
+            });
+        }
+        
+        // 初始化
+        initNextButtonTracking();
+    })();
+    </script>
+    <!-- End Facebook Pixel - Next Button Click Tracking -->
     
     <!-- Tracking Parameter Persistence System -->
     <script>
@@ -2199,40 +2374,40 @@
                 <p>&#34;Lily insisted this place was charming,&#34; Gregory said with a knowing grin. &#34;Though I didn’t realize it was exclusively for couples.&#34; He barely suppressed a laugh.</p>
                 <p>They had all grown up together, so formalities were unnecessary. Nathan shot Tristan a glare, his jaw tightening.</p>
                 <p>Gregory found the situation amusing—Nathan was rarely caught off guard. Without waiting for an invitation, he pulled out a chair, seating his date across from Nathan. Lily’s eyes lingered on Nathan’s striking features, her pulse quickening, though she dared not speak a word with Gregory watching.</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_4 -->
-                <div id='div-gpt-ad-1762512031919-0' style='min-width: 300px; min-height: 250px;'>
-                  <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512031919-0'); });
-                  </script>
-                </div>
-                <p>&#34;Hey, Blackwood,&#34; Gregory drawled, tilting his chin toward the dance floor. &#34;Isn’t that your scheming ex?&#34;</p>
-                <p>The music shifted to something slow and dreamy. Sebastian Hart guided Evelyn Sinclair onto the floor, murmuring, &#34;Just one dance. Since we’re here, why not enjoy the atmosphere?&#34;</p>
-                <p>Before Evelyn could protest, the melody swelled, making a refusal impossible. Fine. It’s just a dance. The rhythm picked up, and after a brief misstep, they fell into perfect sync, their movements fluid and mesmerizing. The surrounding couples paused to watch—the man devastatingly handsome, the woman radiant, her dress swirling like liquid silver.</p>
-                <p>As the song ended, Sebastian caught sight of a familiar figure in the shadows. In one swift motion, he spun Evelyn into his arms, shielding her from view, and dipped her low—creating the illusion of a passionate kiss.</p>
                 <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_5 -->
                 <div id='div-gpt-ad-1762512161163-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
                     googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512161163-0'); });
                   </script>
                 </div>
+                <p>&#34;Hey, Blackwood,&#34; Gregory drawled, tilting his chin toward the dance floor. &#34;Isn’t that your scheming ex?&#34;</p>
+                <p>The music shifted to something slow and dreamy. Sebastian Hart guided Evelyn Sinclair onto the floor, murmuring, &#34;Just one dance. Since we’re here, why not enjoy the atmosphere?&#34;</p>
+                <p>Before Evelyn could protest, the melody swelled, making a refusal impossible. Fine. It’s just a dance. The rhythm picked up, and after a brief misstep, they fell into perfect sync, their movements fluid and mesmerizing. The surrounding couples paused to watch—the man devastatingly handsome, the woman radiant, her dress swirling like liquid silver.</p>
+                <p>As the song ended, Sebastian caught sight of a familiar figure in the shadows. In one swift motion, he spun Evelyn into his arms, shielding her from view, and dipped her low—creating the illusion of a passionate kiss.</p>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_1 -->
+                <div id='div-gpt-ad-1762511964282-0' style='min-width: 300px; min-height: 250px;'>
+                  <script>
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762511964282-0'); });
+                  </script>
+                </div>
                 <p>The restaurant erupted in applause.</p>
                 <p>Before Evelyn could react, Sebastian chuckled and whisked her outside.</p>
                 <p>In the corner, Nathan’s expression darkened.</p>
                 <p>Tristan watched the departing pair with a derisive snort. &#34;Overrated. Sure, they danced well, but it’s not like they’re professionals.&#34; He’d never admit Evelyn had talent. &#34;That gold-digger moved on fast, didn’t she?&#34;</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_2 -->
-                <div id='div-gpt-ad-1762512094799-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_2 -->
+                <div id='div-gpt-ad-1762511986518-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512094799-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762511986518-0'); });
                   </script>
                 </div>
                 <p>Nathan’s gaze snapped to Gregory. &#34;Scheming ex? Is that what you call her?&#34;</p>
                 <p>Gregory shrugged. &#34;What else? She trapped you for your money. We were all relieved when you divorced her.&#34;</p>
                 <p>Nathan’s knuckles whitened around his glass.</p>
                 <p>Unaware, Gregory continued, &#34;Remember that night we got wasted after your wedding? She called at 2 AM, demanding to know where you were. I told her to back off—marrying you was privilege enough for someone like her.&#34;</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_2 -->
-                <div id='div-gpt-ad-1762511986518-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_1 -->
+                <div id='div-gpt-ad-1762512074266-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762511986518-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512074266-0'); });
                   </script>
                 </div>
                 <p>A glass slammed onto the table. The laughter died instantly.</p>
@@ -2241,10 +2416,10 @@
                 <p>Lily trembled, realizing she’d misjudged the dynamics entirely.</p>
                 <p>&#34;Blackwood—&#34; Gregory looked to Tristan for help.</p>
                 <p>Before Tristan could speak, Nathan leaned forward, his voice lethally calm. &#34;Gregory, since you’re so invested in my affairs, why don’t you run the Blackwood family?&#34;</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_1 -->
-                <div id='div-gpt-ad-1762511964282-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_4 -->
+                <div id='div-gpt-ad-1762512140538-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762511964282-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512140538-0'); });
                   </script>
                 </div>
             </div>

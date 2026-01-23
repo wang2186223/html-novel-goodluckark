@@ -983,13 +983,13 @@
         
         googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_4', [300, 250], 'div-gpt-ad-1762512031919-0').addService(googletag.pubads());
         
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_3', [300, 250], 'div-gpt-ad-1762512008111-0').addService(googletag.pubads());
-        
         googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_4', [300, 250], 'div-gpt-ad-1762512140538-0').addService(googletag.pubads());
         
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_1', [300, 250], 'div-gpt-ad-1762511964282-0').addService(googletag.pubads());
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_3', [300, 250], 'div-gpt-ad-1762512119068-0').addService(googletag.pubads());
         
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_5', [300, 250], 'div-gpt-ad-1762512054239-0').addService(googletag.pubads());
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_3', [300, 250], 'div-gpt-ad-1762512008111-0').addService(googletag.pubads());
+        
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_1', [300, 250], 'div-gpt-ad-1762511964282-0').addService(googletag.pubads());
         
         googletag.pubads().enableSingleRequest();
         googletag.enableServices();
@@ -1228,6 +1228,181 @@
     src="https://www.facebook.com/tr?id=1208668507386707&ev=PageView&noscript=1"
     /></noscript>
     <!-- End Facebook Pixel Code -->
+    
+    <!-- Facebook Pixel - Next Button Click Tracking -->
+    <script>
+    (function() {
+        'use strict';
+        
+        const CLICK_COUNT_KEY = 'fb_next_click_count';
+        const CLICK_DATE_KEY = 'fb_next_click_date';
+        const CLICK_EVENTS_SENT_KEY = 'fb_click_events_sent';
+        
+        // 点击里程碑配置
+        const CLICK_MILESTONES = [
+            { count: 1, event: 'read_c_1', value: 0.01 },
+            { count: 3, event: 'read_c_3', value: 0.03 },
+            { count: 5, event: 'read_c_5', value: 0.05 },
+            { count: 10, event: 'read_c_10', value: 0.10 },
+            { count: 30, event: 'read_c_30', value: 0.15 },
+            { count: 50, event: 'read_c_50', value: 0.20 }
+        ];
+        
+        /**
+         * 获取今天的日期字符串
+         */
+        function getTodayDateString() {
+            return new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD
+        }
+        
+        /**
+         * 加载今日点击次数
+         */
+        function loadClickCount() {
+            try {
+                const storedDate = localStorage.getItem(CLICK_DATE_KEY);
+                const today = getTodayDateString();
+                
+                // 如果是新的一天，重置点击次数和事件标记
+                if (storedDate !== today) {
+                    localStorage.setItem(CLICK_DATE_KEY, today);
+                    localStorage.setItem(CLICK_COUNT_KEY, '0');
+                    localStorage.setItem(CLICK_EVENTS_SENT_KEY, '{}');
+                    return 0;
+                }
+                
+                const stored = localStorage.getItem(CLICK_COUNT_KEY);
+                return stored ? parseInt(stored) : 0;
+            } catch (e) {
+                console.error('Failed to load click count:', e);
+                return 0;
+            }
+        }
+        
+        /**
+         * 保存点击次数
+         */
+        function saveClickCount(count) {
+            try {
+                localStorage.setItem(CLICK_COUNT_KEY, count.toString());
+                localStorage.setItem(CLICK_DATE_KEY, getTodayDateString());
+            } catch (e) {
+                console.error('Failed to save click count:', e);
+            }
+        }
+        
+        /**
+         * 加载已发送的点击事件标记
+         */
+        function loadClickEventsSent() {
+            try {
+                const storedDate = localStorage.getItem(CLICK_DATE_KEY);
+                const today = getTodayDateString();
+                
+                // 如果是新的一天，重置
+                if (storedDate !== today) {
+                    return {};
+                }
+                
+                const stored = localStorage.getItem(CLICK_EVENTS_SENT_KEY);
+                return stored ? JSON.parse(stored) : {};
+            } catch (e) {
+                console.error('Failed to load click events sent:', e);
+                return {};
+            }
+        }
+        
+        /**
+         * 保存已发送的点击事件标记
+         */
+        function saveClickEventsSent(eventsSent) {
+            try {
+                localStorage.setItem(CLICK_EVENTS_SENT_KEY, JSON.stringify(eventsSent));
+            } catch (e) {
+                console.error('Failed to save click events sent:', e);
+            }
+        }
+        
+        /**
+         * 检查并触发点击里程碑事件
+         */
+        function checkAndTriggerMilestones(clickCount) {
+            const eventsSent = loadClickEventsSent();
+            
+            CLICK_MILESTONES.forEach(milestone => {
+                // 如果达到里程碑且尚未发送该事件
+                if (clickCount >= milestone.count && !eventsSent[milestone.event]) {
+                    // 使用 shouldTrackEvent 确保24小时内只发送一次
+                    if (typeof shouldTrackEvent === 'function' && shouldTrackEvent(milestone.event)) {
+                        fbq('trackCustom', milestone.event, {
+                            content_name: 'Marriage By Contract with a Billionaire',
+                            content_type: 'chapter',
+                            content_category: 'chapter_navigation',
+                            value: milestone.value,
+                            currency: 'USD',
+                            click_count: clickCount
+                        });
+                        
+                        console.log(`Facebook event sent: ${milestone.event} (${clickCount} clicks, value: $${milestone.value})`);
+                        
+                        // 标记该事件已发送
+                        eventsSent[milestone.event] = true;
+                        saveClickEventsSent(eventsSent);
+                    } else {
+                        console.log(`Facebook event skipped: ${milestone.event} (already sent within 24 hours)`);
+                    }
+                }
+            });
+        }
+        
+        /**
+         * 初始化 Next 按钮点击追踪
+         */
+        function initNextButtonTracking() {
+            // 等待 DOM 加载完成
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', setupClickTracking);
+            } else {
+                setupClickTracking();
+            }
+        }
+        
+        /**
+         * 设置点击追踪
+         */
+        function setupClickTracking() {
+            const nextBtn = document.getElementById('next-chapter');
+            
+            if (!nextBtn) {
+                console.log('Next button not found, click tracking disabled');
+                return;
+            }
+            
+            // 加载当前点击次数
+            let clickCount = loadClickCount();
+            console.log(`Next button click count loaded: ${clickCount} clicks today`);
+            
+            // 页面加载时检查一次（可能之前已经达到里程碑）
+            checkAndTriggerMilestones(clickCount);
+            
+            // 监听 Next 按钮点击
+            nextBtn.addEventListener('click', function(e) {
+                // 增加点击次数
+                clickCount++;
+                saveClickCount(clickCount);
+                
+                console.log(`Next button clicked: ${clickCount} times today`);
+                
+                // 检查并触发相应的里程碑事件
+                checkAndTriggerMilestones(clickCount);
+            });
+        }
+        
+        // 初始化
+        initNextButtonTracking();
+    })();
+    </script>
+    <!-- End Facebook Pixel - Next Button Click Tracking -->
     
     <!-- Tracking Parameter Persistence System -->
     <script>
@@ -2209,30 +2384,30 @@
                 <p>Alexander moved with precision, his tone softening as he turned back to his daughter, his anger melting away. He gently wiped the tears from her cheeks, his hands tender as he comforted her.</p>
                 <p>&#34;Shh... It&#39;s okay. Daddy&#39;s here. Stop crying now.&#34;</p>
                 <p>Viola&#39;s sobs slowly quieted, and her face softened into a contented pout.Alexander stood, cradling her against him, his arms protective and firm as he walked toward his office. James followed quietly behind them, the weight of the aborted meeting hanging over him.</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_3 -->
-                <div id='div-gpt-ad-1762512008111-0' style='min-width: 300px; min-height: 250px;'>
-                  <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512008111-0'); });
-                  </script>
-                </div>
-                <p>As soon as the door to Alexander&#39;s office clicked shut. Alexander adjusted his daughter in his arms, the intensity of the meeting lingering in his eyes despite his apparent calm. His gaze shifted to James.</p>
-                <p>&#34;What&#39;s the situation?&#34; he asked, his tone authoritative but distracted by his daughter&#39;s innocent presence.</p>
-                <p>James hesitated,glancing at Viola. The project they had been discussing was urgent-critical. even-but at this moment, nothing seemed to matter more than the child nestled in Alexander&#39;s arms.</p>
-                <p>&#34;The meeting we just canceled, sir... It was crucial. We need to submit the finalized project plan to the government by tomorrow.&#34; Viola&#39;s large eyes, innocent yet sharp, looked up at James, as if understanding the gravity of the situation. She&#39;d been the cause of the disruption. yet her father&#39;s focus was unwavering. It was as if nothing could deter him from his commitments. Alexander nodded, still holding Viola close. &#34;The project from the first presentation will suffice. Send that to thegovernment tomorrow.&#34;</p>
                 <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_4 -->
                 <div id='div-gpt-ad-1762512140538-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
                     googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512140538-0'); });
                   </script>
                 </div>
+                <p>As soon as the door to Alexander&#39;s office clicked shut. Alexander adjusted his daughter in his arms, the intensity of the meeting lingering in his eyes despite his apparent calm. His gaze shifted to James.</p>
+                <p>&#34;What&#39;s the situation?&#34; he asked, his tone authoritative but distracted by his daughter&#39;s innocent presence.</p>
+                <p>James hesitated,glancing at Viola. The project they had been discussing was urgent-critical. even-but at this moment, nothing seemed to matter more than the child nestled in Alexander&#39;s arms.</p>
+                <p>&#34;The meeting we just canceled, sir... It was crucial. We need to submit the finalized project plan to the government by tomorrow.&#34; Viola&#39;s large eyes, innocent yet sharp, looked up at James, as if understanding the gravity of the situation. She&#39;d been the cause of the disruption. yet her father&#39;s focus was unwavering. It was as if nothing could deter him from his commitments. Alexander nodded, still holding Viola close. &#34;The project from the first presentation will suffice. Send that to thegovernment tomorrow.&#34;</p>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_3 -->
+                <div id='div-gpt-ad-1762512119068-0' style='min-width: 300px; min-height: 250px;'>
+                  <script>
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512119068-0'); });
+                  </script>
+                </div>
                 <p>James exhaled in relief. &#34;Yes, sir. I&#39;ll make sure it gets done.&#34;</p>
                 <p>With the weight of the decision lifted, James stepped back, preparing to exit the office. Alexander&#39;s attention, however, was now entirely focused on his daughter, his icy demeanor melting in her presence.</p>
                 <p>Viola had barely settled on the couch before Alexander&#39;s voice broke the quiet again.</p>
                 <p>&#34;You need to stay there for a while, alright?&#34; he said gently, motioning to the couch where an array of treats awaited her.</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_1 -->
-                <div id='div-gpt-ad-1762511964282-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_3 -->
+                <div id='div-gpt-ad-1762512008111-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762511964282-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512008111-0'); });
                   </script>
                 </div>
                 <p>Viola glanced at the treats, her small face scrunching in indecision. &#34;Only if you promise to take me to the airport to pick up Mommy,&#34; she bargained,her voice sweet but filled with the kind of quiet power only a child could possess.</p>
@@ -2240,10 +2415,10 @@
                 <p>Her lip began to quiver, and tears pooled in her eyes. Alexander,despite himself, relented. &#34;Alright, I&#39;ll take you.&#34;</p>
                 <p>Viola&#39;s face lit up with triumph, and she jumped into his arms. planting a kiss on his cheek. &#34;Yay!&#34; A rare, soft smile touched Alexander&#39;s lips as he kissed her forehead.He set her down gently and watched as she made her way to the couch,already excited by the promise of treats. For a moment, the office was still. The man who commanded millions,whose every decision rippled through the business world,was now lost in the simple joy of a child&#39;s smile.</p>
                 <p>As Viola munched happily on her snacks, Alexander turned back to his work. The documents on his desk were a mountain, demanding his attention, yet somehow, with Viola nearby, the burden seemed lighter. He was Alexander Kane-the cold,calculating CEO, a man of great power-but in this moment, he was just a father, quietly balancing the weight of the world with the weight of love.</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_5 -->
-                <div id='div-gpt-ad-1762512054239-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_1 -->
+                <div id='div-gpt-ad-1762511964282-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512054239-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762511964282-0'); });
                   </script>
                 </div>
             </div>

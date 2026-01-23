@@ -981,15 +981,15 @@
       googletag.cmd.push(function() {
         // Define ad slots for the chapter page (randomly selected 5 out of 10)
         
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_3', [300, 250], 'div-gpt-ad-1762512119068-0').addService(googletag.pubads());
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_5', [300, 250], 'div-gpt-ad-1762512054239-0').addService(googletag.pubads());
+        
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_3', [300, 250], 'div-gpt-ad-1762512008111-0').addService(googletag.pubads());
         
         googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_1', [300, 250], 'div-gpt-ad-1762512074266-0').addService(googletag.pubads());
         
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_2', [300, 250], 'div-gpt-ad-1762511986518-0').addService(googletag.pubads());
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_1', [300, 250], 'div-gpt-ad-1762511964282-0').addService(googletag.pubads());
         
         googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_4', [300, 250], 'div-gpt-ad-1762512031919-0').addService(googletag.pubads());
-        
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_3', [300, 250], 'div-gpt-ad-1762512008111-0').addService(googletag.pubads());
         
         googletag.pubads().enableSingleRequest();
         googletag.enableServices();
@@ -1228,6 +1228,181 @@
     src="https://www.facebook.com/tr?id=1208668507386707&ev=PageView&noscript=1"
     /></noscript>
     <!-- End Facebook Pixel Code -->
+    
+    <!-- Facebook Pixel - Next Button Click Tracking -->
+    <script>
+    (function() {
+        'use strict';
+        
+        const CLICK_COUNT_KEY = 'fb_next_click_count';
+        const CLICK_DATE_KEY = 'fb_next_click_date';
+        const CLICK_EVENTS_SENT_KEY = 'fb_click_events_sent';
+        
+        // 点击里程碑配置
+        const CLICK_MILESTONES = [
+            { count: 1, event: 'read_c_1', value: 0.01 },
+            { count: 3, event: 'read_c_3', value: 0.03 },
+            { count: 5, event: 'read_c_5', value: 0.05 },
+            { count: 10, event: 'read_c_10', value: 0.10 },
+            { count: 30, event: 'read_c_30', value: 0.15 },
+            { count: 50, event: 'read_c_50', value: 0.20 }
+        ];
+        
+        /**
+         * 获取今天的日期字符串
+         */
+        function getTodayDateString() {
+            return new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD
+        }
+        
+        /**
+         * 加载今日点击次数
+         */
+        function loadClickCount() {
+            try {
+                const storedDate = localStorage.getItem(CLICK_DATE_KEY);
+                const today = getTodayDateString();
+                
+                // 如果是新的一天，重置点击次数和事件标记
+                if (storedDate !== today) {
+                    localStorage.setItem(CLICK_DATE_KEY, today);
+                    localStorage.setItem(CLICK_COUNT_KEY, '0');
+                    localStorage.setItem(CLICK_EVENTS_SENT_KEY, '{}');
+                    return 0;
+                }
+                
+                const stored = localStorage.getItem(CLICK_COUNT_KEY);
+                return stored ? parseInt(stored) : 0;
+            } catch (e) {
+                console.error('Failed to load click count:', e);
+                return 0;
+            }
+        }
+        
+        /**
+         * 保存点击次数
+         */
+        function saveClickCount(count) {
+            try {
+                localStorage.setItem(CLICK_COUNT_KEY, count.toString());
+                localStorage.setItem(CLICK_DATE_KEY, getTodayDateString());
+            } catch (e) {
+                console.error('Failed to save click count:', e);
+            }
+        }
+        
+        /**
+         * 加载已发送的点击事件标记
+         */
+        function loadClickEventsSent() {
+            try {
+                const storedDate = localStorage.getItem(CLICK_DATE_KEY);
+                const today = getTodayDateString();
+                
+                // 如果是新的一天，重置
+                if (storedDate !== today) {
+                    return {};
+                }
+                
+                const stored = localStorage.getItem(CLICK_EVENTS_SENT_KEY);
+                return stored ? JSON.parse(stored) : {};
+            } catch (e) {
+                console.error('Failed to load click events sent:', e);
+                return {};
+            }
+        }
+        
+        /**
+         * 保存已发送的点击事件标记
+         */
+        function saveClickEventsSent(eventsSent) {
+            try {
+                localStorage.setItem(CLICK_EVENTS_SENT_KEY, JSON.stringify(eventsSent));
+            } catch (e) {
+                console.error('Failed to save click events sent:', e);
+            }
+        }
+        
+        /**
+         * 检查并触发点击里程碑事件
+         */
+        function checkAndTriggerMilestones(clickCount) {
+            const eventsSent = loadClickEventsSent();
+            
+            CLICK_MILESTONES.forEach(milestone => {
+                // 如果达到里程碑且尚未发送该事件
+                if (clickCount >= milestone.count && !eventsSent[milestone.event]) {
+                    // 使用 shouldTrackEvent 确保24小时内只发送一次
+                    if (typeof shouldTrackEvent === 'function' && shouldTrackEvent(milestone.event)) {
+                        fbq('trackCustom', milestone.event, {
+                            content_name: 'The Billionaire&#39;s Sudden Bride',
+                            content_type: 'chapter',
+                            content_category: 'chapter_navigation',
+                            value: milestone.value,
+                            currency: 'USD',
+                            click_count: clickCount
+                        });
+                        
+                        console.log(`Facebook event sent: ${milestone.event} (${clickCount} clicks, value: $${milestone.value})`);
+                        
+                        // 标记该事件已发送
+                        eventsSent[milestone.event] = true;
+                        saveClickEventsSent(eventsSent);
+                    } else {
+                        console.log(`Facebook event skipped: ${milestone.event} (already sent within 24 hours)`);
+                    }
+                }
+            });
+        }
+        
+        /**
+         * 初始化 Next 按钮点击追踪
+         */
+        function initNextButtonTracking() {
+            // 等待 DOM 加载完成
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', setupClickTracking);
+            } else {
+                setupClickTracking();
+            }
+        }
+        
+        /**
+         * 设置点击追踪
+         */
+        function setupClickTracking() {
+            const nextBtn = document.getElementById('next-chapter');
+            
+            if (!nextBtn) {
+                console.log('Next button not found, click tracking disabled');
+                return;
+            }
+            
+            // 加载当前点击次数
+            let clickCount = loadClickCount();
+            console.log(`Next button click count loaded: ${clickCount} clicks today`);
+            
+            // 页面加载时检查一次（可能之前已经达到里程碑）
+            checkAndTriggerMilestones(clickCount);
+            
+            // 监听 Next 按钮点击
+            nextBtn.addEventListener('click', function(e) {
+                // 增加点击次数
+                clickCount++;
+                saveClickCount(clickCount);
+                
+                console.log(`Next button clicked: ${clickCount} times today`);
+                
+                // 检查并触发相应的里程碑事件
+                checkAndTriggerMilestones(clickCount);
+            });
+        }
+        
+        // 初始化
+        initNextButtonTracking();
+    })();
+    </script>
+    <!-- End Facebook Pixel - Next Button Click Tracking -->
     
     <!-- Tracking Parameter Persistence System -->
     <script>
@@ -2199,50 +2374,50 @@
                 <p>&#34;Nonsense! Brandon, you must stay. Summer just got back from managing Fortune Corp&#39;s European division. She&#39;s still adjusting to the time difference, aren&#39;t you,dear?&#34;</p>
                 <p>Brandon&#39;s dark eyes flickered to my face, and I fought the urge to fidget under his scrutiny. &#34;Miss Taylor seems rather surprised to see me here.&#34;</p>
                 <p>&#34;To be honest, Mr. Stark,&#34; I couldn&#39;t keep the edge from my voice, &#34;finding out you&#39;re my grandfather&#39;s student is... unexpected.&#34;</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_3 -->
-                <div id='div-gpt-ad-1762512119068-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_5 -->
+                <div id='div-gpt-ad-1762512054239-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512119068-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512054239-0'); });
                   </script>
                 </div>
                 <p>One corner of his mouth lifted in that infuriating half-smile. &#34;Do you think we have any reason to deceive you about this?&#34;</p>
                 <p>&#34;Brandon,&#34; Grandpa cut in before I could respond, his voice carrying a hint of pride, &#34;this is the granddaughter I&#39;ve mentioned so often.She followed in your footsteps at Columbia, you know. Graduated with honors,and now she&#39;s already an Executive Director at Fortune Corp.&#34;</p>
                 <p>I wanted to sink into the leather armchair and disappear. *Was Grandpa actually bragging about me to Brandon Stark?* The same Brandon Stark who&#39;d seen me at my absolute worst just days ago?</p>
                 <p>&#34;Her workwith the European division has been particularly impressive,&#34;Grandpa continued, either oblivious to or deliberately ignoring my discomfort. &#34;The quarterly reports show significant improvement under her management.&#34; Brandon&#39;s expression remained unreadable, but something in his eyes made my skin prickle. &#34;Indeed. Very... impressive.&#34;&#34;Well,&#34; Grandpa suddenly pushed himself up fom his chair, &#34;you young people should chat. I need to organize some important documents in my study.&#34;</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_1 -->
-                <div id='div-gpt-ad-1762512074266-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_3 -->
+                <div id='div-gpt-ad-1762512008111-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512074266-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512008111-0'); });
                   </script>
                 </div>
                 <p>*What?* My head snapped up. &#34;Grandpa-&#34;</p>
                 <p>&#34;Summer, be a good host to Brandon. He&#39;s my most brilliant student, you know.&#34; With that parting shot, Grandpa disappeared through the study door, leaving me alone with the last person I wanted to be alone with.</p>
                 <p>The silence stretched between us, heavy with unspoken words. I could feel Brandon&#39;s gaze on me, as tangible as a physical touch. *Don&#39;t fidget. Don&#39;t show weakness.* &#34;So, Mr. Stark,&#34; I kept my voice carefully neutral, &#34;Which year were you Grandpa&#39;s student?&#34; *And how have I never heard about Brandon Stark being his student before?*</p>
                 <p>He studied me for a moment, that hint of amusement playing at the corners of his mouth. &#34;I graduated before you started. I was fifteen when I entered Columbia.&#34;</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_2 -->
-                <div id='div-gpt-ad-1762511986518-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_1 -->
+                <div id='div-gpt-ad-1762512074266-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762511986518-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512074266-0'); });
                   </script>
                 </div>
                 <p>*Fifteen?* I tried not to let my surprise show, but failed miserably. &#34;You were a child prodigy?&#34; *Of course he was. Because being the most powerful man on Wall Street wasn&#39;t impressive enough.*</p>
                 <p>&#34;The Professor didn&#39;t mention that either?&#34; His voice held a note of genuine curiosity. &#34;Interesting, considering how frequently he talks about you.&#34; Something about the way he said it made me wonder what exactly Grandpa had been saying. Before I could pursue that thought, Brandon rose from his chair with that fluid grace that seemed to come so naturally to him. My pulse quickened as he moved to sit beside me on the antique Chesterfield sofa-much closer than strictly necessary. *God, this man.* I fought the urge to bolt from the sofa like a startled deer.&#34;Mr. Stark, could you please keep your distance?&#34;</p>
                 <p>His dark eyes held mine with that unsettling intensity. *Why does he have to look at me like that? Like he&#39;s trying to read every thought in my head.*The weight of his gaze made my skin prickle with awareness.</p>
                 <p>&#34;Professor Thompson clearly thinks highly of you. Perhaps we should get to know each other better, as he seems to wish.&#34;</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_4 -->
-                <div id='div-gpt-ad-1762512031919-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_1 -->
+                <div id='div-gpt-ad-1762511964282-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512031919-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762511964282-0'); });
                   </script>
                 </div>
                 <p>*Yeah, right. Because the CEO of Stark Group just happens to want to &#39;get to know&#39; his old professor&#39;s granddaughter. The same granddaughter who&#39;s currently the talk of Wall Street for all the wrong reasons.* I fought back a hysterical laugh. This whole situation felt like some bizarre dream-or nightmare.</p>
                 <p>&#34;Mr. Stark.&#34; I kept my voice professionally detached despite our proximity,proud that it didn&#39;t betray the nervous flutter in my stomach. &#34;I appreciate that you&#39;re my grandfather&#39;s former student, but that doesn&#39;t require us to become... acquainted.&#34;*And I definitely don&#39;t need another Wall Street titan complicating my life right now.*</p>
                 <p>A slight smile played at the corners of his mouth. &#34;You&#39;re making assumptions about my intentions, Miss Taylor.&#34;</p>
                 <p>&#34;And you&#39;re making assumptions about my interest in any sort of acquaintance,&#34; I countered, trying to maintain my composure despite how his presence seemed to fill the entire room. *Why does he have to sit so close? The sofa&#39;s huge- there&#39;s literally no reason for him to be practically breathing down my neck,* My fingers twisted nervously in my lap,betraying the calm I was trying so hard to project. *Focus,Summer.Don&#39;t think about that night. Don&#39;t think about waking up naked in his room, or the way he carried you, or...* I cut that thought off abruptly. *Nope. Not*What the hell?* I pressed my hands against his chest, trying to push him away.</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_3 -->
-                <div id='div-gpt-ad-1762512008111-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_4 -->
+                <div id='div-gpt-ad-1762512031919-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512008111-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512031919-0'); });
                   </script>
                 </div>
             </div>

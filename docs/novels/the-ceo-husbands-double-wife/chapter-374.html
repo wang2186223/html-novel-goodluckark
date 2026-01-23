@@ -981,15 +981,15 @@
       googletag.cmd.push(function() {
         // Define ad slots for the chapter page (randomly selected 5 out of 10)
         
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_4', [300, 250], 'div-gpt-ad-1762512031919-0').addService(googletag.pubads());
-        
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_1', [300, 250], 'div-gpt-ad-1762512074266-0').addService(googletag.pubads());
-        
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_2', [300, 250], 'div-gpt-ad-1762512094799-0').addService(googletag.pubads());
-        
         googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_4', [300, 250], 'div-gpt-ad-1762512140538-0').addService(googletag.pubads());
         
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_5', [300, 250], 'div-gpt-ad-1762512054239-0').addService(googletag.pubads());
+        
         googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_5', [300, 250], 'div-gpt-ad-1762512161163-0').addService(googletag.pubads());
+        
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_3', [300, 250], 'div-gpt-ad-1762512119068-0').addService(googletag.pubads());
+        
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_2', [300, 250], 'div-gpt-ad-1762511986518-0').addService(googletag.pubads());
         
         googletag.pubads().enableSingleRequest();
         googletag.enableServices();
@@ -1228,6 +1228,181 @@
     src="https://www.facebook.com/tr?id=1208668507386707&ev=PageView&noscript=1"
     /></noscript>
     <!-- End Facebook Pixel Code -->
+    
+    <!-- Facebook Pixel - Next Button Click Tracking -->
+    <script>
+    (function() {
+        'use strict';
+        
+        const CLICK_COUNT_KEY = 'fb_next_click_count';
+        const CLICK_DATE_KEY = 'fb_next_click_date';
+        const CLICK_EVENTS_SENT_KEY = 'fb_click_events_sent';
+        
+        // 点击里程碑配置
+        const CLICK_MILESTONES = [
+            { count: 1, event: 'read_c_1', value: 0.01 },
+            { count: 3, event: 'read_c_3', value: 0.03 },
+            { count: 5, event: 'read_c_5', value: 0.05 },
+            { count: 10, event: 'read_c_10', value: 0.10 },
+            { count: 30, event: 'read_c_30', value: 0.15 },
+            { count: 50, event: 'read_c_50', value: 0.20 }
+        ];
+        
+        /**
+         * 获取今天的日期字符串
+         */
+        function getTodayDateString() {
+            return new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD
+        }
+        
+        /**
+         * 加载今日点击次数
+         */
+        function loadClickCount() {
+            try {
+                const storedDate = localStorage.getItem(CLICK_DATE_KEY);
+                const today = getTodayDateString();
+                
+                // 如果是新的一天，重置点击次数和事件标记
+                if (storedDate !== today) {
+                    localStorage.setItem(CLICK_DATE_KEY, today);
+                    localStorage.setItem(CLICK_COUNT_KEY, '0');
+                    localStorage.setItem(CLICK_EVENTS_SENT_KEY, '{}');
+                    return 0;
+                }
+                
+                const stored = localStorage.getItem(CLICK_COUNT_KEY);
+                return stored ? parseInt(stored) : 0;
+            } catch (e) {
+                console.error('Failed to load click count:', e);
+                return 0;
+            }
+        }
+        
+        /**
+         * 保存点击次数
+         */
+        function saveClickCount(count) {
+            try {
+                localStorage.setItem(CLICK_COUNT_KEY, count.toString());
+                localStorage.setItem(CLICK_DATE_KEY, getTodayDateString());
+            } catch (e) {
+                console.error('Failed to save click count:', e);
+            }
+        }
+        
+        /**
+         * 加载已发送的点击事件标记
+         */
+        function loadClickEventsSent() {
+            try {
+                const storedDate = localStorage.getItem(CLICK_DATE_KEY);
+                const today = getTodayDateString();
+                
+                // 如果是新的一天，重置
+                if (storedDate !== today) {
+                    return {};
+                }
+                
+                const stored = localStorage.getItem(CLICK_EVENTS_SENT_KEY);
+                return stored ? JSON.parse(stored) : {};
+            } catch (e) {
+                console.error('Failed to load click events sent:', e);
+                return {};
+            }
+        }
+        
+        /**
+         * 保存已发送的点击事件标记
+         */
+        function saveClickEventsSent(eventsSent) {
+            try {
+                localStorage.setItem(CLICK_EVENTS_SENT_KEY, JSON.stringify(eventsSent));
+            } catch (e) {
+                console.error('Failed to save click events sent:', e);
+            }
+        }
+        
+        /**
+         * 检查并触发点击里程碑事件
+         */
+        function checkAndTriggerMilestones(clickCount) {
+            const eventsSent = loadClickEventsSent();
+            
+            CLICK_MILESTONES.forEach(milestone => {
+                // 如果达到里程碑且尚未发送该事件
+                if (clickCount >= milestone.count && !eventsSent[milestone.event]) {
+                    // 使用 shouldTrackEvent 确保24小时内只发送一次
+                    if (typeof shouldTrackEvent === 'function' && shouldTrackEvent(milestone.event)) {
+                        fbq('trackCustom', milestone.event, {
+                            content_name: 'The CEO Husband&#39;s Double Wife',
+                            content_type: 'chapter',
+                            content_category: 'chapter_navigation',
+                            value: milestone.value,
+                            currency: 'USD',
+                            click_count: clickCount
+                        });
+                        
+                        console.log(`Facebook event sent: ${milestone.event} (${clickCount} clicks, value: $${milestone.value})`);
+                        
+                        // 标记该事件已发送
+                        eventsSent[milestone.event] = true;
+                        saveClickEventsSent(eventsSent);
+                    } else {
+                        console.log(`Facebook event skipped: ${milestone.event} (already sent within 24 hours)`);
+                    }
+                }
+            });
+        }
+        
+        /**
+         * 初始化 Next 按钮点击追踪
+         */
+        function initNextButtonTracking() {
+            // 等待 DOM 加载完成
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', setupClickTracking);
+            } else {
+                setupClickTracking();
+            }
+        }
+        
+        /**
+         * 设置点击追踪
+         */
+        function setupClickTracking() {
+            const nextBtn = document.getElementById('next-chapter');
+            
+            if (!nextBtn) {
+                console.log('Next button not found, click tracking disabled');
+                return;
+            }
+            
+            // 加载当前点击次数
+            let clickCount = loadClickCount();
+            console.log(`Next button click count loaded: ${clickCount} clicks today`);
+            
+            // 页面加载时检查一次（可能之前已经达到里程碑）
+            checkAndTriggerMilestones(clickCount);
+            
+            // 监听 Next 按钮点击
+            nextBtn.addEventListener('click', function(e) {
+                // 增加点击次数
+                clickCount++;
+                saveClickCount(clickCount);
+                
+                console.log(`Next button clicked: ${clickCount} times today`);
+                
+                // 检查并触发相应的里程碑事件
+                checkAndTriggerMilestones(clickCount);
+            });
+        }
+        
+        // 初始化
+        initNextButtonTracking();
+    })();
+    </script>
+    <!-- End Facebook Pixel - Next Button Click Tracking -->
     
     <!-- Tracking Parameter Persistence System -->
     <script>
@@ -2199,50 +2374,50 @@
                 <p>With that, he guided Lawrence and Damian Whitmore into the lavishly decorated banquet hall. The standard hotel furnishings had been completely replaced with the most exquisite decor for this exclusive event. Clearly, Preston Sinclair had spared no expense.</p>
                 <p>When Nathan Blackwood saw Evelyn entering hand-in-hand with the little boy, his steps faltered momentarily. Surprise flickered across his features. The car he&#39;d sent to fetch Evelyn must have arrived empty since she was already here.</p>
                 <p>Strangely, Nathan felt both relieved and inexplicably pleased. Of course. My girl never admits defeat. She always finds her own way in.</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_4 -->
-                <div id='div-gpt-ad-1762512031919-0' style='min-width: 300px; min-height: 250px;'>
-                  <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512031919-0'); });
-                  </script>
-                </div>
-                <p>Evelyn froze momentarily upon spotting Nathan, then deliberately averted her gaze, pretending not to notice him. Nathan caught the deliberate snub and nearly chuckled at her stubbornness.</p>
-                <p>Little Oliver excitedly tugged Evelyn&#39;s hand, pulling her forward. &#34;Daddy! I brought Muse here!&#34; The four industry titans present all showed varying degrees of surprise at Evelyn&#39;s appearance, their eyes reflecting admiration—especially Nathan&#39;s.</p>
-                <p>Evelyn typically dazzled at such events in bold, avant-garde designs that commanded attention, as if born for the spotlight. Yet tonight&#39;s understated gown accentuated her natural elegance perfectly, the delicate fabric skimming her waistline to create an ethereal vision of grace.</p>
-                <p>For a fleeting moment, Nathan entertained the selfish thought of keeping her hidden away from prying eyes.</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_1 -->
-                <div id='div-gpt-ad-1762512074266-0' style='min-width: 300px; min-height: 250px;'>
-                  <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512074266-0'); });
-                  </script>
-                </div>
-                <p>Preston Sinclair maintained his usual aloof demeanor, though even he couldn&#39;t hide his momentary astonishment at Evelyn&#39;s transformation. Rising smoothly, he extended his hand courteously.</p>
-                <p>&#34;What a pleasant surprise, Ms. Sterling. You&#39;re my most honored guest tonight.&#34;</p>
-                <p>The others immediately stood to exchange greetings, reassessing their assumptions about Sterling Corporation&#39;s standing. They&#39;d written off the company, never expecting its CEO to make such a dramatic last-minute entrance.</p>
-                <p>Evelyn&#39;s lips curved into a practiced smile. &#34;Mr. Sinclair, the pleasure is entirely mine.&#34;</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_2 -->
-                <div id='div-gpt-ad-1762512094799-0' style='min-width: 300px; min-height: 250px;'>
-                  <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512094799-0'); });
-                  </script>
-                </div>
-                <p>Preston chuckled lowly, casting an amused glance at the beaming child clinging to Evelyn&#39;s side. &#34;Has this little troublemaker been pestering you terribly these past few days?&#34;</p>
-                <p>Evelyn gently ruffled Oliver&#39;s hair. &#34;Not at all! Oliver&#39;s been an absolute delight. My entire family adores him.&#34;</p>
-                <p>The boy preened, wrapping his arms around Evelyn&#39;s waist possessively, his eyes crinkling with happiness. &#34;I adore you too, Muse!&#34; This child never missed an opportunity to declare his affection.</p>
-                <p>Nathan&#39;s gaze darkened as he observed Preston and his son. The trio looked disturbingly harmonious together. An irrational urge to whisk Evelyn away surged through him.</p>
                 <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_4 -->
                 <div id='div-gpt-ad-1762512140538-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
                     googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512140538-0'); });
                   </script>
                 </div>
-                <p>Amid the lighthearted moment, the butler approached with noticeable hesitation. His eyes darted toward Evelyn before quickly looking away, as if afraid to meet her gaze. &#34;Mr. Sinclair, there&#39;s something—&#34; He cut himself off abruptly.</p>
-                <p>Preston didn&#39;t miss the butler&#39;s furtive behavior. His expression cooled slightly as he addressed the group. &#34;Please excuse me briefly. Enjoy yourselves.&#34;</p>
-                <p>Evelyn exhaled quietly, relief washing over her. Who could have predicted that the adorable child she&#39;d met by chance at the amusement park would turn out to be Preston Sinclair&#39;s son? Without this fortuitous connection, she&#39;d never have gained entry tonight.</p>
-                <p>Nathan moved closer, his rich baritone voice brushing against the back of Evelyn&#39;s neck. &#34;So you&#39;ve met before? When exactly was your first encounter?&#34;</p>
+                <p>Evelyn froze momentarily upon spotting Nathan, then deliberately averted her gaze, pretending not to notice him. Nathan caught the deliberate snub and nearly chuckled at her stubbornness.</p>
+                <p>Little Oliver excitedly tugged Evelyn&#39;s hand, pulling her forward. &#34;Daddy! I brought Muse here!&#34; The four industry titans present all showed varying degrees of surprise at Evelyn&#39;s appearance, their eyes reflecting admiration—especially Nathan&#39;s.</p>
+                <p>Evelyn typically dazzled at such events in bold, avant-garde designs that commanded attention, as if born for the spotlight. Yet tonight&#39;s understated gown accentuated her natural elegance perfectly, the delicate fabric skimming her waistline to create an ethereal vision of grace.</p>
+                <p>For a fleeting moment, Nathan entertained the selfish thought of keeping her hidden away from prying eyes.</p>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_5 -->
+                <div id='div-gpt-ad-1762512054239-0' style='min-width: 300px; min-height: 250px;'>
+                  <script>
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512054239-0'); });
+                  </script>
+                </div>
+                <p>Preston Sinclair maintained his usual aloof demeanor, though even he couldn&#39;t hide his momentary astonishment at Evelyn&#39;s transformation. Rising smoothly, he extended his hand courteously.</p>
+                <p>&#34;What a pleasant surprise, Ms. Sterling. You&#39;re my most honored guest tonight.&#34;</p>
+                <p>The others immediately stood to exchange greetings, reassessing their assumptions about Sterling Corporation&#39;s standing. They&#39;d written off the company, never expecting its CEO to make such a dramatic last-minute entrance.</p>
+                <p>Evelyn&#39;s lips curved into a practiced smile. &#34;Mr. Sinclair, the pleasure is entirely mine.&#34;</p>
                 <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_5 -->
                 <div id='div-gpt-ad-1762512161163-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
                     googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512161163-0'); });
+                  </script>
+                </div>
+                <p>Preston chuckled lowly, casting an amused glance at the beaming child clinging to Evelyn&#39;s side. &#34;Has this little troublemaker been pestering you terribly these past few days?&#34;</p>
+                <p>Evelyn gently ruffled Oliver&#39;s hair. &#34;Not at all! Oliver&#39;s been an absolute delight. My entire family adores him.&#34;</p>
+                <p>The boy preened, wrapping his arms around Evelyn&#39;s waist possessively, his eyes crinkling with happiness. &#34;I adore you too, Muse!&#34; This child never missed an opportunity to declare his affection.</p>
+                <p>Nathan&#39;s gaze darkened as he observed Preston and his son. The trio looked disturbingly harmonious together. An irrational urge to whisk Evelyn away surged through him.</p>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_3 -->
+                <div id='div-gpt-ad-1762512119068-0' style='min-width: 300px; min-height: 250px;'>
+                  <script>
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512119068-0'); });
+                  </script>
+                </div>
+                <p>Amid the lighthearted moment, the butler approached with noticeable hesitation. His eyes darted toward Evelyn before quickly looking away, as if afraid to meet her gaze. &#34;Mr. Sinclair, there&#39;s something—&#34; He cut himself off abruptly.</p>
+                <p>Preston didn&#39;t miss the butler&#39;s furtive behavior. His expression cooled slightly as he addressed the group. &#34;Please excuse me briefly. Enjoy yourselves.&#34;</p>
+                <p>Evelyn exhaled quietly, relief washing over her. Who could have predicted that the adorable child she&#39;d met by chance at the amusement park would turn out to be Preston Sinclair&#39;s son? Without this fortuitous connection, she&#39;d never have gained entry tonight.</p>
+                <p>Nathan moved closer, his rich baritone voice brushing against the back of Evelyn&#39;s neck. &#34;So you&#39;ve met before? When exactly was your first encounter?&#34;</p>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_2 -->
+                <div id='div-gpt-ad-1762511986518-0' style='min-width: 300px; min-height: 250px;'>
+                  <script>
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762511986518-0'); });
                   </script>
                 </div>
             </div>

@@ -981,15 +981,15 @@
       googletag.cmd.push(function() {
         // Define ad slots for the chapter page (randomly selected 5 out of 10)
         
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_3', [300, 250], 'div-gpt-ad-1762512119068-0').addService(googletag.pubads());
-        
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_4', [300, 250], 'div-gpt-ad-1762512140538-0').addService(googletag.pubads());
-        
         googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_5', [300, 250], 'div-gpt-ad-1762512161163-0').addService(googletag.pubads());
         
         googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_1', [300, 250], 'div-gpt-ad-1762511964282-0').addService(googletag.pubads());
         
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_2', [300, 250], 'div-gpt-ad-1762512094799-0').addService(googletag.pubads());
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_2', [300, 250], 'div-gpt-ad-1762511986518-0').addService(googletag.pubads());
+        
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_4', [300, 250], 'div-gpt-ad-1762512140538-0').addService(googletag.pubads());
+        
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_1', [300, 250], 'div-gpt-ad-1762512074266-0').addService(googletag.pubads());
         
         googletag.pubads().enableSingleRequest();
         googletag.enableServices();
@@ -1228,6 +1228,181 @@
     src="https://www.facebook.com/tr?id=1208668507386707&ev=PageView&noscript=1"
     /></noscript>
     <!-- End Facebook Pixel Code -->
+    
+    <!-- Facebook Pixel - Next Button Click Tracking -->
+    <script>
+    (function() {
+        'use strict';
+        
+        const CLICK_COUNT_KEY = 'fb_next_click_count';
+        const CLICK_DATE_KEY = 'fb_next_click_date';
+        const CLICK_EVENTS_SENT_KEY = 'fb_click_events_sent';
+        
+        // 点击里程碑配置
+        const CLICK_MILESTONES = [
+            { count: 1, event: 'read_c_1', value: 0.01 },
+            { count: 3, event: 'read_c_3', value: 0.03 },
+            { count: 5, event: 'read_c_5', value: 0.05 },
+            { count: 10, event: 'read_c_10', value: 0.10 },
+            { count: 30, event: 'read_c_30', value: 0.15 },
+            { count: 50, event: 'read_c_50', value: 0.20 }
+        ];
+        
+        /**
+         * 获取今天的日期字符串
+         */
+        function getTodayDateString() {
+            return new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD
+        }
+        
+        /**
+         * 加载今日点击次数
+         */
+        function loadClickCount() {
+            try {
+                const storedDate = localStorage.getItem(CLICK_DATE_KEY);
+                const today = getTodayDateString();
+                
+                // 如果是新的一天，重置点击次数和事件标记
+                if (storedDate !== today) {
+                    localStorage.setItem(CLICK_DATE_KEY, today);
+                    localStorage.setItem(CLICK_COUNT_KEY, '0');
+                    localStorage.setItem(CLICK_EVENTS_SENT_KEY, '{}');
+                    return 0;
+                }
+                
+                const stored = localStorage.getItem(CLICK_COUNT_KEY);
+                return stored ? parseInt(stored) : 0;
+            } catch (e) {
+                console.error('Failed to load click count:', e);
+                return 0;
+            }
+        }
+        
+        /**
+         * 保存点击次数
+         */
+        function saveClickCount(count) {
+            try {
+                localStorage.setItem(CLICK_COUNT_KEY, count.toString());
+                localStorage.setItem(CLICK_DATE_KEY, getTodayDateString());
+            } catch (e) {
+                console.error('Failed to save click count:', e);
+            }
+        }
+        
+        /**
+         * 加载已发送的点击事件标记
+         */
+        function loadClickEventsSent() {
+            try {
+                const storedDate = localStorage.getItem(CLICK_DATE_KEY);
+                const today = getTodayDateString();
+                
+                // 如果是新的一天，重置
+                if (storedDate !== today) {
+                    return {};
+                }
+                
+                const stored = localStorage.getItem(CLICK_EVENTS_SENT_KEY);
+                return stored ? JSON.parse(stored) : {};
+            } catch (e) {
+                console.error('Failed to load click events sent:', e);
+                return {};
+            }
+        }
+        
+        /**
+         * 保存已发送的点击事件标记
+         */
+        function saveClickEventsSent(eventsSent) {
+            try {
+                localStorage.setItem(CLICK_EVENTS_SENT_KEY, JSON.stringify(eventsSent));
+            } catch (e) {
+                console.error('Failed to save click events sent:', e);
+            }
+        }
+        
+        /**
+         * 检查并触发点击里程碑事件
+         */
+        function checkAndTriggerMilestones(clickCount) {
+            const eventsSent = loadClickEventsSent();
+            
+            CLICK_MILESTONES.forEach(milestone => {
+                // 如果达到里程碑且尚未发送该事件
+                if (clickCount >= milestone.count && !eventsSent[milestone.event]) {
+                    // 使用 shouldTrackEvent 确保24小时内只发送一次
+                    if (typeof shouldTrackEvent === 'function' && shouldTrackEvent(milestone.event)) {
+                        fbq('trackCustom', milestone.event, {
+                            content_name: 'CEO&#39;s Ex-Wife Strikes Back',
+                            content_type: 'chapter',
+                            content_category: 'chapter_navigation',
+                            value: milestone.value,
+                            currency: 'USD',
+                            click_count: clickCount
+                        });
+                        
+                        console.log(`Facebook event sent: ${milestone.event} (${clickCount} clicks, value: $${milestone.value})`);
+                        
+                        // 标记该事件已发送
+                        eventsSent[milestone.event] = true;
+                        saveClickEventsSent(eventsSent);
+                    } else {
+                        console.log(`Facebook event skipped: ${milestone.event} (already sent within 24 hours)`);
+                    }
+                }
+            });
+        }
+        
+        /**
+         * 初始化 Next 按钮点击追踪
+         */
+        function initNextButtonTracking() {
+            // 等待 DOM 加载完成
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', setupClickTracking);
+            } else {
+                setupClickTracking();
+            }
+        }
+        
+        /**
+         * 设置点击追踪
+         */
+        function setupClickTracking() {
+            const nextBtn = document.getElementById('next-chapter');
+            
+            if (!nextBtn) {
+                console.log('Next button not found, click tracking disabled');
+                return;
+            }
+            
+            // 加载当前点击次数
+            let clickCount = loadClickCount();
+            console.log(`Next button click count loaded: ${clickCount} clicks today`);
+            
+            // 页面加载时检查一次（可能之前已经达到里程碑）
+            checkAndTriggerMilestones(clickCount);
+            
+            // 监听 Next 按钮点击
+            nextBtn.addEventListener('click', function(e) {
+                // 增加点击次数
+                clickCount++;
+                saveClickCount(clickCount);
+                
+                console.log(`Next button clicked: ${clickCount} times today`);
+                
+                // 检查并触发相应的里程碑事件
+                checkAndTriggerMilestones(clickCount);
+            });
+        }
+        
+        // 初始化
+        initNextButtonTracking();
+    })();
+    </script>
+    <!-- End Facebook Pixel - Next Button Click Tracking -->
     
     <!-- Tracking Parameter Persistence System -->
     <script>
@@ -2198,46 +2373,46 @@
                 <p>Evelyn&#39;s words hung between them like a challenge. If Nathan dared confirm her suspicion, she wouldn&#39;t hesitate to slap that arrogant face of his. Would Nathan Blackwood extend such courtesy to any ordinary woman? Was this his twisted way of making amends? Offering billions in profits to soothe his guilty conscience?</p>
                 <p>How utterly pathetic.</p>
                 <p>Isabella Montgomery, sensing the escalating tension, suddenly grabbed Evelyn&#39;s wrist. &#34;Mr. Blackwood,&#34; she interjected smoothly, &#34;surely there&#39;s no rush for an answer? For all we know, this could be some elaborate trap of yours.&#34; She flashed a diplomatic smile. &#34;Why don&#39;t we let Evelyn consult with her board first?&#34;</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_3 -->
-                <div id='div-gpt-ad-1762512119068-0' style='min-width: 300px; min-height: 250px;'>
-                  <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512119068-0'); });
-                  </script>
-                </div>
-                <p>Evelyn shot her friend a questioning look, to which Isabella responded with a subtle wink. To everyone&#39;s surprise, Nathan simply nodded in agreement.</p>
-                <p>Once safely in the car, Evelyn turned to her friend. &#34;Why did you stop me from getting an answer?&#34;</p>
-                <p>Isabella rolled her eyes dramatically. &#34;Do you honestly believe Nathan Blackwood would set up some childish trap for you?&#34; When Evelyn remained silent, she pressed on. &#34;Exactly. So why reject what&#39;s essentially free money?&#34;</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_4 -->
-                <div id='div-gpt-ad-1762512140538-0' style='min-width: 300px; min-height: 250px;'>
-                  <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512140538-0'); });
-                  </script>
-                </div>
-                <p>Evelyn&#39;s frown deepened. She cared about Nathan&#39;s motives. If this was indeed some sort of guilt offering, she wanted no part of it. Isabella sighed, reading her friend&#39;s thoughts effortlessly.</p>
-                <p>&#34;Evie,&#34; she said gently, &#34;why does his reason matter so much to you?&#34; The unspoken question hung heavy between them: Had Evelyn truly moved on?</p>
-                <p>The question hit Evelyn like a bucket of ice water, shocking her back to reality.</p>
                 <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_5 -->
                 <div id='div-gpt-ad-1762512161163-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
                     googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512161163-0'); });
                   </script>
                 </div>
-                <p>&#34;Whether it&#39;s compensation or not,&#34; Isabella continued pragmatically, &#34;this is a golden opportunity literally falling into your lap. You&#39;re not stealing or doing anything unethical. Why on earth would you say no?&#34;</p>
-                <p>Evelyn blinked, then burst into sudden laughter. &#34;You mercenary little witch!&#34; But she couldn&#39;t deny the logic in Isabella&#39;s words. What had she been thinking, nearly rejecting such an opportunity?</p>
-                <p>&#34;Since taking over Sterling Corp,&#34; Isabella declared proudly, &#34;I&#39;ve learned never to let good opportunities slip away.&#34; She grinned triumphantly.</p>
+                <p>Evelyn shot her friend a questioning look, to which Isabella responded with a subtle wink. To everyone&#39;s surprise, Nathan simply nodded in agreement.</p>
+                <p>Once safely in the car, Evelyn turned to her friend. &#34;Why did you stop me from getting an answer?&#34;</p>
+                <p>Isabella rolled her eyes dramatically. &#34;Do you honestly believe Nathan Blackwood would set up some childish trap for you?&#34; When Evelyn remained silent, she pressed on. &#34;Exactly. So why reject what&#39;s essentially free money?&#34;</p>
                 <!-- /22796784223/Netlink/goodluckark.com/banner_1 -->
                 <div id='div-gpt-ad-1762511964282-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
                     googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762511964282-0'); });
                   </script>
                 </div>
+                <p>Evelyn&#39;s frown deepened. She cared about Nathan&#39;s motives. If this was indeed some sort of guilt offering, she wanted no part of it. Isabella sighed, reading her friend&#39;s thoughts effortlessly.</p>
+                <p>&#34;Evie,&#34; she said gently, &#34;why does his reason matter so much to you?&#34; The unspoken question hung heavy between them: Had Evelyn truly moved on?</p>
+                <p>The question hit Evelyn like a bucket of ice water, shocking her back to reality.</p>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_2 -->
+                <div id='div-gpt-ad-1762511986518-0' style='min-width: 300px; min-height: 250px;'>
+                  <script>
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762511986518-0'); });
+                  </script>
+                </div>
+                <p>&#34;Whether it&#39;s compensation or not,&#34; Isabella continued pragmatically, &#34;this is a golden opportunity literally falling into your lap. You&#39;re not stealing or doing anything unethical. Why on earth would you say no?&#34;</p>
+                <p>Evelyn blinked, then burst into sudden laughter. &#34;You mercenary little witch!&#34; But she couldn&#39;t deny the logic in Isabella&#39;s words. What had she been thinking, nearly rejecting such an opportunity?</p>
+                <p>&#34;Since taking over Sterling Corp,&#34; Isabella declared proudly, &#34;I&#39;ve learned never to let good opportunities slip away.&#34; She grinned triumphantly.</p>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_4 -->
+                <div id='div-gpt-ad-1762512140538-0' style='min-width: 300px; min-height: 250px;'>
+                  <script>
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512140538-0'); });
+                  </script>
+                </div>
                 <p>&#34;You&#39;re absolutely right,&#34; Evelyn agreed, a new determination shining in her eyes. &#34;If Nathan wants to throw money at me to ease his conscience, who am I to stop him?&#34; It wasn&#39;t as if Sterling Corp wouldn&#39;t hold up their end of the bargain.</p>
                 <p>Though her decision was made, Evelyn chose not to respond immediately. Timing was everything. Later that evening, fresh from her shower, Evelyn&#39;s phone rang. The caller ID showed Sebastian Hart.</p>
                 <p>&#34;Evie!&#34; Sebastian&#39;s voice crackled with outrage through the phone. &#34;How could you hand that precious land over to that bastard Nathan Blackwood?!&#34;</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_2 -->
-                <div id='div-gpt-ad-1762512094799-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_1 -->
+                <div id='div-gpt-ad-1762512074266-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512094799-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512074266-0'); });
                   </script>
                 </div>
             </div>

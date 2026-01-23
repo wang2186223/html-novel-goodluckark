@@ -981,15 +981,15 @@
       googletag.cmd.push(function() {
         // Define ad slots for the chapter page (randomly selected 5 out of 10)
         
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_5', [300, 250], 'div-gpt-ad-1762512054239-0').addService(googletag.pubads());
-        
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_4', [300, 250], 'div-gpt-ad-1762512140538-0').addService(googletag.pubads());
-        
         googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_5', [300, 250], 'div-gpt-ad-1762512161163-0').addService(googletag.pubads());
         
         googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_4', [300, 250], 'div-gpt-ad-1762512031919-0').addService(googletag.pubads());
         
-        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_1', [300, 250], 'div-gpt-ad-1762512074266-0').addService(googletag.pubads());
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_2', [300, 250], 'div-gpt-ad-1762512094799-0').addService(googletag.pubads());
+        
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_4', [300, 250], 'div-gpt-ad-1762512140538-0').addService(googletag.pubads());
+        
+        googletag.defineSlot('/22796784223/Netlink/goodluckark.com/banner_in_article_3', [300, 250], 'div-gpt-ad-1762512119068-0').addService(googletag.pubads());
         
         googletag.pubads().enableSingleRequest();
         googletag.enableServices();
@@ -1228,6 +1228,181 @@
     src="https://www.facebook.com/tr?id=1208668507386707&ev=PageView&noscript=1"
     /></noscript>
     <!-- End Facebook Pixel Code -->
+    
+    <!-- Facebook Pixel - Next Button Click Tracking -->
+    <script>
+    (function() {
+        'use strict';
+        
+        const CLICK_COUNT_KEY = 'fb_next_click_count';
+        const CLICK_DATE_KEY = 'fb_next_click_date';
+        const CLICK_EVENTS_SENT_KEY = 'fb_click_events_sent';
+        
+        // 点击里程碑配置
+        const CLICK_MILESTONES = [
+            { count: 1, event: 'read_c_1', value: 0.01 },
+            { count: 3, event: 'read_c_3', value: 0.03 },
+            { count: 5, event: 'read_c_5', value: 0.05 },
+            { count: 10, event: 'read_c_10', value: 0.10 },
+            { count: 30, event: 'read_c_30', value: 0.15 },
+            { count: 50, event: 'read_c_50', value: 0.20 }
+        ];
+        
+        /**
+         * 获取今天的日期字符串
+         */
+        function getTodayDateString() {
+            return new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD
+        }
+        
+        /**
+         * 加载今日点击次数
+         */
+        function loadClickCount() {
+            try {
+                const storedDate = localStorage.getItem(CLICK_DATE_KEY);
+                const today = getTodayDateString();
+                
+                // 如果是新的一天，重置点击次数和事件标记
+                if (storedDate !== today) {
+                    localStorage.setItem(CLICK_DATE_KEY, today);
+                    localStorage.setItem(CLICK_COUNT_KEY, '0');
+                    localStorage.setItem(CLICK_EVENTS_SENT_KEY, '{}');
+                    return 0;
+                }
+                
+                const stored = localStorage.getItem(CLICK_COUNT_KEY);
+                return stored ? parseInt(stored) : 0;
+            } catch (e) {
+                console.error('Failed to load click count:', e);
+                return 0;
+            }
+        }
+        
+        /**
+         * 保存点击次数
+         */
+        function saveClickCount(count) {
+            try {
+                localStorage.setItem(CLICK_COUNT_KEY, count.toString());
+                localStorage.setItem(CLICK_DATE_KEY, getTodayDateString());
+            } catch (e) {
+                console.error('Failed to save click count:', e);
+            }
+        }
+        
+        /**
+         * 加载已发送的点击事件标记
+         */
+        function loadClickEventsSent() {
+            try {
+                const storedDate = localStorage.getItem(CLICK_DATE_KEY);
+                const today = getTodayDateString();
+                
+                // 如果是新的一天，重置
+                if (storedDate !== today) {
+                    return {};
+                }
+                
+                const stored = localStorage.getItem(CLICK_EVENTS_SENT_KEY);
+                return stored ? JSON.parse(stored) : {};
+            } catch (e) {
+                console.error('Failed to load click events sent:', e);
+                return {};
+            }
+        }
+        
+        /**
+         * 保存已发送的点击事件标记
+         */
+        function saveClickEventsSent(eventsSent) {
+            try {
+                localStorage.setItem(CLICK_EVENTS_SENT_KEY, JSON.stringify(eventsSent));
+            } catch (e) {
+                console.error('Failed to save click events sent:', e);
+            }
+        }
+        
+        /**
+         * 检查并触发点击里程碑事件
+         */
+        function checkAndTriggerMilestones(clickCount) {
+            const eventsSent = loadClickEventsSent();
+            
+            CLICK_MILESTONES.forEach(milestone => {
+                // 如果达到里程碑且尚未发送该事件
+                if (clickCount >= milestone.count && !eventsSent[milestone.event]) {
+                    // 使用 shouldTrackEvent 确保24小时内只发送一次
+                    if (typeof shouldTrackEvent === 'function' && shouldTrackEvent(milestone.event)) {
+                        fbq('trackCustom', milestone.event, {
+                            content_name: 'The Neglected Silent Heiress',
+                            content_type: 'chapter',
+                            content_category: 'chapter_navigation',
+                            value: milestone.value,
+                            currency: 'USD',
+                            click_count: clickCount
+                        });
+                        
+                        console.log(`Facebook event sent: ${milestone.event} (${clickCount} clicks, value: $${milestone.value})`);
+                        
+                        // 标记该事件已发送
+                        eventsSent[milestone.event] = true;
+                        saveClickEventsSent(eventsSent);
+                    } else {
+                        console.log(`Facebook event skipped: ${milestone.event} (already sent within 24 hours)`);
+                    }
+                }
+            });
+        }
+        
+        /**
+         * 初始化 Next 按钮点击追踪
+         */
+        function initNextButtonTracking() {
+            // 等待 DOM 加载完成
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', setupClickTracking);
+            } else {
+                setupClickTracking();
+            }
+        }
+        
+        /**
+         * 设置点击追踪
+         */
+        function setupClickTracking() {
+            const nextBtn = document.getElementById('next-chapter');
+            
+            if (!nextBtn) {
+                console.log('Next button not found, click tracking disabled');
+                return;
+            }
+            
+            // 加载当前点击次数
+            let clickCount = loadClickCount();
+            console.log(`Next button click count loaded: ${clickCount} clicks today`);
+            
+            // 页面加载时检查一次（可能之前已经达到里程碑）
+            checkAndTriggerMilestones(clickCount);
+            
+            // 监听 Next 按钮点击
+            nextBtn.addEventListener('click', function(e) {
+                // 增加点击次数
+                clickCount++;
+                saveClickCount(clickCount);
+                
+                console.log(`Next button clicked: ${clickCount} times today`);
+                
+                // 检查并触发相应的里程碑事件
+                checkAndTriggerMilestones(clickCount);
+            });
+        }
+        
+        // 初始化
+        initNextButtonTracking();
+    })();
+    </script>
+    <!-- End Facebook Pixel - Next Button Click Tracking -->
     
     <!-- Tracking Parameter Persistence System -->
     <script>
@@ -2199,40 +2374,40 @@
                 <p>&#34;You forget your place,&#34; Beatrice said evenly, cradling her injured face. &#34;This is the Blackwood estate, not your family&#39;s property.&#34;</p>
                 <p>Liam might be distant, but he treated staff with basic respect. They were well-compensated professionals, not punching bags for spoiled heiresses.</p>
                 <p>Evelyn laughed mockingly. &#34;Soon enough, this will be my household to command. Cross me now, and you&#39;ll be the first one I fire when I&#39;m lady of the house.&#34; Her voice dripped venom. &#34;Run crying to that pathetic mute if you like. She can&#39;t even speak for herself, let alone defend you.&#34;</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_5 -->
-                <div id='div-gpt-ad-1762512054239-0' style='min-width: 300px; min-height: 250px;'>
-                  <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512054239-0'); });
-                  </script>
-                </div>
-                <p>Beatrice stood her ground. &#34;My employment terms require Mr. or Mrs. Blackwood&#39;s approval for termination. Unless you have that, these items stay.&#34;</p>
-                <p>Each &#34;Mrs. Blackwood&#34; struck Evelyn like a physical blow. Enraged, she grabbed Beatrice&#39;s arm and dragged her toward the grand staircase. &#34;Consider yourself fired! Get out!&#34;</p>
-                <p>At that moment, Olivia appeared at the top of the stairs, having heard the commotion. Beatrice teetered dangerously at the landing&#39;s edge.</p>
-                <p>Seeing the opportunity, Evelyn didn&#39;t just release her grip—she gave a calculated shove.</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_4 -->
-                <div id='div-gpt-ad-1762512140538-0' style='min-width: 300px; min-height: 250px;'>
-                  <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512140538-0'); });
-                  </script>
-                </div>
-                <p>The housekeeper tumbled down the marble steps with a cry that turned Olivia&#39;s blood to ice.</p>
-                <p>Evelyn&#39;s face morphed into theatrical shock, hands flying to her mouth. &#34;She just collapsed! It was an accident!&#34;</p>
-                <p>Olivia ignored the performance, rushing to Beatrice&#39;s side. Her skilled fingers flew in urgent signs: Are you hurt? Can you stand?</p>
-                <p>Though bruised and shaken, Beatrice managed a weak smile. &#34;Just my pride, ma&#39;am.&#34;</p>
                 <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_5 -->
                 <div id='div-gpt-ad-1762512161163-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
                     googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512161163-0'); });
                   </script>
                 </div>
-                <p>&#34;What&#39;s happening here?&#34; Liam&#39;s voice cut through the tension like a blade.</p>
-                <p>Evelyn transformed instantly, throwing herself against Liam&#39;s chest with practiced sobs. &#34;That maid fell right in front of me! After what Olivia did to me on these stairs... it triggered my trauma!&#34; Her entire body trembled with manufactured panic.</p>
-                <p>Liam gently disentangled himself, his stormy gaze shifting between the women. &#34;Explain.&#34;</p>
-                <p>Olivia moved first, signing rapidly with fierce precision. Evelyn pushed her. I saw everything.</p>
+                <p>Beatrice stood her ground. &#34;My employment terms require Mr. or Mrs. Blackwood&#39;s approval for termination. Unless you have that, these items stay.&#34;</p>
+                <p>Each &#34;Mrs. Blackwood&#34; struck Evelyn like a physical blow. Enraged, she grabbed Beatrice&#39;s arm and dragged her toward the grand staircase. &#34;Consider yourself fired! Get out!&#34;</p>
+                <p>At that moment, Olivia appeared at the top of the stairs, having heard the commotion. Beatrice teetered dangerously at the landing&#39;s edge.</p>
+                <p>Seeing the opportunity, Evelyn didn&#39;t just release her grip—she gave a calculated shove.</p>
                 <!-- /22796784223/Netlink/goodluckark.com/banner_4 -->
                 <div id='div-gpt-ad-1762512031919-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
                     googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512031919-0'); });
+                  </script>
+                </div>
+                <p>The housekeeper tumbled down the marble steps with a cry that turned Olivia&#39;s blood to ice.</p>
+                <p>Evelyn&#39;s face morphed into theatrical shock, hands flying to her mouth. &#34;She just collapsed! It was an accident!&#34;</p>
+                <p>Olivia ignored the performance, rushing to Beatrice&#39;s side. Her skilled fingers flew in urgent signs: Are you hurt? Can you stand?</p>
+                <p>Though bruised and shaken, Beatrice managed a weak smile. &#34;Just my pride, ma&#39;am.&#34;</p>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_2 -->
+                <div id='div-gpt-ad-1762512094799-0' style='min-width: 300px; min-height: 250px;'>
+                  <script>
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512094799-0'); });
+                  </script>
+                </div>
+                <p>&#34;What&#39;s happening here?&#34; Liam&#39;s voice cut through the tension like a blade.</p>
+                <p>Evelyn transformed instantly, throwing herself against Liam&#39;s chest with practiced sobs. &#34;That maid fell right in front of me! After what Olivia did to me on these stairs... it triggered my trauma!&#34; Her entire body trembled with manufactured panic.</p>
+                <p>Liam gently disentangled himself, his stormy gaze shifting between the women. &#34;Explain.&#34;</p>
+                <p>Olivia moved first, signing rapidly with fierce precision. Evelyn pushed her. I saw everything.</p>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_4 -->
+                <div id='div-gpt-ad-1762512140538-0' style='min-width: 300px; min-height: 250px;'>
+                  <script>
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512140538-0'); });
                   </script>
                 </div>
                 <p>&#34;You lying bitch!&#34; Evelyn abandoned her fragile act, rounding on Olivia. &#34;She slipped! You&#39;re just trying to turn Liam against me!&#34;</p>
@@ -2240,10 +2415,10 @@
                 <p>Beatrice wiped her bleeding lip. &#34;Miss Hartley demanded we redecorate the master suite. When I said that required your approval, she struck me. Then she dragged me to the stairs and...&#34; Her voice broke. &#34;Your grandfather hired me thirty years ago, sir. I was following household protocol.&#34;</p>
                 <p>Evelyn&#39;s eyes welled with crocodile tears. &#34;Liam, you know me! I may be spoiled, but I&#39;d never resort to violence. Olivia&#39;s been trying to destroy me since day one—first my face, now my reputation!&#34;</p>
                 <p>The air thickened with tension as Liam&#39;s jaw tightened. He turned to Beatrice. &#34;Security cameras cover every inch of this hallway. Shall we review the footage, or will someone start telling the truth?&#34;</p>
-                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_1 -->
-                <div id='div-gpt-ad-1762512074266-0' style='min-width: 300px; min-height: 250px;'>
+                <!-- /22796784223/Netlink/goodluckark.com/banner_in_article_3 -->
+                <div id='div-gpt-ad-1762512119068-0' style='min-width: 300px; min-height: 250px;'>
                   <script>
-                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512074266-0'); });
+                    googletag.cmd.push(function() { googletag.display('div-gpt-ad-1762512119068-0'); });
                   </script>
                 </div>
             </div>
