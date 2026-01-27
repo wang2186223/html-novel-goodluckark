@@ -236,8 +236,8 @@ class WebsiteBuilder:
                 {'id': 10, 'slot_id': 'div-gpt-ad-1762512161163-0', 'path': '/22796784223/Netlink/goodluckark.com/banner_in_article_5'},
             ]
             
-            # 从10个广告单元中随机选择5个（每个页面都不同）
-            selected_ad_units = random.sample(all_ad_units, 5)
+            # 从10个广告单元中随机选择6个（每个页面都不同）
+            selected_ad_units = random.sample(all_ad_units, 6)
             
             # 准备渲染数据（两个版本使用相同的数据）
             render_data = {
@@ -256,7 +256,7 @@ class WebsiteBuilder:
                     'chapters': all_chapters,
                     'tags': novel_data['tags']
                 },
-                'selected_ad_units': selected_ad_units,  # 传递选中的5个广告单元完整信息
+                'selected_ad_units': selected_ad_units,  # 传递选中的6个广告单元完整信息
                 'prev_chapter': prev_chapter,
                 'next_chapter': next_chapter,
                 'site_url': self.site_url
