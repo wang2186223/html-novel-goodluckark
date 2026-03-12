@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>分析测试页面</title>
+</head>
+<body>
+    <h1>分析测试页面</h1>
+    <div id="status"></div>
+    <button onclick="testAnalytics()">手动测试分析</button>
+    
+    <script>
+    function log(message) {
+        console.log(message);
+        document.getElementById('status').innerHTML += '<p>' + message + '</p>';
+    }
+    
+    // 测试分析函数
+    function testAnalytics() {
+        log('开始测试分析功能...');
+        
+        // 先获取用户IP地址
+        getUserIP().then(userIP => {
+            log('获取到IP地址: ' + userIP);
+            
+            const data = {
+                page: window.location.href,
+                userAgent: navigator.userAgent,
+                referrer: document.referrer || 'direct',
+                userIP: userIP
+            };
+            
+            log('准备发送数据: ' + JSON.stringify(data));
+            
+            // 发送数据到 Google Apps Script
+            fetch('https://script.google.com/macros/s/AKfycbzPD8lLkK8-XkzWP1EfztR9ESfx1keij2SUYXowX28uDIcmdp_nYf9QRyxWCbuEdQJZmg/exec', {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data)
+            }).then(() => {
+                log('✅ 数据发送成功！请检查Google表格');
+            }).catch(error => {
+                log('❌ 数据发送失败: ' + error.message);
+            });
+        }).catch(error => {
+            log('❌ 获取IP失败: ' + error.message);
+            // 如果获取IP失败，仍发送其他数据
+            const data = {
+                page: window.location.href,
+                userAgent: navigator.userAgent,
+                referrer: document.referrer || 'direct',
+                userIP: 'Unknown'
+            };
+            
+            log('使用Unknown IP发送数据: ' + JSON.stringify(data));
+            
+            fetch('https://script.google.com/macros/s/AKfycbzPD8lLkK8-XkzWP1EfztR9ESfx1keij2SUYXowX28uDIcmdp_nYf9QRyxWCbuEdQJZmg/exec', {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data)
+            }).then(() => {
+                log('✅ 数据发送成功（使用Unknown IP）！请检查Google表格');
+            }).catch(error => {
+                log('❌ 数据发送失败: ' + error.message);
+            });
+        });
+    }
+    
+    // 获取用户IP地址
+    async function getUserIP() {
+        try {
+            log('尝试获取IP地址...');
+            // 方法1：使用免费的IP API
+            const response = await fetch('https://api.ipify.org?format=json');
+            const ipData = await response.json();
+            return ipData.ip;
+        } catch (error1) {
+            try {
+                // 方法2：备用IP API
+                const response = await fetch('https://httpbin.org/ip');
+                const ipData = await response.json();
+                return ipData.origin.split(',')[0].trim();
+            } catch (error2) {
+                try {
+                    // 方法3：第三个备用API
+                    const response = await fetch('https://jsonip.com');
+                    const ipData = await response.json();
+                    return ipData.ip;
+                } catch (error3) {
+                    log('所有IP获取方法都失败，使用Unknown');
+                    throw new Error('无法获取IP地址');
+                }
+            }
+        }
+    }
+    
+    // 页面加载时自动测试
+    window.addEventListener('load', function() {
+        log('页面加载完成，开始自动测试...');
+        testAnalytics();
+    });
+    </script>
+</body>
+</html>

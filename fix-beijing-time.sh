@@ -1,0 +1,50 @@
+#!/bin/bash
+
+echo "🕐 北京时间显示修复指南"
+echo "========================"
+echo ""
+
+echo "❌ 问题描述："
+echo "实际时间: 2025-10-11 14:13:25"
+echo "表格显示: 2025/10/11 下午 10:13:27"
+echo "时差错误: 快了约4小时"
+echo ""
+
+echo "🔍 问题原因："
+echo "代码中重复进行了时区转换："
+echo "1. 手动给UTC时间加8小时"
+echo "2. 又通过timeZone转换了一次"
+echo "3. 导致总共加了约12小时"
+echo ""
+
+echo "✅ 修复方案："
+echo "移除手动时间加减，只使用timeZone转换"
+echo "添加hour12: false使用24小时制"
+echo ""
+
+echo "🚀 修复步骤："
+echo "1. 访问 Google Apps Script:"
+echo "   https://script.google.com/"
+echo ""
+echo "2. 打开您的项目 (Script ID):"
+echo "   AKfycbzytWEL37yRCG-alRtlcTZ2eO4xBwhWQPUEQJ_E0D6LuLeyW7hKpdPZSP0hxtuHB3_S"
+echo ""
+echo "3. 复制 analytics-script.js 中的修复代码"
+echo ""
+echo "4. 替换所有代码并保存"
+echo ""
+echo "5. 重新部署 (URL保持不变)"
+echo ""
+
+echo "🧪 验证步骤："
+echo "1. 访问网站任意页面"
+echo "2. 检查表格新记录的时间"
+echo "3. 确认时间格式: YYYY/MM/DD HH:mm:ss (24小时制)"
+echo ""
+
+echo "📝 预期结果："
+echo "修复前: 2025/10/11 下午 10:13:27 (错误)"
+echo "修复后: 2025/10/11 14:13:25 (正确)"
+echo ""
+
+echo "⚡ 修复完成后立即生效，新访问记录将显示正确时间！"

@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AB版本系统测试</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            border-bottom: 3px solid #007AFF;
+            padding-bottom: 10px;
+        }
+        .test-section {
+            margin: 30px 0;
+            padding: 20px;
+            background: #f9f9f9;
+            border-radius: 8px;
+        }
+        .test-section h2 {
+            color: #007AFF;
+            margin-top: 0;
+        }
+        .button {
+            display: inline-block;
+            padding: 12px 24px;
+            margin: 10px 10px 10px 0;
+            background: #007AFF;
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+            transition: background 0.3s;
+        }
+        .button:hover {
+            background: #0051D5;
+        }
+        .button.secondary {
+            background: #5AC8FA;
+        }
+        .button.secondary:hover {
+            background: #32AEE8;
+        }
+        .info {
+            background: #E3F2FD;
+            padding: 15px;
+            border-left: 4px solid #2196F3;
+            margin: 15px 0;
+            border-radius: 4px;
+        }
+        .success {
+            background: #E8F5E9;
+            border-left-color: #4CAF50;
+        }
+        .warning {
+            background: #FFF3E0;
+            border-left-color: #FF9800;
+        }
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+        }
+        .status {
+            padding: 10px;
+            margin: 15px 0;
+            border-radius: 6px;
+            font-weight: 500;
+        }
+        .clear-button {
+            background: #FF3B30;
+        }
+        .clear-button:hover {
+            background: #D32F2F;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📊 AB版本系统测试工具</h1>
+        
+        <div id="current-status" class="status"></div>
+        
+        <div class="test-section">
+            <h2>🧪 测试场景1: 带追踪参数访问</h2>
+            <p>模拟用户从Facebook广告点击进入</p>
+            <a href="./docs/novels/once-discarded-now-desired/chapter-1.html?fbclid=test123&utm_source=facebook&utm_campaign=test" 
+               class="button" target="_blank">
+                访问章节（带fbclid参数）
+            </a>
+            <div class="info success">
+                <strong>预期结果：</strong>显示完整版本（带AdClickGuideSystem），参数被保存到localStorage
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h2>🧪 测试场景2: 无参数直接访问</h2>
+            <p>模拟直接访问或搜索引擎来源</p>
+            <a href="./docs/novels/once-discarded-now-desired/chapter-1.html" 
+               class="button secondary" target="_blank">
+                访问章节（无参数）
+            </a>
+            <div class="info warning">
+                <strong>预期结果：</strong>自动跳转到clean版本（不带AdClickGuideSystem）
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h2>🧪 测试场景3: 有历史记录后再次访问</h2>
+            <p>先执行场景1保存参数，然后清除URL参数再访问</p>
+            <ol>
+                <li>点击上面"带fbclid参数"的链接</li>
+                <li>然后点击下面的链接（无参数）</li>
+            </ol>
+            <a href="./docs/novels/once-discarded-now-desired/chapter-2.html" 
+               class="button secondary" target="_blank">
+                访问章节2（无参数）
+            </a>
+            <div class="info success">
+                <strong>预期结果：</strong>显示完整版本（因为localStorage中有历史记录）
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h2>🔧 开发者工具</h2>
+            <button onclick="checkStorage()" class="button">
+                检查localStorage状态
+            </button>
+            <button onclick="clearStorage()" class="button clear-button">
+                清除追踪数据
+            </button>
+            <div id="storage-info" style="margin-top: 15px;"></div>
+        </div>
+        
+        <div class="test-section">
+            <h2>📝 验证清单</h2>
+            <ul>
+                <li>✅ 带参数访问显示完整版本</li>
+                <li>✅ 无参数访问跳转到clean版本</li>
+                <li>✅ localStorage保存30天有效</li>
+                <li>✅ 有历史记录的用户看到完整版本</li>
+                <li>✅ Clean版本不包含AdClickGuideSystem</li>
+                <li>✅ Clean版本保留Google Ads和Analytics</li>
+                <li>✅ 跳转对用户无感知</li>
+            </ul>
+        </div>
+        
+        <div class="info">
+            <strong>💡 提示：</strong>
+            <ul>
+                <li>打开浏览器开发者工具(F12)查看Network和Console</li>
+                <li>观察是否有重定向发生</li>
+                <li>检查localStorage中的<code>has_tracking_params</code>值</li>
+                <li>对比两个版本的页面大小差异</li>
+            </ul>
+        </div>
+    </div>
+    
+    <script>
+        function checkStorage() {
+            const hasTracking = localStorage.getItem('has_tracking_params');
+            const expiry = localStorage.getItem('tracking_params_expiry');
+            
+            let info = '<div class="info">';
+            if (hasTracking) {
+                const expiryDate = new Date(parseInt(expiry));
+                info += `<strong>✅ 检测到追踪参数记录</strong><br>`;
+                info += `保存时间: ${hasTracking === 'true' ? '已保存' : '未保存'}<br>`;
+                info += `过期时间: ${expiryDate.toLocaleString('zh-CN')}<br>`;
+                info += `剩余天数: ${Math.ceil((parseInt(expiry) - Date.now()) / (24 * 60 * 60 * 1000))} 天`;
+            } else {
+                info += '<strong>❌ 未检测到追踪参数记录</strong><br>';
+                info += '用户将看到clean版本';
+            }
+            info += '</div>';
+            
+            document.getElementById('storage-info').innerHTML = info;
+            updateStatus();
+        }
+        
+        function clearStorage() {
+            localStorage.removeItem('has_tracking_params');
+            localStorage.removeItem('tracking_params_expiry');
+            document.getElementById('storage-info').innerHTML = 
+                '<div class="info success"><strong>✅ 已清除追踪数据</strong><br>下次访问将重新判定版本</div>';
+            updateStatus();
+        }
+        
+        function updateStatus() {
+            const hasTracking = localStorage.getItem('has_tracking_params');
+            const statusDiv = document.getElementById('current-status');
+            
+            if (hasTracking === 'true') {
+                statusDiv.className = 'status success';
+                statusDiv.innerHTML = '🟢 当前状态：有追踪记录 - 将显示<strong>完整版本</strong>';
+            } else {
+                statusDiv.className = 'status warning';
+                statusDiv.innerHTML = '🟡 当前状态：无追踪记录 - 将显示<strong>Clean版本</strong>';
+            }
+        }
+        
+        // 页面加载时更新状态
+        updateStatus();
+    </script>
+</body>
+</html>

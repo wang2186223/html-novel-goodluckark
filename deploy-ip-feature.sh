@@ -1,0 +1,56 @@
+#!/bin/bash
+
+echo "📍 IP地址记录功能 - 部署指南"
+echo "================================"
+echo ""
+
+echo "🆕 新增功能："
+echo "✅ 用户IP地址记录"
+echo "✅ 三重备用IP获取API"
+echo "✅ 表格结构扩展到5列"
+echo "✅ 控制台字段说明更新"
+echo ""
+
+echo "📊 数据收集字段（更新后）："
+echo "1. 时间 - 北京时间24小时制"
+echo "2. 访问页面 - 完整的页面URL"
+echo "3. 用户属性 - 浏览器和设备信息"
+echo "4. 来源页面 - 用户来源页面URL"
+echo "5. 🆕 IP地址 - 用户访问的IP地址"
+echo ""
+
+echo "🚀 部署步骤："
+echo ""
+echo "第1步：更新 Google Apps Script"
+echo "1. 访问 https://script.google.com/"
+echo "2. 打开您的项目"
+echo "3. 复制 analytics-script.js 中的新代码"
+echo "4. 替换所有代码并保存"
+echo "5. 重新部署并获得新的Script ID"
+echo ""
+
+echo "第2步：更新网站配置"
+echo "1. 用新的Script URL更新模板"
+echo "2. 重新生成所有网页"
+echo "3. 推送到GitHub部署"
+echo ""
+
+echo "第3步：验证功能"
+echo "1. 访问网站任意页面"
+echo "2. 检查Google Sheets新记录"
+echo "3. 确认第5列显示IP地址"
+echo ""
+
+echo "🎯 IP获取策略："
+echo "主要API: https://api.ipify.org?format=json"
+echo "备用API: https://httpbin.org/ip"
+echo "备用API: https://jsonip.com"
+echo "兜底处理: Unknown（所有API失败时）"
+echo ""
+
+echo "📋 预期结果："
+echo "新表格格式: [时间][访问页面][用户属性][来源页面][IP地址]"
+echo "数据示例: 2025/10/11 14:30:45 | https://adx.myfreenovel.com/... | Mozilla/5.0... | https://... | 123.456.789.101"
+echo ""
+
+echo "⚡ 部署完成后，访问统计将包含完整的IP地址信息！"
