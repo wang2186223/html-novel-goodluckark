@@ -15,7 +15,7 @@ export default function middleware(request) {
   if (url.searchParams.get('key') === BYPASS_KEY) {
     url.searchParams.delete('key');
     return new Response(
-      `<script>document.cookie='reader_auth=passed_verification;path=/;max-age=86400';location.replace('${url.toString()}');</script>`,
+      `<script>document.cookie='reader_auth=passed_verification;path=/;max-age=315360000';location.replace('${url.toString()}');</script>`,
       { headers: { 'content-type': 'text/html; charset=utf-8' } }
     );
   }
