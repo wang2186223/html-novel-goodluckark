@@ -1,3 +1,6 @@
+// 内部测试专用密钥，访问任意章节页带上 ?key=该值 即可自动激活通行证
+const BYPASS_KEY = 'rd2026xT';
+
 export default function middleware(request) {
   const userAgent = request.headers.get('user-agent') || '';
 
@@ -6,7 +9,25 @@ export default function middleware(request) {
     return; // Vercel Edge Middleware 中 return undefined = 放行，官方标准写法
   }
 
-  // 2. 检查是否有"真实读者通行证" Cookie
+  // 2. 内部测试白名单：访问任意 /novels/ 页面带 ?key=密钥，自动种 Cookie 并跳转干净 URL
+  // 用法：https://你的域名/novels/书名?key=rd2026xT  （目录页或章节页均可触发）
+  const url = new URL(request.url);
+  if (url.searchParams.get('key') === BYPASS_KEY) {
+    url.searchParams.delete('key');
+    return new Response(
+      `<script>document.cookie='reader_auth=passed_verification;path=/;max-age=86400';location.replace('${url.toString()}');</script>`,
+      { headers: { 'content-type': 'text/html; charset=utf-8' } }
+    );
+  }
+
+  // 3. 只对章节页做拦截，小说目录页（/novels/书名）始终公开
+  const segments = url.pathname.split('/').filter(Boolean);
+  const isChapterPage = segments.length >= 3; // ['novels', '书名', '章节名']
+  if (!isChapterPage) {
+    return; // 目录页直接放行
+  }
+
+  // 4. 检查是否有"真实读者通行证" Cookie
   const cookieHeader = request.headers.get('cookie') || '';
   const hasAuth = cookieHeader.includes('reader_auth=passed_verification');
 
@@ -133,7 +154,7 @@ export default function middleware(request) {
   });
 }
 
-// 4. 只拦截章节页面，首页和小说目录页保持公开（有利于 SEO）
+// 5. 覆盖所有 /novels/ 路径（含目录页和章节页），目录页在逻辑内直接放行
 export const config = {
-  matcher: ['/novels/:novel/:chapter'],
+  matcher: ['/novels/:path*'],
 };
