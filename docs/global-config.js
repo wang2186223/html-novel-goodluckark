@@ -45,13 +45,8 @@
     var nextBtn = document.getElementById('next-chapter');
     if (!nextBtn || !nextBtn.href) return;
 
-    // 克隆节点以清除页面原有的事件监听器，再挂载新的
-    var newBtn = nextBtn.cloneNode(true);
-    nextBtn.parentNode.replaceChild(newBtn, nextBtn);
-
-    newBtn.addEventListener('click', function (e) {
+    nextBtn.addEventListener('click', function (e) {
       e.preventDefault();
-      e.stopImmediatePropagation();
 
       // 追踪参数已由 processPageLinks 直接写入 href，直接读取即可
       var href = e.currentTarget.href || e.currentTarget.getAttribute('href');
