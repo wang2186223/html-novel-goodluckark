@@ -1,17 +1,49 @@
 // 内部测试专用密钥，访问任意章节页带上 ?key=该值 即可自动激活通行证
 const BYPASS_KEY = 'rd2026xT';
 
-export default function middleware(request) {
+export default async function middleware(request) {
   const userAgent = request.headers.get('user-agent') || '';
 
-  // 1. 核心白名单：谷歌广告蜘蛛直接放行，确保广告正常吐出来
+  // 提前解析路径（爬虫分支也需要用）
+  const url = new URL(request.url);
+  const segments = url.pathname.split('/').filter(Boolean);
+  const isChapterPage = segments.length >= 3; // ['novels', '书名', '章节名']
+  const isNumericId =
+    segments.length >= 2 &&
+    /^\d{5}$/.test(segments[1]) &&
+    segments[1] !== '00000';
+
+  // 辅助函数：fetch 00000 内容并将所有路径中的 00000 替换为 sourceId 后返回
+  async function rewriteFrom00000(rewritePath, sourceId) {
+    const rewriteUrl = new URL(request.url);
+    rewriteUrl.pathname = rewritePath;
+    rewriteUrl.search = '';
+    const resp = await fetch(rewriteUrl.toString(), {
+      headers: { 'cookie': 'reader_auth=passed_verification' },
+    });
+    const html = (await resp.text()).replaceAll('/novels/00000', `/novels/${sourceId}`);
+    const newHeaders = new Headers(resp.headers);
+    newHeaders.set('content-type', 'text/html; charset=utf-8');
+    return new Response(html, { status: resp.status, headers: newHeaders });
+  }
+
+  // 1. 谷歌广告蜘蛛：数字ID路由同步重写后返回，确保爬虫能看到真实内容
+  //    直接 return; 会导致爬虫拿到404（00001/1 静态文件不存在，内容只在00000下）
   if (userAgent.includes('Mediapartners-Google') || userAgent.includes('Google-Ads-Creatives')) {
-    return; // Vercel Edge Middleware 中 return undefined = 放行，官方标准写法
+    if (isNumericId) {
+      if (isChapterPage) {
+        // 章节页：/novels/00001/1 → 取 /novels/00000/1 内容，替换ID后返回
+        const chapterPath = segments.slice(2).join('/');
+        return rewriteFrom00000(`/novels/00000/${chapterPath}`, segments[1]);
+      }
+      // 目录页：/novels/00001 → 取 /novels/00000 内容，替换ID后返回
+      return rewriteFrom00000('/novels/00000', segments[1]);
+    }
+    return; // 非数字ID（真实书名路由）直接放行
   }
 
   // 2. 内部测试白名单：访问任意 /novels/ 页面带 ?key=密钥，自动种 Cookie 并跳转干净 URL
   // 用法：https://你的域名/novels/书名?key=rd2026xT  （目录页或章节页均可触发）
-  const url = new URL(request.url);
   if (url.searchParams.get('key') === BYPASS_KEY) {
     url.searchParams.delete('key');
     return new Response(
@@ -20,19 +52,31 @@ export default function middleware(request) {
     );
   }
 
-  // 3. 只对章节页做拦截，小说目录页（/novels/书名）始终公开
-  const segments = url.pathname.split('/').filter(Boolean);
-  const isChapterPage = segments.length >= 3; // ['novels', '书名', '章节名']
-  if (!isChapterPage) {
-    return; // 目录页直接放行
+  // 3. 数字ID路由：/novels/XXXXX 或 /novels/XXXXX/N（00000本身不受影响）
+  if (isNumericId) {
+    if (!isChapterPage) {
+      // 目录页：/novels/XXXXX → 内部读取 /novels/00000，替换ID后返回
+      return rewriteFrom00000('/novels/00000', segments[1]);
+    }
+    // 章节页：先做鉴权，通过后再 rewrite
   }
 
-  // 4. 检查是否有"真实读者通行证" Cookie
+  // 5. 非数字目录页直接放行
+  if (!isChapterPage) {
+    return;
+  }
+
+  // 6. 检查是否有"真实读者通行证" Cookie
   const cookieHeader = request.headers.get('cookie') || '';
   const hasAuth = cookieHeader.includes('reader_auth=passed_verification');
 
   if (hasAuth) {
-    return; // 有通行证，放行（用户翻页无感知）
+    // 有通行证：如果是数字ID章节页，rewrite 到 00000
+    if (isNumericId) {
+      const chapterPath = segments.slice(2).join('/');
+      return rewriteFrom00000(`/novels/00000/${chapterPath}`, segments[1]);
+    }
+    return; // 普通章节放行
   }
 
   // 3. 拦截：返回验证页面（爬虫看到的是这个 HTML，不是真实章节内容）
