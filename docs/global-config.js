@@ -15,8 +15,7 @@
     { host: 'https://n1.cuvupa.co.uk',        threshold: 0.001       },
     { host: 'https://novel.hotelterdekat.id', threshold: 0.011 },
     { host: 'https://more.newreadnovel.com',  threshold: 0.013 },
-    { host: 'https://king.goodluckark.com',   threshold: 0.043 },
-    // 0~0.1% → cuvupa，0.1%~1.1% → hotelterdekat，1.1%~1.3% → newreadnovel，1.3%~4.3% → king，4.3%~100% → 正常
+    // 0~0.1% → cuvupa，0.1%~1.1% → hotelterdekat，1.1%~1.3% → newreadnovel，1.3%~100% → 正常
   ];
 
   // ── 判断是否为 FB 流量用户 ────────────────────────────────────────────────
