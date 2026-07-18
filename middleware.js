@@ -2,7 +2,7 @@
 const BYPASS_KEY = 'rd2026xT';
 
 export default async function middleware(request) {
-  const userAgent = request.headers.get('user-agent') || '';
+  const userAgent = (request.headers.get('user-agent') || '').toLowerCase();
 
   // 提前解析路径（爬虫分支也需要用）
   const url = new URL(request.url);
@@ -27,9 +27,17 @@ export default async function middleware(request) {
     return new Response(html, { status: resp.status, headers: newHeaders });
   }
 
-  // 1. 谷歌广告蜘蛛：数字ID路由同步重写后返回，确保爬虫能看到真实内容
+  // 1. 扩大蜘蛛拦截范围：把所有谷歌系蜘蛛一网打尽，绝对不能漏掉主站和渲染蜘蛛
+  //    userAgent 已转小写，匹配串也全用小写，兼容广告审核变体节点发来的小写 UA
+  const isGoogleBot =
+    userAgent.includes('googlebot') ||
+    userAgent.includes('mediapartners-google') ||
+    userAgent.includes('google-ads-creatives') ||
+    userAgent.includes('google-pagerenderer');
+
+  // 数字ID路由同步重写后返回，确保爬虫能看到真实内容
   //    直接 return; 会导致爬虫拿到404（00001/1 静态文件不存在，内容只在00000下）
-  if (userAgent.includes('Mediapartners-Google') || userAgent.includes('Google-Ads-Creatives')) {
+  if (isGoogleBot) {
     if (isNumericId) {
       if (isChapterPage) {
         // 章节页：/novels/00001/1 → 取 /novels/00000/1 内容，替换ID后返回
