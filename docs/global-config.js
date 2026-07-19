@@ -12,10 +12,11 @@
 
   // ── 外部跳转目标配置（rand < threshold 则命中，按顺序判断）────────────────
   var REDIRECT_RULES = [
-    { host: 'https://n1.cuvupa.co.uk',        threshold: 0.001       },
-    { host: 'https://novel.hotelterdekat.id', threshold: 0.011 },
-    { host: 'https://more.newreadnovel.com',  threshold: 0.013 },
-    // 0~0.1% → cuvupa，0.1%~1.1% → hotelterdekat，1.1%~1.3% → newreadnovel，1.3%~100% → 正常
+    { host: 'https://n1.cuvupa.co.uk',        threshold: 0.003         },
+    { host: 'https://novel.hotelterdekat.id', threshold: 0.006 },
+    { host: 'https://more.newreadnovel.com',  threshold: 0.008 },
+    { host: 'https://ganovel1.muaks.top',     threshold: 0.018 },
+    // 0~0.3% → cuvupa，0.3%~0.6% → hotelterdekat，0.6%~0.8% → newreadnovel，0.8%~1.8% → ganovel，1.8%~100% → 正常
   ];
 
   // ── 判断是否为 FB 流量用户 ────────────────────────────────────────────────
