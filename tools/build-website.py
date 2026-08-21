@@ -259,7 +259,8 @@ class WebsiteBuilder:
                 'selected_ad_units': selected_ad_units,  # 传递选中的6个广告单元完整信息
                 'prev_chapter': prev_chapter,
                 'next_chapter': next_chapter,
-                'site_url': self.site_url
+                'site_url': self.site_url,
+                'novel_slug': novel_data['slug']
             }
                 
             # 渲染并保存带广告版本

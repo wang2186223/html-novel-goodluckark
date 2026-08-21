@@ -977,7 +977,38 @@
             const totalChapters = {{ novel.chapters|length if novel.chapters else 0 }};
             
             // 加载并显示阅读历史
-            loadReadingHistory();
+            const _urlParts = window.location.pathname.split('/').filter(Boolean);
+            const _isNumericId = _urlParts.length === 2 && _urlParts[0] === 'novels' && /^\d{5}$/.test(_urlParts[1]);
+            if (!_isNumericId) { loadReadingHistory(); }
+            (function() {
+                const parts = _urlParts;
+                if (_isNumericId) {
+                    const sourceId = parts[1];
+                    (function() {
+                        var _u = 'https://czqmqnvqkugzpgwfmyth.supabase.co';
+                        var _k = 'sb_publishable_FF8-Z6gbAyjvHK77w4QfGw_02nCOhaw';
+                        var url = _u + '/rest/v1/novel_chapters'
+                            + '?novel_id=eq.' + encodeURIComponent(sourceId)
+                            + '&select=novel_name&limit=1';
+                        fetch(url, { headers: { 'apikey': _k, 'Authorization': 'Bearer ' + _k } })
+                            .then(function(r) { return r.ok ? r.json() : null; })
+                            .then(function(d) {
+                                if (d && d[0] && d[0].novel_name) {
+                                    var h1 = document.querySelector('.book-title');
+                                    if (h1) h1.textContent = d[0].novel_name;
+                                }
+                            }).catch(function() {});
+                    })();
+                    try {
+                        const saved = JSON.parse(localStorage.getItem('numeric_novel_' + sourceId) || 'null');
+                        if (saved && saved.chapter > 0) {
+                            const historyData = { currentChapter: saved.chapter, lastRead: saved.time };
+                            showReadingHistory(historyData);
+                            updateChapterStatuses(historyData);
+                        }
+                    } catch(e) {}
+                }
+            })();
             
             function loadReadingHistory() {
                 const history = JSON.parse(localStorage.getItem('readingHistory') || '[]');
